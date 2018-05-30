@@ -29,12 +29,10 @@ public:
         int newLocation = computeEmptyLocation();
         usedTextureLocations[newLocation] = true;
         lastShaderTextureLocationUsed = newLocation;
-        ofLog() << "NewLocationFound: " << newLocation;
         return newLocation;
     }
 
     void makeTextureLocationAvailable(uint location){
-        ofLog() << "Unuse location: " << location;
         usedTextureLocations[location] = false;
     }
     
