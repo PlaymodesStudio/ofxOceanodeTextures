@@ -17,8 +17,11 @@ public:
     oscillatorTexture();
     ~oscillatorTexture();
     
+    void setup() override;
+    
     void presetRecallBeforeSettingParameters(ofJson &json) override;
 private:
+    bool isSetup;
     ofTexture&  computeBank(float phasor);
     
     template<typename T>
