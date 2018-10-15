@@ -191,13 +191,13 @@ void main(){
     }
     value = map(value, -1, 1, 0, 1);
     
-    value = clamp(value, 0, 1);
+    value = clamp(value, 0.0, 1.0);
     
     //Quantization
     if(quantizationParam < 255)
         value = (1/float(quantizationParam-1))*floor(value*quantizationParam);
     
-    value = clamp(value, 0, 1);
+    value = clamp(value, 0.0, 1.0);
     
     value *= faderParam;
     
