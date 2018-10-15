@@ -12,6 +12,22 @@
 #define STRINGIFY(x) #x
 
 oscillatorTexture::oscillatorTexture() : ofxOceanodeNodeModel("Oscillator Texture"){
+    isSetup = false;
+}
+
+oscillatorTexture::~oscillatorTexture(){
+    if(isSetup){
+        resources->makeTextureLocationAvailable(oscillatorShaderIntParametersTextureLocation);
+        resources->makeTextureLocationAvailable(oscillatorShaderFloatParametersTextureLocation);
+        resources->makeTextureLocationAvailable(scalingShaderIntParametersTextureLocation);
+        resources->makeTextureLocationAvailable(scalingShaderFloatParametersTextureLocation);
+        resources->makeTextureLocationAvailable(randomIndexsTextureLocation);
+        resources->makeTextureLocationAvailable(randomInfoOscillatorShaderTextureLocation);
+        resources->makeTextureLocationAvailable(randomInfoScalingShaderTextureLocation);
+    }
+}
+
+void oscillatorTexture::setup(){
     resources = &sharedResources::getInstance();
     
     parameters->add(phasorIn.set("Phasor In", 0, 0, 1));
@@ -277,16 +293,7 @@ oscillatorTexture::oscillatorTexture() : ofxOceanodeNodeModel("Oscillator Textur
     }));
     
     waveSelect_Param.addListener(this, &oscillatorTexture::newWaveSelectParam);
-}
-
-oscillatorTexture::~oscillatorTexture(){
-    resources->makeTextureLocationAvailable(oscillatorShaderIntParametersTextureLocation);
-    resources->makeTextureLocationAvailable(oscillatorShaderFloatParametersTextureLocation);
-    resources->makeTextureLocationAvailable(scalingShaderIntParametersTextureLocation);
-    resources->makeTextureLocationAvailable(scalingShaderFloatParametersTextureLocation);
-    resources->makeTextureLocationAvailable(randomIndexsTextureLocation);
-    resources->makeTextureLocationAvailable(randomInfoOscillatorShaderTextureLocation);
-    resources->makeTextureLocationAvailable(randomInfoScalingShaderTextureLocation);
+    isSetup = true;
 }
 
 void oscillatorTexture::setParametersInfoMaps(){
