@@ -32,7 +32,7 @@ public:
         return newLocation;
     }
 
-    void makeTextureLocationAvailable(uint location){
+    void makeTextureLocationAvailable(unsigned int location){
         usedTextureLocations[location] = false;
     }
     
@@ -57,7 +57,7 @@ private:
     }
     
     vector<bool> usedTextureLocations;
-    uint lastShaderTextureLocationUsed = -1;
+    unsigned int lastShaderTextureLocationUsed = -1;
 };
 
 

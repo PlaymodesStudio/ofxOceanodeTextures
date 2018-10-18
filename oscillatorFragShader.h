@@ -311,7 +311,7 @@ void main(){
     w = mod(w, 2*M_PI);
 //    
     w = map(w, (1-pulseWidthParam)*2*M_PI, 2*M_PI, 0, 2*M_PI);
-    w = clamp(w, 0, 2*M_PI);
+    w = clamp(w, 0.0, 2*M_PI);
 
     float w_skewed = w;
 
@@ -333,7 +333,7 @@ void main(){
         }
     }
 
-    w = clamp(w_skewed, 0, 2*M_PI);    
+    w = clamp(w_skewed, 0.0, 2*M_PI);    
     
     float linPhase =  w / (2*M_PI);
     float val1 = 0;

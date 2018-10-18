@@ -105,15 +105,15 @@ private:
 
     sharedResources* resources;
     
-    uint oscillatorShaderIntParametersTextureLocation;
-    uint oscillatorShaderFloatParametersTextureLocation;
-    uint scalingShaderIntParametersTextureLocation;
-    uint scalingShaderFloatParametersTextureLocation;
+    unsigned int oscillatorShaderIntParametersTextureLocation;
+    unsigned int oscillatorShaderFloatParametersTextureLocation;
+    unsigned int scalingShaderIntParametersTextureLocation;
+    unsigned int scalingShaderFloatParametersTextureLocation;
     
-    uint randomIndexsTextureLocation;
+    unsigned int randomIndexsTextureLocation;
     
-    uint randomInfoOscillatorShaderTextureLocation;
-    uint randomInfoScalingShaderTextureLocation;
+    unsigned int randomInfoOscillatorShaderTextureLocation;
+    unsigned int randomInfoScalingShaderTextureLocation;
     
     ofShader shaderOscillator;
     ofShader shaderScaling;
