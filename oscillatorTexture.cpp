@@ -614,12 +614,14 @@ void oscillatorTexture::newPhasorIn(float &f){
 vector<float> oscillatorTexture::newRandomValuesVector(){
     vector<float> randomValuesVecX(width, 0);
     vector<float> randomValuesVecY(height, 0);
-    for(int i = 0; i < randomValuesVecX.size(); i++){
-        randomValuesVecX[i] = (int)-randomValuesVecX.size()/2 + i;
-    }
-    for(int i = 0; i < randomValuesVecY.size(); i++){
-        randomValuesVecY[i] = (int)-randomValuesVecY.size()/2 + i;
-    }
+    iota(randomValuesVecX.begin(), randomValuesVecX.end(), 0);
+    iota(randomValuesVecY.begin(), randomValuesVecY.end(), 0);
+//    for(int i = 0; i < randomValuesVecX.size(); i++){
+//        randomValuesVecX[i] = (int)-randomValuesVecX.size()/2 + i;
+//    }
+//    for(int i = 0; i < randomValuesVecY.size(); i++){
+//        randomValuesVecY[i] = (int)-randomValuesVecY.size()/2 + i;
+//    }
     
     mt19937 g(static_cast<uint32_t>(time(0)));
     shuffle(randomValuesVecX.begin(), randomValuesVecX.end(), g);

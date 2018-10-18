@@ -252,16 +252,16 @@ void main(){
 
     //Random
     xIndex += int(texelFetch(indexRandomValues, xIndex).r * xIndexRandom);
-    xIndex %= width;
-    if(xIndex < 0){
-        xIndex += width;
-    }
+//    xIndex %= width;
+//    if(xIndex < 0){
+//        xIndex += width;
+//    }
 
     yIndex += int(texelFetch(indexRandomValues, yIndex + width).r * yIndexRandom);
-    yIndex %= height;
-    if(yIndex < 0){
-        yIndex += height;
-    }
+//    yIndex %= height;
+//    if(yIndex < 0){
+//        yIndex += height;
+//    }
 
     //COMBINATION
     xIndex = int(abs(((xIndex%2)*width*xIndexCombination)-xIndex));
