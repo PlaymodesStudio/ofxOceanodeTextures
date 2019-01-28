@@ -37,21 +37,29 @@ void oscillatorTexture::setup(){
     previousWidth = width;
     previousHeight = height;
     
-    width.addListener(this, &oscillatorTexture::sizeChanged);
-    height.addListener(this, &oscillatorTexture::sizeChanged);
+    listeners.push(width.newListener(this, &oscillatorTexture::sizeChanged));
+    listeners.push(height.newListener(this, &oscillatorTexture::sizeChanged));
     
+    ofFbo::Settings settings;
+    settings.height = height;
+    settings.width = width;
+    settings.internalformat = GL_RGBA32F;
+    settings.maxFilter = GL_NEAREST;
+    settings.minFilter = GL_NEAREST;
+    settings.numColorbuffers = 1;
+    settings.useDepth = false;
+    settings.useStencil = false;
+    settings.textureTarget = GL_TEXTURE_2D;
     
-    fbo.allocate(width, height, GL_RGBA32F);
+    fbo.allocate(settings);
     fbo.begin();
     ofClear(255, 255, 255, 0);
     fbo.end();
-    fbo.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
     
-    fboBuffer.allocate(width, height, GL_RGBA32F);
+    fboBuffer.allocate(settings);
     fboBuffer.begin();
     ofClear(255, 255, 255, 0);
     fboBuffer.end();
-    fboBuffer.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
 
     
     auto setAndBindXYParamsVecFloat = [this](ofParameter<vector<float>> *p, string name, float val, float min, float max) -> void{
@@ -150,7 +158,7 @@ void oscillatorTexture::setup(){
     
     //listeners
     
-    phasorIn.addListener(this, &oscillatorTexture::newPhasorIn);
+    listeners.push(phasorIn.newListener(this, &oscillatorTexture::newPhasorIn));
     
     oscillatorShaderFloatListeners.push(indexNumWaves[0].newListener([&](vector<float> &vf){
         onOscillatorShaderFloatParameterChanged(indexNumWaves[0], vf);
@@ -292,7 +300,7 @@ void oscillatorTexture::setup(){
         onOscillatorShaderFloatParameterChanged(waveform[1], vf);
     }));
     
-    waveSelect_Param.addListener(this, &oscillatorTexture::newWaveSelectParam);
+    listeners.push(waveSelect_Param.newListener(this, &oscillatorTexture::newWaveSelectParam));
     isSetup = true;
 }
 
@@ -703,23 +711,37 @@ void oscillatorTexture::sizeChanged(int &i){
     }
     
     if(sizeChanged){
-        fbo.allocate(width, height, GL_RGBA32F);
+        ofFbo::Settings settings;
+        settings.height = height;
+        settings.width = width;
+        settings.internalformat = GL_RGBA32F;
+        settings.maxFilter = GL_NEAREST;
+        settings.minFilter = GL_NEAREST;
+        settings.numColorbuffers = 1;
+        settings.useDepth = false;
+        settings.useStencil = false;
+        settings.textureTarget = GL_TEXTURE_2D;
+
+        fbo.allocate(settings);
         fbo.begin();
         ofClear(255, 255, 255, 0);
         fbo.end();
-        fbo.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
         
-        fboBuffer.allocate(width, height, GL_RGBA32F);
+        fboBuffer.allocate(settings);
         fboBuffer.begin();
         ofClear(255, 255, 255, 0);
         fboBuffer.end();
-        fboBuffer.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
     
         setParametersInfoMaps();
         setOscillatorShaderIntParameterDataToTBO();
         setOscillatorShaderFloatParameterDataToTBO();
         setScalingShaderIntParameterDataToTBO();
         setScalingShaderFloatParameterDataToTBO();
+        
+        GLenum err;
+        while ((err = glGetError()) != GL_NO_ERROR) {
+            ofLog() << "OpenGL error: " << err;
+        }
         
         indexRandomValuesBuffer.setData(newRandomValuesVector(), GL_STREAM_DRAW);
     }

@@ -67,6 +67,8 @@ private:
     ofParameter<int> height;
     int previousWidth, previousHeight;
     
+    ofEventListeners listeners;
+    
     ofParameter<vector<float>>   indexNumWaves[2];
     ofParameter<vector<float>>   indexInvert[2];
     ofParameter<vector<int>>   indexSymmetry[2];
