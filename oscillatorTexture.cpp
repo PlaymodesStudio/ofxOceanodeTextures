@@ -655,6 +655,20 @@ void oscillatorTexture::onOscillatorShaderIntParameterChanged(ofAbstractParamete
 void oscillatorTexture::onOscillatorShaderFloatParameterChanged(ofAbstractParameter &p, vector<float> &vf){
     int position = oscillatorShaderFloatParameterNameTBOPositionMap[p.getName()];
     int size = oscillatorShaderParameterNameTBOSizeMap[p.getName()];
+    
+    if(&vf == &indexRandom[0].get() || &vf == &indexRandom[1].get()){
+        if(vf.size() == size){
+            if(std::accumulate(vf.begin(), vf.end(), 0) == 0){
+                indexRandomValuesBuffer.setData(newRandomValuesVector(), GL_STREAM_DRAW);
+            }
+        }else{
+            if(vf[0] == 0){
+                indexRandomValuesBuffer.setData(newRandomValuesVector(), GL_STREAM_DRAW);
+            }
+        }
+    }
+    
+    
     if(vf.size() == size){
         oscillatorShaderFloatBuffer.updateData(position*4, vf);
     }else{
