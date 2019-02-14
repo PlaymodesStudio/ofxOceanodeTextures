@@ -7,7 +7,6 @@
 //
 
 #include "waveScope.h"
-#include "ofxOceanodeContainer.h"
 
 waveScope::waveScope() : ofxOceanodeNodeModelExternalWindow("Texture Scope"){
     

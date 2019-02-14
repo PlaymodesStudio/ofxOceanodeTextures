@@ -43,20 +43,26 @@ public:
         if(json.count("MultiPresetArrange") == 1){
             vector<int> indexs = json["MultiPresetArrange"];
             for(auto param : parameterVector){
-                group->remove(param.second.getEscapedName());
-                listeners.erase(param.first);
-                ifNewCreatedChecker.erase(param.first);
+                auto result = std::find(indexs.begin(), indexs.end(), param.first);
+                if(result == indexs.end()){
+                    group->remove(param.second.getEscapedName());
+                    listeners.erase(param.first);
+                    ifNewCreatedChecker.erase(param.first);
+                }
+                else{
+                    ifNewCreatedChecker[param.first] = true;
+                }
             }
-            parameterVector.clear();
             for(int i : indexs){
-                parameterVector[i] = ofParameter<T>();
-                parameterVector[i].set(baseParameter.getName() + " " + ofToString(i), baseParameter);
-                ifNewCreatedChecker[i] = false;
-                group->add(parameterVector[i]);
-                listeners[i] = parameterVector[i].newListener([&, i](T &val){
-                    inputListener(i);
-                });
-                ifNewCreatedChecker[i] = true;
+                if(parameterVector.count(i) == 0){
+                    parameterVector[i] = ofParameter<T>();
+                    parameterVector[i].set(baseParameter.getName() + " " + ofToString(i), baseParameter);
+                    group->add(parameterVector[i]);
+                    listeners[i] = parameterVector[i].newListener([&, i](T &val){
+                        inputListener(i);
+                    });
+                    ifNewCreatedChecker[i] = true;
+                }
             }
             ofNotifyEvent(parameterGroupChanged);
         }
@@ -117,9 +123,13 @@ public:
         texturesInput.saveParameterArrange(json);
     };
     
-    virtual void presetRecallBeforeSettingParameters(ofJson &json) override{
+//    virtual void presetRecallBeforeSettingParameters(ofJson &json) override{
+//        texturesInput.loadParameterArrange(json);
+//    };
+    
+    void loadBeforeConnections(ofJson &json) override{
         texturesInput.loadParameterArrange(json);
-    };
+    }
 
 private:
     void drawInExternalWindow(ofEventArgs &e) override;
