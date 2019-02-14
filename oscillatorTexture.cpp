@@ -17,6 +17,12 @@ oscillatorTexture::oscillatorTexture() : ofxOceanodeNodeModel("Oscillator Textur
 
 oscillatorTexture::~oscillatorTexture(){
     if(isSetup){
+        oscillatorShaderIntTexture.clear();
+        oscillatorShaderFloatTexture.clear();
+        scalingShaderIntTexture.clear();
+        scalingShaderFloatTexture.clear();
+        indexRandomValuesTexture.clear();
+        
         resources->makeTextureLocationAvailable(oscillatorShaderIntParametersTextureLocation);
         resources->makeTextureLocationAvailable(oscillatorShaderFloatParametersTextureLocation);
         resources->makeTextureLocationAvailable(scalingShaderIntParametersTextureLocation);
@@ -316,11 +322,6 @@ void oscillatorTexture::setParametersInfoMaps(){
     oscillatorShaderParameterNameTBOSizeMap[indexInvert[0].getName()] = height;
     oscillatorShaderParameterNameTBOSizeMap[indexInvert[1].getName()] = width;
     
-    oscillatorShaderIntParameterNameTBOPositionMap[indexSymmetry[0].getName()] = 0;
-    oscillatorShaderIntParameterNameTBOPositionMap[indexSymmetry[1].getName()] = height;
-    oscillatorShaderParameterNameTBOSizeMap[indexSymmetry[0].getName()] = height;
-    oscillatorShaderParameterNameTBOSizeMap[indexSymmetry[1].getName()] = width;
-    
     oscillatorShaderFloatParameterNameTBOPositionMap[indexRandom[0].getName()] = dimensionsSum * 2;
     oscillatorShaderFloatParameterNameTBOPositionMap[indexRandom[1].getName()] = (dimensionsSum * 2) + height;
     oscillatorShaderParameterNameTBOSizeMap[indexRandom[0].getName()] = height;
@@ -331,26 +332,46 @@ void oscillatorTexture::setParametersInfoMaps(){
     oscillatorShaderParameterNameTBOSizeMap[indexOffset[0].getName()] = height;
     oscillatorShaderParameterNameTBOSizeMap[indexOffset[1].getName()] = width;
     
-    oscillatorShaderIntParameterNameTBOPositionMap[indexQuantization[0].getName()] = dimensionsSum;
-    oscillatorShaderIntParameterNameTBOPositionMap[indexQuantization[1].getName()] = (dimensionsSum) + height;
-    oscillatorShaderParameterNameTBOSizeMap[indexQuantization[0].getName()] = height;
-    oscillatorShaderParameterNameTBOSizeMap[indexQuantization[1].getName()] = width;
-    
     oscillatorShaderFloatParameterNameTBOPositionMap[indexCombination[0].getName()] = dimensionsSum * 4;
     oscillatorShaderFloatParameterNameTBOPositionMap[indexCombination[1].getName()] = (dimensionsSum * 4) + height;
     oscillatorShaderParameterNameTBOSizeMap[indexCombination[0].getName()] = height;
     oscillatorShaderParameterNameTBOSizeMap[indexCombination[1].getName()] = width;
+    
+    oscillatorShaderFloatParameterNameTBOPositionMap[phaseOffset[0].getName()] = dimensionsSum * 5;
+    oscillatorShaderFloatParameterNameTBOPositionMap[phaseOffset[1].getName()] = (dimensionsSum * 5) + width;
+    oscillatorShaderParameterNameTBOSizeMap[phaseOffset[0].getName()] = width;
+    oscillatorShaderParameterNameTBOSizeMap[phaseOffset[1].getName()] = height;
+    
+    oscillatorShaderFloatParameterNameTBOPositionMap[pulseWidth[0].getName()] = dimensionsSum * 6;
+    oscillatorShaderFloatParameterNameTBOPositionMap[pulseWidth[1].getName()] = (dimensionsSum * 6) + width;
+    oscillatorShaderParameterNameTBOSizeMap[pulseWidth[0].getName()] = width;
+    oscillatorShaderParameterNameTBOSizeMap[pulseWidth[1].getName()] = height;
+    
+    oscillatorShaderFloatParameterNameTBOPositionMap[skew[0].getName()] = dimensionsSum * 7;
+    oscillatorShaderFloatParameterNameTBOPositionMap[skew[1].getName()] = (dimensionsSum * 7) + width;
+    oscillatorShaderParameterNameTBOSizeMap[skew[0].getName()] = width;
+    oscillatorShaderParameterNameTBOSizeMap[skew[1].getName()] = height;
+    
+    oscillatorShaderFloatParameterNameTBOPositionMap[waveform[0].getName()] = dimensionsSum * 8;
+    oscillatorShaderFloatParameterNameTBOPositionMap[waveform[1].getName()] = (dimensionsSum * 8) + width;
+    oscillatorShaderParameterNameTBOSizeMap[waveform[0].getName()] = width;
+    oscillatorShaderParameterNameTBOSizeMap[waveform[1].getName()] = height;
+    
+    oscillatorShaderIntParameterNameTBOPositionMap[indexSymmetry[0].getName()] = 0;
+    oscillatorShaderIntParameterNameTBOPositionMap[indexSymmetry[1].getName()] = height;
+    oscillatorShaderParameterNameTBOSizeMap[indexSymmetry[0].getName()] = height;
+    oscillatorShaderParameterNameTBOSizeMap[indexSymmetry[1].getName()] = width;
+    
+    oscillatorShaderIntParameterNameTBOPositionMap[indexQuantization[0].getName()] = dimensionsSum;
+    oscillatorShaderIntParameterNameTBOPositionMap[indexQuantization[1].getName()] = (dimensionsSum) + height;
+    oscillatorShaderParameterNameTBOSizeMap[indexQuantization[0].getName()] = height;
+    oscillatorShaderParameterNameTBOSizeMap[indexQuantization[1].getName()] = width;
     
     oscillatorShaderIntParameterNameTBOPositionMap[indexModulo[0].getName()] = dimensionsSum * 2;
     oscillatorShaderIntParameterNameTBOPositionMap[indexModulo[1].getName()] = (dimensionsSum * 2) + height;
     oscillatorShaderParameterNameTBOSizeMap[indexModulo[0].getName()] = height;
     oscillatorShaderParameterNameTBOSizeMap[indexModulo[1].getName()] = width;
 
-    oscillatorShaderFloatParameterNameTBOPositionMap[phaseOffset[0].getName()] = dimensionsSum * 5;
-    oscillatorShaderFloatParameterNameTBOPositionMap[phaseOffset[1].getName()] = (dimensionsSum * 5) + width;
-    oscillatorShaderParameterNameTBOSizeMap[phaseOffset[0].getName()] = width;
-    oscillatorShaderParameterNameTBOSizeMap[phaseOffset[1].getName()] = height;
-    
     scalingShaderFloatParameterNameTBOPositionMap[randomAddition[0].getName()] = 0;
     scalingShaderFloatParameterNameTBOPositionMap[randomAddition[1].getName()] = width;
     scalingShaderParameterNameTBOSizeMap[randomAddition[0].getName()] = width;
@@ -381,16 +402,6 @@ void oscillatorTexture::setParametersInfoMaps(){
     scalingShaderParameterNameTBOSizeMap[quantization[0].getName()] = width;
     scalingShaderParameterNameTBOSizeMap[quantization[1].getName()] = height;
     
-    oscillatorShaderFloatParameterNameTBOPositionMap[pulseWidth[0].getName()] = dimensionsSum * 6;
-    oscillatorShaderFloatParameterNameTBOPositionMap[pulseWidth[1].getName()] = (dimensionsSum * 6) + width;
-    oscillatorShaderParameterNameTBOSizeMap[pulseWidth[0].getName()] = width;
-    oscillatorShaderParameterNameTBOSizeMap[pulseWidth[1].getName()] = height;
-    
-    oscillatorShaderFloatParameterNameTBOPositionMap[skew[0].getName()] = dimensionsSum * 7;
-    oscillatorShaderFloatParameterNameTBOPositionMap[skew[1].getName()] = (dimensionsSum * 7) + width;
-    oscillatorShaderParameterNameTBOSizeMap[skew[0].getName()] = width;
-    oscillatorShaderParameterNameTBOSizeMap[skew[1].getName()] = height;
-    
     scalingShaderFloatParameterNameTBOPositionMap[fader[0].getName()] = dimensionsSum * 5;
     scalingShaderFloatParameterNameTBOPositionMap[fader[1].getName()] = (dimensionsSum * 5) + width;
     scalingShaderParameterNameTBOSizeMap[fader[0].getName()] = width;
@@ -400,11 +411,6 @@ void oscillatorTexture::setParametersInfoMaps(){
     scalingShaderFloatParameterNameTBOPositionMap[invert[1].getName()] = (dimensionsSum * 6) + width;
     scalingShaderParameterNameTBOSizeMap[invert[0].getName()] = width;
     scalingShaderParameterNameTBOSizeMap[invert[1].getName()] = height;
-    
-    oscillatorShaderFloatParameterNameTBOPositionMap[waveform[0].getName()] = dimensionsSum * 8;
-    oscillatorShaderFloatParameterNameTBOPositionMap[waveform[1].getName()] = (dimensionsSum * 8) + width;
-    oscillatorShaderParameterNameTBOSizeMap[waveform[0].getName()] = width;
-    oscillatorShaderParameterNameTBOSizeMap[waveform[1].getName()] = height;
 }
 
 void oscillatorTexture::setOscillatorShaderIntParameterDataToTBO(){
