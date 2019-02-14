@@ -251,13 +251,13 @@ void main(){
 
 
     //Random
-    xIndex += int(texelFetch(indexRandomValues, xIndex).r * xIndexRandom);
+    xIndex = int(xIndex*(1.0-xIndexRandom)) +int(texelFetch(indexRandomValues, xIndex).r * xIndexRandom);
 //    xIndex %= width;
 //    if(xIndex < 0){
 //        xIndex += width;
 //    }
 
-    yIndex += int(texelFetch(indexRandomValues, yIndex + width).r * yIndexRandom);
+    yIndex = int(yIndex*(1.0-yIndexRandom)) + int(texelFetch(indexRandomValues, yIndex + width).r * yIndexRandom);
 //    yIndex %= height;
 //    if(yIndex < 0){
 //        yIndex += height;
