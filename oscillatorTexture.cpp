@@ -13,6 +13,7 @@
 
 oscillatorTexture::oscillatorTexture() : ofxOceanodeNodeModel("Oscillator Texture"){
     isSetup = false;
+    isFirstPassAfterSetup = true;
 }
 
 oscillatorTexture::~oscillatorTexture(){
@@ -59,12 +60,12 @@ void oscillatorTexture::setup(){
     
     fbo.allocate(settings);
     fbo.begin();
-    ofClear(255, 255, 255, 0);
+    ofClear(0, 0, 0, 255);
     fbo.end();
     
     fboBuffer.allocate(settings);
     fboBuffer.begin();
-    ofClear(255, 255, 255, 0);
+    ofClear(0, 0, 0, 255);
     fboBuffer.end();
 
     
@@ -119,7 +120,7 @@ void oscillatorTexture::setup(){
     
     parameters->add(createDropdownAbstractParameter("Wave Select", {"sin", "cos", "tri", "square", "saw", "inverted saw", "rand1", "rand2", "rand3"}, waveSelect_Param));
     
-    parameters->add(oscillatorOut.set("Oscillator Out", nullptr));
+    parameters->add(oscillatorOut.set("Oscillator Out", nullptr, nullptr, nullptr));
     
     
     //TBOs
@@ -308,6 +309,8 @@ void oscillatorTexture::setup(){
     
     listeners.push(waveSelect_Param.newListener(this, &oscillatorTexture::newWaveSelectParam));
     isSetup = true;
+    
+    isFirstPassAfterSetup = true;
 }
 
 void oscillatorTexture::setParametersInfoMaps(){
@@ -589,6 +592,14 @@ void oscillatorTexture::presetRecallBeforeSettingParameters(ofJson &json){
     if(json.count(height.getEscapedName()) == 1){
         ofDeserialize(json, height);
     }
+    isFirstPassAfterSetup = true;
+    fbo.begin();
+    ofClear(0, 0, 0, 255);
+    fbo.end();
+    
+    fboBuffer.begin();
+    ofClear(0, 0, 0, 255);
+    fboBuffer.end();
 }
 
 ofTexture& oscillatorTexture::computeBank(float phasor){
@@ -602,6 +613,7 @@ ofTexture& oscillatorTexture::computeBank(float phasor){
     shaderOscillator.begin();
     shaderOscillator.setUniform1f("phase", phasor);
     shaderOscillator.setUniform1f("time", ofGetElapsedTimef());
+    shaderOscillator.setUniform1f("createRandoms", isFirstPassAfterSetup ? 1 : 0);
     shaderOscillator.setUniformTexture("randomInfo", fbo.getTexture(), randomInfoOscillatorShaderTextureLocation);
     ofDrawRectangle(0, 0, width, height);
     shaderOscillator.end();
@@ -617,6 +629,8 @@ ofTexture& oscillatorTexture::computeBank(float phasor){
     shaderScaling.end();
     fbo.end();
     ofPopStyle();
+    
+    isFirstPassAfterSetup = false;
     
     return fbo.getTexture();
 }
@@ -744,12 +758,12 @@ void oscillatorTexture::sizeChanged(int &i){
 
         fbo.allocate(settings);
         fbo.begin();
-        ofClear(255, 255, 255, 0);
+        ofClear(0, 0, 0, 255);
         fbo.end();
         
         fboBuffer.allocate(settings);
         fboBuffer.begin();
-        ofClear(255, 255, 255, 0);
+        ofClear(0, 0, 0, 255);
         fboBuffer.end();
     
         setParametersInfoMaps();
@@ -764,6 +778,8 @@ void oscillatorTexture::sizeChanged(int &i){
         }
         
         indexRandomValuesBuffer.setData(newRandomValuesVector(), GL_STREAM_DRAW);
+        
+        isFirstPassAfterSetup = true;
     }
 }
 

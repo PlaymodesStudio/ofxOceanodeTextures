@@ -5,6 +5,7 @@ R"(
 //uniform vec2 size;
 uniform float phase;
 uniform float time;
+uniform float createRandoms;
 uniform sampler2D randomInfo;
 
 uniform usamplerBuffer intParameters;
@@ -301,6 +302,12 @@ void main(){
     float newRandom = r_info.a;
     
     
+    //If we have changed size or initialized the texture we have to insert new items for pastRandom and newRandom, as we have no random data.
+    if(createRandoms == 1){
+        pastRandom = hash13(vec3(xIndex, yIndex, time*2));
+        newRandom = hash13(vec3(xIndex, yIndex, time));
+    }
+    
     
     //get phasor to be w (radial freq)
     float w = (phase * 2 * M_PI);
@@ -358,11 +365,9 @@ void main(){
     }
     if(waveformParam > 5 && waveformParam < 7){ //Random
         if(linPhase < oldPhasor){
-            val1 = hash13(vec3(xIndex, yIndex, time));
+            pastRandom = hash13(vec3(xIndex, yIndex, time));
         }
-        else{
-            val1 = oldValue;
-        }
+        val1 = pastRandom;
     }
     if(waveformParam > 6 && waveformParam < 8){
         if(linPhase < oldPhasor){

@@ -151,6 +151,8 @@ private:
     //Index Random Values
     ofTexture               indexRandomValuesTexture;
     ofBufferObject          indexRandomValuesBuffer;
+    
+    bool isFirstPassAfterSetup;
 };
 
 #endif /* oscillatorTexture_h */
