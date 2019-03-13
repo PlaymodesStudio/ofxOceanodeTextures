@@ -64,6 +64,7 @@ public:
                     ifNewCreatedChecker[i] = true;
                 }
             }
+            ifNewCreatedChecker[indexs.back()] = false;
             ofNotifyEvent(parameterGroupChanged);
         }
     }
