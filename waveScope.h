@@ -17,7 +17,7 @@ public:
     multiDynamicParameters(){};
     ~multiDynamicParameters(){};
     
-    void setup(ofParameterGroup* _group, ofParameter<T> _baseParameter){
+    void setup(shared_ptr<ofParameterGroup> _group, ofParameter<T> _baseParameter){
         group = _group;
         baseParameter.set(_baseParameter.getName(), _baseParameter.get());
         parameterVector[0] = baseParameter;
@@ -107,7 +107,7 @@ private:
         }
     }
     
-    ofParameterGroup* group;
+    shared_ptr<ofParameterGroup> group;
     ofParameter<T> baseParameter;
     map<int, ofParameter<T>> parameterVector;
     map<int, bool> ifNewCreatedChecker;
