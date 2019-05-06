@@ -38,8 +38,20 @@ void oscillatorTexture::setup(){
     resources = &sharedResources::getInstance();
     
     parameters->add(phasorIn.set("Phasor In", 0, 0, 1));
-    addParameterToGroupAndInfo(width.set("Tex Width", 100, 1, 5120)).acceptInConnection = false;
-    addParameterToGroupAndInfo(height.set("Tex Height", 100, 1, 2880)).acceptInConnection = false;
+    addParameterToGroupAndInfo(widthVec.set("Tex Width", {100}, {1}, {5120}));
+    addParameterToGroupAndInfo(heightVec.set("Tex Height", {100}, {1}, {2880}));
+    width = 100;
+    height = 100;
+    
+    listeners.push(widthVec.newListener([this](vector<int> &v){
+        onOscillatorShaderIntParameterChanged(widthVec, v);
+        width = *max_element(v.begin(), v.end());
+    }));
+    
+    listeners.push(heightVec.newListener([this](vector<int> &v){
+        onOscillatorShaderIntParameterChanged(heightVec, v);
+        height = *max_element(v.begin(), v.end());
+    }));
     
     previousWidth = width;
     previousHeight = height;
@@ -374,6 +386,11 @@ void oscillatorTexture::setParametersInfoMaps(){
     oscillatorShaderIntParameterNameTBOPositionMap[indexModulo[1].getName()] = (dimensionsSum * 2) + height;
     oscillatorShaderParameterNameTBOSizeMap[indexModulo[0].getName()] = height;
     oscillatorShaderParameterNameTBOSizeMap[indexModulo[1].getName()] = width;
+    
+    oscillatorShaderIntParameterNameTBOPositionMap[widthVec.getName()] = dimensionsSum * 3;
+    oscillatorShaderIntParameterNameTBOPositionMap[heightVec.getName()] = (dimensionsSum * 3) + height;
+    oscillatorShaderParameterNameTBOSizeMap[widthVec.getName()] = height;
+    oscillatorShaderParameterNameTBOSizeMap[heightVec.getName()] = width;
 
     scalingShaderFloatParameterNameTBOPositionMap[randomAddition[0].getName()] = 0;
     scalingShaderFloatParameterNameTBOPositionMap[randomAddition[1].getName()] = width;
@@ -433,6 +450,11 @@ void oscillatorTexture::setOscillatorShaderIntParameterDataToTBO(){
     accumulateParametersOscillatorShaderIntParameters.insert(accumulateParametersOscillatorShaderIntParameters.end(), indexModuloX_tempVec.begin(), indexModuloX_tempVec.end());
     vector<int> indexModuloY_tempVec(width, indexModulo[1].get()[0]);
     accumulateParametersOscillatorShaderIntParameters.insert(accumulateParametersOscillatorShaderIntParameters.end(), indexModuloY_tempVec.begin(), indexModuloY_tempVec.end());
+    
+    vector<int> widthVec_tempVec(height, widthVec.get()[0]);
+    accumulateParametersOscillatorShaderIntParameters.insert(accumulateParametersOscillatorShaderIntParameters.end(), widthVec_tempVec.begin(), widthVec_tempVec.end());
+    vector<int> heightVec_tempVec(width, heightVec.get()[0]);
+    accumulateParametersOscillatorShaderIntParameters.insert(accumulateParametersOscillatorShaderIntParameters.end(), heightVec_tempVec.begin(), heightVec_tempVec.end());
 
     oscillatorShaderIntBuffer.setData(accumulateParametersOscillatorShaderIntParameters, GL_STREAM_DRAW);
 }

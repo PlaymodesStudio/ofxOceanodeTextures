@@ -25,6 +25,7 @@ int phaseOffsetPosition = 5;
 int pulseWidthPosition = 6;
 int skewPosition = 7;
 int waveformPosition = 8;
+int sizePosition = 3;
 
 
 
@@ -173,14 +174,19 @@ void main(){
     float yNumWaves = texelFetch(floatParameters, xVal + (dimensionsSum*indexNumWavesPosition) + height).r;
     float xInvert = texelFetch(floatParameters, yVal + (dimensionsSum*indexInvertPosition)).r;
     float yInvert = texelFetch(floatParameters, xVal + (dimensionsSum*indexInvertPosition) + height).r;
-
+    int widthItem = int(texelFetch(intParameters, yVal + (dimensionsSum*sizePosition)).r);
+    int heightItem = int(texelFetch(intParameters, xVal + (dimensionsSum*sizePosition) + height).r);
+    
     //Offset
-    xIndex = int(mod((xIndex - round(xIndexOffset)), width));
-    yIndex = int(mod((yIndex - round(yIndexOffset)), height));
+    xIndex = int(mod((xIndex - round(xIndexOffset)), widthItem));
+    yIndex = int(mod((yIndex - round(yIndexOffset)), heightItem));
+    
+    xQuantization = min(xQuantization, widthItem);
+    yQuantization = min(yQuantization, heightItem);
     
     //Quantization
-    xIndex = int(floor(float(xIndex)/(float(width)/float(xQuantization))));
-    yIndex = int(floor(float(yIndex)/(float(height)/float(yQuantization))));
+    xIndex = int(floor(float(xIndex)/(float(widthItem)/float(xQuantization))));
+    yIndex = int(floor(float(yIndex)/(float(heightItem)/float(yQuantization))));
 
     //Symmetry
     while (xSymmetry > xQuantization-1) {
@@ -239,8 +245,8 @@ void main(){
     }
     
     
-    xIndex = width - xIndex;
-    yIndex = height - yIndex;
+    xIndex = widthItem - xIndex;
+    yIndex = heightItem - yIndex;
     
 //    if(xQuantization % 2 == 0){
 //        xIndex -= 1;
@@ -265,8 +271,8 @@ void main(){
 //    }
 
     //COMBINATION
-    xIndex = int(abs(((xIndex%2)*width*xIndexCombination)-xIndex));
-    yIndex = int(abs(((yIndex%2)*height*yIndexCombination)-yIndex));
+    xIndex = int(abs(((xIndex%2)*widthItem*xIndexCombination)-xIndex));
+    yIndex = int(abs(((yIndex%2)*heightItem*yIndexCombination)-yIndex));
 
     //Modulo
     if(xIndexModulo != width)
@@ -278,8 +284,8 @@ void main(){
     float yNumWavesInverted = -yNumWaves * yInvert;
 
 
-    float xIndexf = ((float(xIndex)/float(width)))*(xNumWavesInverted)*(float(width)/float(xQuantization))*(xSymmetry+1);
-    float yIndexf = ((float(yIndex)/float(height)))*(yNumWavesInverted)*(float(height)/float(yQuantization))*(ySymmetry+1);
+    float xIndexf = ((float(xIndex)/float(widthItem)))*(xNumWavesInverted)*(float(widthItem)/float(xQuantization))*(xSymmetry+1);
+    float yIndexf = ((float(yIndex)/float(heightItem)))*(yNumWavesInverted)*(float(heightItem)/float(yQuantization))*(ySymmetry+1);
 
 
     float index = xIndexf + yIndexf;
