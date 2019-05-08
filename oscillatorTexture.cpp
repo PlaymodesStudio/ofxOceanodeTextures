@@ -608,11 +608,19 @@ void oscillatorTexture::loadShader(bool &b){
 }
 
 void oscillatorTexture::presetRecallBeforeSettingParameters(ofJson &json){
-    if(json.count(width.getEscapedName()) == 1){
-        ofDeserialize(json, width);
+    if(json.count(widthVec.getEscapedName()) == 1){
+        if(json[widthVec.getEscapedName()].is_string()){
+            widthVec = vector<int>(1, ofToInt(json[widthVec.getEscapedName()]));
+        }else{
+            widthVec = vector<int>(1, int(json[widthVec.getEscapedName()]));
+        }
     }
-    if(json.count(height.getEscapedName()) == 1){
-        ofDeserialize(json, height);
+    if(json.count(heightVec.getEscapedName()) == 1){
+        if(json[heightVec.getEscapedName()].is_string()){
+            heightVec = vector<int>(1, ofToInt(json[heightVec.getEscapedName()]));
+        }else{
+            heightVec = vector<int>(1, int(json[heightVec.getEscapedName()]));
+        }
     }
     isFirstPassAfterSetup = true;
     fbo.begin();
