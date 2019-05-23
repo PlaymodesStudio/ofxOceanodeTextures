@@ -201,7 +201,7 @@ void main(){
     //X
     bool odd = false;
     
-    if(int((float(xIndex)/(float(xQuantization)/float(xSymmetry+1))))%2 == 1){
+    if(int((xIndex/(xQuantization/xSymmetry+1)))%2 == 1){
         odd = true;
     }
 
@@ -244,8 +244,12 @@ void main(){
         yIndex %= int(yQuantization);
     }
     
+    float nonInvertIndex = float(xIndex-1);
+    float invertedIndex = ((float(xQuantization)/(xSymmetry+1))-float(xIndex));
+    float xIndexf = (map(xInvert, -1, 1, 1, 0)*invertedIndex + (1-map(xInvert, -1, 1, 1, 0))*nonInvertIndex);
+    xIndex = int(xIndexf);
     
-    xIndex = widthItem - xIndex;
+    //xIndex = widthItem - xIndex;
     yIndex = heightItem - yIndex;
     
 //    if(xQuantization % 2 == 0){
@@ -271,7 +275,7 @@ void main(){
 //    }
 
     //COMBINATION
-    xIndex = int(abs(((xIndex%2)*widthItem*xIndexCombination)-xIndex));
+//    xIndex = (abs(((xIndexf%2)*widthItem*xIndexCombination)-xIndexf));
     yIndex = int(abs(((yIndex%2)*heightItem*yIndexCombination)-yIndex));
 
     //Modulo
@@ -280,15 +284,17 @@ void main(){
     if(yIndexModulo != height)
         yIndex %= int(yIndexModulo);
     
-    float xNumWavesInverted = -xNumWaves * xInvert;
+//    float xNumWavesInverted = -xNumWaves * xInvert;
+    float xNumWavesInverted = xNumWaves;
     float yNumWavesInverted = -yNumWaves * yInvert;
 
 
-    float xIndexf = ((float(xIndex)/float(widthItem)))*(xNumWavesInverted)*(float(widthItem)/float(xQuantization))*(xSymmetry+1);
+    xIndexf = ((float(xIndexf)/float(widthItem)))*(xNumWavesInverted)*(float(widthItem)/float(xQuantization))*(xSymmetry+1);
     float yIndexf = ((float(yIndex)/float(heightItem)))*(yNumWavesInverted)*(float(heightItem)/float(yQuantization))*(ySymmetry+1);
 
 
     float index = xIndexf + yIndexf;
+    float testIndex = index;
     
     
     //Compute parameters of current coord;
