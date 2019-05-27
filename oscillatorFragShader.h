@@ -201,34 +201,34 @@ void main(){
     //X
     bool odd = false;
     
-    if(int((xIndex/(xQuantization/xSymmetry+1)))%2 == 1){
-        odd = true;
-    }
-
     if(abs(xIndexOffset) - int(abs(xIndexOffset)) > 0.5){
         //odd = !odd;
     }
     
+    if(int((xIndex/(xQuantization/(xSymmetry+1))))%2 == 1){
+        odd = true;
+    }
+
     int veusSym = int(xQuantization)/int(xSymmetry+1);
-    xIndex = veusSym-int(abs(((int(xIndex/veusSym)%2) * veusSym)-(xIndex%veusSym)));
+    xIndex = veusSym-int(abs(float((xIndex/veusSym)%2) * float(veusSym)-(float(xIndex%veusSym))));
 
     if(xQuantization % 2 == 0){
-        xIndex += odd ? 1 : 0;
+        if(odd) xIndex += 1;
     }
     else if(xSymmetry > 0){
-        xIndex += 1;
+        xIndex += xInvert < 1 ? 0 : 1;
         xIndex %= int(xQuantization);
     }
 
     //Y
     odd = false;
-   
-    if(int((float(yIndex)/(float(yQuantization)/float(ySymmetry+1))))%2 == 1){
-        odd = true;
-    }
-    
+
     if(abs(yIndexOffset) - int(abs(yIndexOffset)) > 0.5){
         //odd = !odd;
+    }
+    
+    if(int((yIndex/(yQuantization/(ySymmetry+1))))%2 == 1){
+        odd = true;
     }
 
     veusSym = int(yQuantization)/int(ySymmetry+1);
@@ -236,21 +236,31 @@ void main(){
 
 
     if(yQuantization % 2 == 0){
-        yIndex += odd ? 1 : 0;
+        if(odd) yIndex += 1;
     }
-    
     else if(ySymmetry > 0){
-        yIndex += 1;
+        yIndex += yInvert < 1 ? 0 : 1;
         yIndex %= int(yQuantization);
     }
     
+    //Random
+    xIndex = int(xIndex*(1.0-xIndexRandom)) +int(texelFetch(indexRandomValues, xIndex).r * xIndexRandom);
+    yIndex = int(yIndex*(1.0-yIndexRandom)) + int(texelFetch(indexRandomValues, yIndex + width).r * yIndexRandom);
+
+    
+    //Combination
+    xIndex = int(abs(((xIndex%2)*widthItem*xIndexCombination)-xIndex));
+    yIndex = int(abs(((yIndex%2)*heightItem*yIndexCombination)-yIndex));
+    
+    //Invert
     float nonInvertIndex = float(xIndex-1);
     float invertedIndex = ((float(xQuantization)/(xSymmetry+1))-float(xIndex));
     float xIndexf = (map(xInvert, -1, 1, 1, 0)*invertedIndex + (1-map(xInvert, -1, 1, 1, 0))*nonInvertIndex);
-    xIndex = int(xIndexf);
     
-    //xIndex = widthItem - xIndex;
-    yIndex = heightItem - yIndex;
+    
+    nonInvertIndex = float(yIndex-1);
+    invertedIndex = ((float(yQuantization)/(ySymmetry+1))-float(yIndex));
+    float yIndexf = (map(yInvert, -1, 1, 1, 0)*invertedIndex + (1-map(yInvert, -1, 1, 1, 0))*nonInvertIndex);
     
 //    if(xQuantization % 2 == 0){
 //        xIndex -= 1;
@@ -260,42 +270,17 @@ void main(){
 //        yIndex -= 1;
 //    }
 
-
-    //Random
-    xIndex = int(xIndex*(1.0-xIndexRandom)) +int(texelFetch(indexRandomValues, xIndex).r * xIndexRandom);
-//    xIndex %= width;
-//    if(xIndex < 0){
-//        xIndex += width;
-//    }
-
-    yIndex = int(yIndex*(1.0-yIndexRandom)) + int(texelFetch(indexRandomValues, yIndex + width).r * yIndexRandom);
-//    yIndex %= height;
-//    if(yIndex < 0){
-//        yIndex += height;
-//    }
-
-    //COMBINATION
-//    xIndex = (abs(((xIndexf%2)*widthItem*xIndexCombination)-xIndexf));
-    yIndex = int(abs(((yIndex%2)*heightItem*yIndexCombination)-yIndex));
-
     //Modulo
-    if(xIndexModulo != width)
-        xIndex %= int(xIndexModulo);
-    if(yIndexModulo != height)
-        yIndex %= int(yIndexModulo);
-    
-//    float xNumWavesInverted = -xNumWaves * xInvert;
-    float xNumWavesInverted = xNumWaves;
-    float yNumWavesInverted = -yNumWaves * yInvert;
+    if(xIndexModulo != widthItem)
+        xIndexf = mod(xIndexf, xIndexModulo);
+    if(yIndexModulo != heightItem)
+        yIndexf = mod(yIndexf, yIndexModulo);
 
-
-    xIndexf = ((float(xIndexf)/float(widthItem)))*(xNumWavesInverted)*(float(widthItem)/float(xQuantization))*(xSymmetry+1);
-    float yIndexf = ((float(yIndex)/float(heightItem)))*(yNumWavesInverted)*(float(heightItem)/float(yQuantization))*(ySymmetry+1);
+    xIndexf = ((float(xIndexf)/float(widthItem)))*(xNumWaves)*(float(widthItem)/float(xQuantization))*(xSymmetry+1);
+    yIndexf = ((float(yIndexf)/float(heightItem)))*(yNumWaves)*(float(heightItem)/float(yQuantization))*(ySymmetry+1);
 
 
     float index = xIndexf + yIndexf;
-    float testIndex = index;
-    
     
     //Compute parameters of current coord;
     float phaseOffsetParam = texelFetch(floatParameters, xVal + (dimensionsSum*phaseOffsetPosition)).r + texelFetch(floatParameters, yVal + (dimensionsSum*phaseOffsetPosition) + width).r;
@@ -328,9 +313,11 @@ void main(){
     
     w = w + k;
     w = mod(w, 2*M_PI);
-//    
-    w = map(w, (1-pulseWidthParam)*2*M_PI, 2*M_PI, 0, 2*M_PI);
-    w = clamp(w, 0.0, 2*M_PI);
+
+    if(pulseWidthParam != 1){
+        w = map(w, (1-pulseWidthParam)*2*M_PI, 2*M_PI, 0, 2*M_PI);
+        w = clamp(w, 0.0, 2*M_PI);
+    }
 
     float w_skewed = w;
 
@@ -352,7 +339,7 @@ void main(){
         }
     }
 
-    w = clamp(w_skewed, 0.0, 2*M_PI);    
+    w = clamp(w_skewed, 0.0, 2*M_PI);
     
     float linPhase =  w / (2*M_PI);
     float val1 = 0;
