@@ -312,7 +312,12 @@ void main(){
     float k = (index + phaseOffsetParam) * 2 * M_PI;
     
     w = w + k;
-    w = mod(w, 2*M_PI);
+    while(w > 2*M_PI){
+        w -= 2*M_PI;
+    }
+    while(w < 0){
+        w += 2*M_PI;
+    }
 
     if(pulseWidthParam != 1){
         w = map(w, (1-pulseWidthParam)*2*M_PI, 2*M_PI, 0, 2*M_PI);
