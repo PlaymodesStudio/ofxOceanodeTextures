@@ -359,7 +359,11 @@ void main(){
         val1 = 1-(abs((linPhase * (-2)) + 1));
     }
     if(waveformParam > 2 && waveformParam < 4){ //SQUARE
-        val2 = (linPhase > 0) ? 1 : 0;
+        if(pulseWidthParam != 1){
+            val2 = (linPhase > 0) ? 1 : 0;
+        }else{
+            val2 = 1;
+        }
     }
     if(waveformParam > 3 && waveformParam < 5){ //SAW
         val1 = 1-linPhase;
