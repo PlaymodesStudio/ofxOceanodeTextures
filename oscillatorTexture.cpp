@@ -44,13 +44,13 @@ void oscillatorTexture::setup(){
     height = 100;
     
     listeners.push(widthVec.newListener([this](vector<int> &v){
-        onOscillatorShaderIntParameterChanged(widthVec, v);
         width = *max_element(v.begin(), v.end());
+        onOscillatorShaderIntParameterChanged(widthVec, v);
     }));
     
     listeners.push(heightVec.newListener([this](vector<int> &v){
-        onOscillatorShaderIntParameterChanged(heightVec, v);
         height = *max_element(v.begin(), v.end());
+        onOscillatorShaderIntParameterChanged(heightVec, v);
     }));
     
     previousWidth = width;
