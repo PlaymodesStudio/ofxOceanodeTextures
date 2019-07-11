@@ -14,6 +14,7 @@
 oscillatorTexture::oscillatorTexture() : ofxOceanodeNodeModel("Oscillator Texture"){
     isSetup = false;
     isFirstPassAfterSetup = true;
+    sizeChanged = false;
 }
 
 oscillatorTexture::~oscillatorTexture(){
@@ -37,7 +38,7 @@ oscillatorTexture::~oscillatorTexture(){
 void oscillatorTexture::setup(){
     resources = &sharedResources::getInstance();
     
-    parameters->add(phasorIn.set("Phasor In", 0, 0, 1));
+    addParameterToGroupAndInfo(phasorIn.set("Phasor In", 0, 0, 1)).isSavePreset = false;
     addParameterToGroupAndInfo(widthVec.set("Tex Width", {100}, {1}, {5120}));
     addParameterToGroupAndInfo(heightVec.set("Tex Height", {100}, {1}, {2880}));
     width = 100;
@@ -56,8 +57,8 @@ void oscillatorTexture::setup(){
     previousWidth = width;
     previousHeight = height;
     
-    listeners.push(width.newListener(this, &oscillatorTexture::sizeChanged));
-    listeners.push(height.newListener(this, &oscillatorTexture::sizeChanged));
+    listeners.push(width.newListener(this, &oscillatorTexture::sizeChangedListener));
+    listeners.push(height.newListener(this, &oscillatorTexture::sizeChangedListener));
     
     ofFbo::Settings settings;
     settings.height = height;
@@ -323,6 +324,123 @@ void oscillatorTexture::setup(){
     isSetup = true;
     
     isFirstPassAfterSetup = true;
+}
+
+void oscillatorTexture::update(ofEventArgs &a){
+    if(isFirstPassAfterSetup){
+        fbo.begin();
+        ofClear(0, 0, 0, 255);
+        fbo.end();
+        
+        fboBuffer.begin();
+        ofClear(0, 0, 0, 255);
+        fboBuffer.end();
+    }
+    
+    if(sizeChanged){
+        ofFbo::Settings settings;
+        settings.height = height;
+        settings.width = width;
+        settings.internalformat = GL_RGBA32F;
+        settings.maxFilter = GL_NEAREST;
+        settings.minFilter = GL_NEAREST;
+        settings.numColorbuffers = 1;
+        settings.useDepth = false;
+        settings.useStencil = false;
+        settings.textureTarget = GL_TEXTURE_2D;
+        
+        fbo.allocate(settings);
+        fbo.begin();
+        ofClear(0, 0, 0, 255);
+        fbo.end();
+        
+        fboBuffer.allocate(settings);
+        fboBuffer.begin();
+        ofClear(0, 0, 0, 255);
+        fboBuffer.end();
+        
+        setParametersInfoMaps();
+        setOscillatorShaderIntParameterDataToTBO();
+        setOscillatorShaderFloatParameterDataToTBO();
+        setScalingShaderIntParameterDataToTBO();
+        setScalingShaderFloatParameterDataToTBO();
+        
+        GLenum err;
+        while ((err = glGetError()) != GL_NO_ERROR) {
+            ofLog() << "OpenGL error: " << err;
+        }
+        
+        indexRandomValuesBuffer.setData(newRandomValuesVector(), GL_STREAM_DRAW);
+        
+        isFirstPassAfterSetup = true;
+        sizeChanged = false;
+    }
+    
+    for(auto &parameter : changedOscillatorIntParameters){
+        vector<int> &vi = parameter.second;
+        int position = oscillatorShaderIntParameterNameTBOPositionMap[parameter.first];
+        int size = oscillatorShaderParameterNameTBOSizeMap[parameter.first];
+        if(vi.size() == size){
+            oscillatorShaderIntBuffer.updateData(position*4, vi);
+        }else{
+            oscillatorShaderIntBuffer.updateData(position*4, vector<int>(size, vi[0]));
+        }
+    }
+    changedOscillatorIntParameters.clear();
+    
+    for(auto &parameter : changedOscillatorFloatParameters){
+        vector<float> &vf = parameter.second;
+        int position = oscillatorShaderFloatParameterNameTBOPositionMap[parameter.first];
+        int size = oscillatorShaderParameterNameTBOSizeMap[parameter.first];
+        
+        if(parameter.first == indexRandom[0].getName() || parameter.first == indexRandom[1].getName()){
+            if(vf.size() == size){
+                if(std::accumulate(vf.begin(), vf.end(), 0) == 0){
+                    indexRandomValuesBuffer.setData(newRandomValuesVector(), GL_STREAM_DRAW);
+                }
+            }else{
+                if(vf[0] == 0){
+                    indexRandomValuesBuffer.setData(newRandomValuesVector(), GL_STREAM_DRAW);
+                }
+            }
+        }
+        
+        
+        if(vf.size() == size){
+            oscillatorShaderFloatBuffer.updateData(position*4, vf);
+        }else{
+            oscillatorShaderFloatBuffer.updateData(position*4, vector<float>(size, vf[0]));
+        }
+    }
+    changedOscillatorFloatParameters.clear();
+    
+    for(auto &parameter : changedScalingIntParameters){
+        vector<int> &vi = parameter.second;
+        int position = scalingShaderIntParameterNameTBOPositionMap[parameter.first];
+        int size = scalingShaderParameterNameTBOSizeMap[parameter.first];
+        if(vi.size() == size){
+            scalingShaderIntBuffer.updateData(position*4, vi);
+        }else{
+            scalingShaderIntBuffer.updateData(position*4, vector<int>(size, vi[0]));
+        }
+    }
+    changedScalingIntParameters.clear();
+    
+    for(auto &parameter : changedScalingFloatParameters){
+        vector<float> &vf = parameter.second;
+        int position = scalingShaderFloatParameterNameTBOPositionMap[parameter.first];
+        int size = scalingShaderParameterNameTBOSizeMap[parameter.first];
+        if(vf.size() == size){
+            scalingShaderFloatBuffer.updateData(position*4, vf);
+        }else{
+            scalingShaderFloatBuffer.updateData(position*4, vector<float>(size, vf[0]));
+        }
+    }
+    changedScalingFloatParameters.clear();
+}
+
+void oscillatorTexture::draw(ofEventArgs &a){
+    oscillatorOut = &computeBank(phasorIn);
 }
 
 void oscillatorTexture::setParametersInfoMaps(){
@@ -623,13 +741,6 @@ void oscillatorTexture::presetRecallBeforeSettingParameters(ofJson &json){
         }
     }
     isFirstPassAfterSetup = true;
-    fbo.begin();
-    ofClear(0, 0, 0, 255);
-    fbo.end();
-    
-    fboBuffer.begin();
-    ofClear(0, 0, 0, 255);
-    fboBuffer.end();
 }
 
 ofTexture& oscillatorTexture::computeBank(float phasor){
@@ -666,7 +777,7 @@ ofTexture& oscillatorTexture::computeBank(float phasor){
 }
 
 void oscillatorTexture::newPhasorIn(float &f){
-    oscillatorOut = &computeBank(f);
+    //oscillatorOut = &computeBank(f);
 }
 
 vector<float> oscillatorTexture::newRandomValuesVector(){
@@ -693,65 +804,26 @@ vector<float> oscillatorTexture::newRandomValuesVector(){
 
 #pragma mark Parameter Listeners
 void oscillatorTexture::onOscillatorShaderIntParameterChanged(ofAbstractParameter &p, vector<int> &vi){
-    int position = oscillatorShaderIntParameterNameTBOPositionMap[p.getName()];
-    int size = oscillatorShaderParameterNameTBOSizeMap[p.getName()];
-    if(vi.size() == size){
-        oscillatorShaderIntBuffer.updateData(position*4, vi);
-    }else{
-        oscillatorShaderIntBuffer.updateData(position*4, vector<int>(size, vi[0]));
-    }
+    changedOscillatorIntParameters.emplace_back(p.getName(), vi);
 }
 
 void oscillatorTexture::onOscillatorShaderFloatParameterChanged(ofAbstractParameter &p, vector<float> &vf){
-    int position = oscillatorShaderFloatParameterNameTBOPositionMap[p.getName()];
-    int size = oscillatorShaderParameterNameTBOSizeMap[p.getName()];
-    
-    if(&vf == &indexRandom[0].get() || &vf == &indexRandom[1].get()){
-        if(vf.size() == size){
-            if(std::accumulate(vf.begin(), vf.end(), 0) == 0){
-                indexRandomValuesBuffer.setData(newRandomValuesVector(), GL_STREAM_DRAW);
-            }
-        }else{
-            if(vf[0] == 0){
-                indexRandomValuesBuffer.setData(newRandomValuesVector(), GL_STREAM_DRAW);
-            }
-        }
-    }
-    
-    
-    if(vf.size() == size){
-        oscillatorShaderFloatBuffer.updateData(position*4, vf);
-    }else{
-        oscillatorShaderFloatBuffer.updateData(position*4, vector<float>(size, vf[0]));
-    }
+    changedOscillatorFloatParameters.emplace_back(p.getName(), vf);
 }
 
 void oscillatorTexture::onScalingShaderIntParameterChanged(ofAbstractParameter &p, vector<int> &vi){
-    int position = scalingShaderIntParameterNameTBOPositionMap[p.getName()];
-    int size = scalingShaderParameterNameTBOSizeMap[p.getName()];
-    if(vi.size() == size){
-        scalingShaderIntBuffer.updateData(position*4, vi);
-    }else{
-        scalingShaderIntBuffer.updateData(position*4, vector<int>(size, vi[0]));
-    }
+    changedScalingIntParameters.emplace_back(p.getName(), vi);
 }
 
 void oscillatorTexture::onScalingShaderFloatParameterChanged(ofAbstractParameter &p, vector<float> &vf){
-    int position = scalingShaderFloatParameterNameTBOPositionMap[p.getName()];
-    int size = scalingShaderParameterNameTBOSizeMap[p.getName()];
-    if(vf.size() == size){
-        scalingShaderFloatBuffer.updateData(position*4, vf);
-    }else{
-        scalingShaderFloatBuffer.updateData(position*4, vector<float>(size, vf[0]));
-    }
+    changedScalingFloatParameters.emplace_back(p.getName(), vf);
 }
 
 void oscillatorTexture::newWaveSelectParam(int &i){
     waveform[0] = vector<float>(1, i);
 }
 
-void oscillatorTexture::sizeChanged(int &i){
-    bool sizeChanged = false;
+void oscillatorTexture::sizeChangedListener(int &i){
     if(&i == &width.get()){
         if(width != previousWidth){
             changeMinMaxOfVecParameter(indexNumWaves[0], -1.0f, float(width), false);
@@ -772,44 +844,6 @@ void oscillatorTexture::sizeChanged(int &i){
             sizeChanged = true;
         }
         previousHeight = height;
-    }
-    
-    if(sizeChanged){
-        ofFbo::Settings settings;
-        settings.height = height;
-        settings.width = width;
-        settings.internalformat = GL_RGBA32F;
-        settings.maxFilter = GL_NEAREST;
-        settings.minFilter = GL_NEAREST;
-        settings.numColorbuffers = 1;
-        settings.useDepth = false;
-        settings.useStencil = false;
-        settings.textureTarget = GL_TEXTURE_2D;
-
-        fbo.allocate(settings);
-        fbo.begin();
-        ofClear(0, 0, 0, 255);
-        fbo.end();
-        
-        fboBuffer.allocate(settings);
-        fboBuffer.begin();
-        ofClear(0, 0, 0, 255);
-        fboBuffer.end();
-    
-        setParametersInfoMaps();
-        setOscillatorShaderIntParameterDataToTBO();
-        setOscillatorShaderFloatParameterDataToTBO();
-        setScalingShaderIntParameterDataToTBO();
-        setScalingShaderFloatParameterDataToTBO();
-        
-        GLenum err;
-        while ((err = glGetError()) != GL_NO_ERROR) {
-            ofLog() << "OpenGL error: " << err;
-        }
-        
-        indexRandomValuesBuffer.setData(newRandomValuesVector(), GL_STREAM_DRAW);
-        
-        isFirstPassAfterSetup = true;
     }
 }
 

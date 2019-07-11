@@ -18,6 +18,8 @@ public:
     ~oscillatorTexture();
     
     void setup() override;
+    void update(ofEventArgs &a) override;
+    void draw(ofEventArgs &a) override;
     
     void presetRecallBeforeSettingParameters(ofJson &json) override;
 private:
@@ -56,7 +58,7 @@ private:
     void loadShader(bool &b);
     
     void newPhasorIn(float &f);
-    void sizeChanged(int &i);
+    void sizeChangedListener(int &i);
     void newWaveSelectParam(int &i);
     
     
@@ -155,6 +157,14 @@ private:
     ofBufferObject          indexRandomValuesBuffer;
     
     bool isFirstPassAfterSetup;
+    
+    vector<pair<string, vector<int>>> changedOscillatorIntParameters;
+    vector<pair<string, vector<float>>> changedOscillatorFloatParameters;
+    
+    vector<pair<string, vector<int>>> changedScalingIntParameters;
+    vector<pair<string, vector<float>>> changedScalingFloatParameters;
+    
+    bool sizeChanged;
 };
 
 #endif /* oscillatorTexture_h */
