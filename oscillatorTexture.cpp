@@ -60,27 +60,6 @@ void oscillatorTexture::setup(){
     listeners.push(width.newListener(this, &oscillatorTexture::sizeChangedListener));
     listeners.push(height.newListener(this, &oscillatorTexture::sizeChangedListener));
     
-    ofFbo::Settings settings;
-    settings.height = height;
-    settings.width = width;
-    settings.internalformat = GL_RGBA32F;
-    settings.maxFilter = GL_NEAREST;
-    settings.minFilter = GL_NEAREST;
-    settings.numColorbuffers = 1;
-    settings.useDepth = false;
-    settings.useStencil = false;
-    settings.textureTarget = GL_TEXTURE_2D;
-    
-    fbo.allocate(settings);
-    fbo.begin();
-    ofClear(0, 0, 0, 255);
-    fbo.end();
-    
-    fboBuffer.allocate(settings);
-    fboBuffer.begin();
-    ofClear(0, 0, 0, 255);
-    fboBuffer.end();
-
     
     auto setAndBindXYParamsVecFloat = [this](ofParameter<vector<float>> *p, string name, float val, float min, float max) -> void{
         parameters->add(p[0].set(name + " X", vector<float>(1, val), vector<float>(1, min), vector<float>(1, max)));
@@ -134,46 +113,6 @@ void oscillatorTexture::setup(){
     parameters->add(createDropdownAbstractParameter("Wave Select", {"sin", "cos", "tri", "square", "saw", "inverted saw", "rand1", "rand2", "rand3"}, waveSelect_Param));
     
     parameters->add(oscillatorOut.set("Oscillator Out", nullptr, nullptr, nullptr));
-    
-    
-    //TBOs
-    
-    //OSCILLATOR SHADER INT
-    oscillatorShaderIntBuffer.allocate();
-    oscillatorShaderIntBuffer.bind(GL_TEXTURE_BUFFER);
-    setOscillatorShaderIntParameterDataToTBO();
-    oscillatorShaderIntTexture.allocateAsBufferTexture(oscillatorShaderIntBuffer, GL_R32UI);
-    
-    //OSCILLATOR SHADER FLOAT
-    oscillatorShaderFloatBuffer.allocate();
-    oscillatorShaderFloatBuffer.bind(GL_TEXTURE_BUFFER);
-    setOscillatorShaderFloatParameterDataToTBO();
-    oscillatorShaderFloatTexture.allocateAsBufferTexture(oscillatorShaderFloatBuffer, GL_R32F);
-    
-    
-    //SCALING SHADER INT
-    scalingShaderIntBuffer.allocate();
-    scalingShaderIntBuffer.bind(GL_TEXTURE_BUFFER);
-    setScalingShaderIntParameterDataToTBO();
-    scalingShaderIntTexture.allocateAsBufferTexture(scalingShaderIntBuffer, GL_R32UI);
-    
-    
-    //SCALING SHADER FLOAT
-    scalingShaderFloatBuffer.allocate();
-    scalingShaderFloatBuffer.bind(GL_TEXTURE_BUFFER);
-    setScalingShaderFloatParameterDataToTBO();
-    scalingShaderFloatTexture.allocateAsBufferTexture(scalingShaderFloatBuffer, GL_R32F);
-    
-    
-    //IndexRandomValues
-    indexRandomValuesBuffer.allocate();
-    indexRandomValuesBuffer.bind(GL_TEXTURE_BUFFER);
-    indexRandomValuesBuffer.setData(newRandomValuesVector(), GL_STREAM_DRAW);
-    indexRandomValuesTexture.allocateAsBufferTexture(indexRandomValuesBuffer, GL_R32F);
-    
-    //LoadShader
-    bool b = true;
-    loadShader(b);
     
     
     //listeners
@@ -321,12 +260,75 @@ void oscillatorTexture::setup(){
     }));
     
     listeners.push(waveSelect_Param.newListener(this, &oscillatorTexture::newWaveSelectParam));
-    isSetup = true;
     
     isFirstPassAfterSetup = true;
 }
 
 void oscillatorTexture::update(ofEventArgs &a){
+    if(!isSetup){
+        ofFbo::Settings settings;
+        settings.height = height;
+        settings.width = width;
+        settings.internalformat = GL_RGBA32F;
+        settings.maxFilter = GL_NEAREST;
+        settings.minFilter = GL_NEAREST;
+        settings.numColorbuffers = 1;
+        settings.useDepth = false;
+        settings.useStencil = false;
+        settings.textureTarget = GL_TEXTURE_2D;
+        
+        fbo.allocate(settings);
+        fbo.begin();
+        ofClear(0, 0, 0, 255);
+        fbo.end();
+        
+        fboBuffer.allocate(settings);
+        fboBuffer.begin();
+        ofClear(0, 0, 0, 255);
+        fboBuffer.end();
+    
+        //TBOs
+        
+        //OSCILLATOR SHADER INT
+        oscillatorShaderIntBuffer.allocate();
+        oscillatorShaderIntBuffer.bind(GL_TEXTURE_BUFFER);
+        setOscillatorShaderIntParameterDataToTBO();
+        oscillatorShaderIntTexture.allocateAsBufferTexture(oscillatorShaderIntBuffer, GL_R32UI);
+        
+        //OSCILLATOR SHADER FLOAT
+        oscillatorShaderFloatBuffer.allocate();
+        oscillatorShaderFloatBuffer.bind(GL_TEXTURE_BUFFER);
+        setOscillatorShaderFloatParameterDataToTBO();
+        oscillatorShaderFloatTexture.allocateAsBufferTexture(oscillatorShaderFloatBuffer, GL_R32F);
+        
+        
+        //SCALING SHADER INT
+        scalingShaderIntBuffer.allocate();
+        scalingShaderIntBuffer.bind(GL_TEXTURE_BUFFER);
+        setScalingShaderIntParameterDataToTBO();
+        scalingShaderIntTexture.allocateAsBufferTexture(scalingShaderIntBuffer, GL_R32UI);
+        
+        
+        //SCALING SHADER FLOAT
+        scalingShaderFloatBuffer.allocate();
+        scalingShaderFloatBuffer.bind(GL_TEXTURE_BUFFER);
+        setScalingShaderFloatParameterDataToTBO();
+        scalingShaderFloatTexture.allocateAsBufferTexture(scalingShaderFloatBuffer, GL_R32F);
+        
+        
+        //IndexRandomValues
+        indexRandomValuesBuffer.allocate();
+        indexRandomValuesBuffer.bind(GL_TEXTURE_BUFFER);
+        indexRandomValuesBuffer.setData(newRandomValuesVector(), GL_STREAM_DRAW);
+        indexRandomValuesTexture.allocateAsBufferTexture(indexRandomValuesBuffer, GL_R32F);
+        
+        //LoadShader
+        bool b = true;
+        loadShader(b);
+        
+        isSetup = true;
+    }
+    
     if(isFirstPassAfterSetup){
         fbo.begin();
         ofClear(0, 0, 0, 255);
