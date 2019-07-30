@@ -44,22 +44,8 @@ void oscillatorTexture::setup(){
     width = 100;
     height = 100;
     
-    listeners.push(widthVec.newListener([this](vector<int> &v){
-        width = *max_element(v.begin(), v.end());
-        onOscillatorShaderIntParameterChanged(widthVec, v);
-    }));
-    
-    listeners.push(heightVec.newListener([this](vector<int> &v){
-        height = *max_element(v.begin(), v.end());
-        onOscillatorShaderIntParameterChanged(heightVec, v);
-    }));
-    
     previousWidth = width;
     previousHeight = height;
-    
-    listeners.push(width.newListener(this, &oscillatorTexture::sizeChangedListener));
-    listeners.push(height.newListener(this, &oscillatorTexture::sizeChangedListener));
-    
     
     auto setAndBindXYParamsVecFloat = [this](ofParameter<vector<float>> *p, string name, float val, float min, float max) -> void{
         parameters->add(p[0].set(name + " X", vector<float>(1, val), vector<float>(1, min), vector<float>(1, max)));
@@ -115,7 +101,19 @@ void oscillatorTexture::setup(){
     parameters->add(oscillatorOut.set("Oscillator Out", nullptr, nullptr, nullptr));
     
     
-    //listeners
+    //Listeners
+    listeners.push(widthVec.newListener([this](vector<int> &v){
+        width = *max_element(v.begin(), v.end());
+        onOscillatorShaderIntParameterChanged(widthVec, v);
+    }));
+    
+    listeners.push(heightVec.newListener([this](vector<int> &v){
+        height = *max_element(v.begin(), v.end());
+        onOscillatorShaderIntParameterChanged(heightVec, v);
+    }));
+    
+    listeners.push(width.newListener(this, &oscillatorTexture::sizeChangedListener));
+    listeners.push(height.newListener(this, &oscillatorTexture::sizeChangedListener));
     
     listeners.push(phasorIn.newListener(this, &oscillatorTexture::newPhasorIn));
     
@@ -266,6 +264,7 @@ void oscillatorTexture::setup(){
 
 void oscillatorTexture::update(ofEventArgs &a){
     if(!isSetup){
+        //Texture Allocation
         ofFbo::Settings settings;
         settings.height = height;
         settings.width = width;
