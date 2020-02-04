@@ -243,32 +243,25 @@ void main(){
         yIndex %= int(yQuantization);
     }
     
-    //Random
-    xIndex = int(xIndex*(1.0-xIndexRandom)) +int(texelFetch(indexRandomValues, xIndex).r * xIndexRandom);
-    yIndex = int(yIndex*(1.0-yIndexRandom)) + int(texelFetch(indexRandomValues, yIndex + width).r * yIndexRandom);
-
     
     //Combination
     xIndex = int(abs(((xIndex%2)*widthItem*xIndexCombination)-xIndex));
     yIndex = int(abs(((yIndex%2)*heightItem*yIndexCombination)-yIndex));
     
+    //Random
+//    double(index)*(1-indexRand_Param) + (double(indexRand[index-1] + 1)*indexRand_Param)
+    float xIndexf = float(xIndex)*(1.0-xIndexRandom) + (float((texelFetch(indexRandomValues, xIndex).r) +1 ) * xIndexRandom);
+    float yIndexf = float(yIndex)*(1.0-yIndexRandom) + (float((texelFetch(indexRandomValues, yIndex + width).r) +1 ) * yIndexRandom);
+    
     //Invert
-    float nonInvertIndex = float(xIndex-1);
-    float invertedIndex = ((float(xQuantization)/(xSymmetry+1))-float(xIndex));
-    float xIndexf = (map(xInvert, -1, 1, 1, 0)*invertedIndex + (1-map(xInvert, -1, 1, 1, 0))*nonInvertIndex);
+    float nonInvertIndex = (xIndexf-1.0);
+    float invertedIndex = ((float(xQuantization)/(xSymmetry+1))-xIndexf);
+    xIndexf = (map(xInvert, -1, 1, 1, 0)*invertedIndex + (1-map(xInvert, -1, 1, 1, 0))*nonInvertIndex);
     
+    nonInvertIndex = float(yIndexf-1);
+    invertedIndex = ((float(yQuantization)/(ySymmetry+1))-float(yIndexf));
+    yIndexf = (map(yInvert, -1, 1, 1, 0)*invertedIndex + (1-map(yInvert, -1, 1, 1, 0))*nonInvertIndex);
     
-    nonInvertIndex = float(yIndex-1);
-    invertedIndex = ((float(yQuantization)/(ySymmetry+1))-float(yIndex));
-    float yIndexf = (map(yInvert, -1, 1, 1, 0)*invertedIndex + (1-map(yInvert, -1, 1, 1, 0))*nonInvertIndex);
-    
-//    if(xQuantization % 2 == 0){
-//        xIndex -= 1;
-//    }
-    
-//    if(yQuantization % 2 == 0){
-//        yIndex -= 1;
-//    }
 
     //Modulo
     if(xIndexModulo != widthItem)
@@ -305,7 +298,35 @@ void main(){
         newRandom = hash13(vec3(xIndex, yIndex, time));
     }
     
+    float linPhase = phase + index + phaseOffsetParam;
     
+    linPhase = mod(linPhase, 1);
+    
+    float skewedLinPhase = linPhase;
+    
+    if(skewParam < 0){
+        if(linPhase < 0.5+((abs(skewParam))*0.5))
+            skewedLinPhase = map(linPhase, 0.0, 0.5+((abs(skewParam))*0.5), 0.0, 0.5);
+        else
+            skewedLinPhase = map(linPhase, 0.5+((abs(skewParam))*0.5), 1, 0.5, 1);
+    }
+    else if(skewParam > 0){
+        if(linPhase > ((1-abs(skewParam))*0.5))
+            skewedLinPhase = map(linPhase, (1-abs(skewParam))*0.5, 1, 0.5, 1);
+        else
+            skewedLinPhase = map(linPhase, 0, ((1-abs(skewParam))*0.5), 0.0, 0.5);
+    }
+    
+    linPhase = skewedLinPhase;
+    
+    float noPulseWidthPhase = linPhase; //Used for square wave
+    linPhase = map(linPhase, (1-pulseWidthParam), 1, 0.0, 1);
+    linPhase = clamp(linPhase, 0.0, 1.0);
+    
+    //get phasor to be w (radial freq)
+    float w = linPhase * 2*M_PI;
+    
+    /*
     //get phasor to be w (radial freq)
     float w = (phase * 2 * M_PI);
     
@@ -347,6 +368,7 @@ void main(){
     w = clamp(w_skewed, 0.0, 2*M_PI);
     
     float linPhase =  w / (2*M_PI);
+     */
     float val1 = 0;
     float val2 = 0;
     if(waveformParam >= 0 && waveformParam < 1){ //SIN
@@ -388,15 +410,16 @@ void main(){
         }
     }
     if(waveformParam > 7 && waveformParam <= 8){
-        if(linPhase < oldPhasor){
-            pastRandom = newRandom;
-            newRandom = hash13(vec3(xIndex, yIndex, time));
-            val1 = pastRandom;
-        }
-        else{
-            float smoothPhase = 1 - (cos(w/2) + 1)/ 2;
-            val1 = (pastRandom*(1-smoothPhase)) + (newRandom*smoothPhase);
-        }
+//        if(linPhase < oldPhasor){
+//            pastRandom = newRandom;
+//            newRandom = hash13(vec3(xIndex, yIndex, time));
+//            val1 = pastRandom;
+//        }
+//        else{
+//            float smoothPhase = 1 - (cos(w/2) + 1)/ 2;
+//            val1 = (pastRandom*(1-smoothPhase)) + (newRandom*smoothPhase);
+//        }
+        val1 = snoise(vec2(linPhase*25.31, linPhase*10));
     }
     
     float val = 0;
