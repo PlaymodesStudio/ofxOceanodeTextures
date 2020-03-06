@@ -74,7 +74,7 @@ private:
     ofParameter<vector<float>>   indexCombination[2];
     ofParameter<vector<int>>   indexModulo[2];
     
-    ofParameter<ofTexture*>      oscillatorOut;
+    ofParameter<ofTexture*>      indexsOut;
     
     map<string, int> shaderParameterNameTBOPositionMap;
     

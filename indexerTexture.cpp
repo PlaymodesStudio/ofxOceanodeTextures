@@ -71,7 +71,7 @@ void indexerTexture::setup(){
     
     setParametersInfoMaps();
     
-    parameters->add(oscillatorOut.set("Oscillator Out", nullptr, nullptr, nullptr));
+    parameters->add(indexsOut.set("Indexs Out", nullptr, nullptr, nullptr));
     
     
     //Listeners
@@ -274,7 +274,7 @@ void indexerTexture::update(ofEventArgs &a){
 }
 
 void indexerTexture::draw(ofEventArgs &a){
-    oscillatorOut = &computeBank();
+    indexsOut = &computeBank();
 }
 
 void indexerTexture::setParametersInfoMaps(){
@@ -305,22 +305,22 @@ void indexerTexture::setParametersInfoMaps(){
     shaderParameterNameTBOSizeMap[indexCombination[1].getName()] = width;
     
     shaderParameterNameTBOPositionMap[indexSymmetry[0].getName()] = dimensionsSum * 5;
-    shaderParameterNameTBOPositionMap[indexSymmetry[1].getName()] = height;
+    shaderParameterNameTBOPositionMap[indexSymmetry[1].getName()] = (dimensionsSum * 5) + height;
     shaderParameterNameTBOSizeMap[indexSymmetry[0].getName()] = height;
     shaderParameterNameTBOSizeMap[indexSymmetry[1].getName()] = width;
     
     shaderParameterNameTBOPositionMap[indexQuantization[0].getName()] = dimensionsSum * 6;
-    shaderParameterNameTBOPositionMap[indexQuantization[1].getName()] = (dimensionsSum) + height;
+    shaderParameterNameTBOPositionMap[indexQuantization[1].getName()] = (dimensionsSum * 6) + height;
     shaderParameterNameTBOSizeMap[indexQuantization[0].getName()] = height;
     shaderParameterNameTBOSizeMap[indexQuantization[1].getName()] = width;
     
     shaderParameterNameTBOPositionMap[indexModulo[0].getName()] = dimensionsSum * 7;
-    shaderParameterNameTBOPositionMap[indexModulo[1].getName()] = (dimensionsSum * 2) + height;
+    shaderParameterNameTBOPositionMap[indexModulo[1].getName()] = (dimensionsSum * 7) + height;
     shaderParameterNameTBOSizeMap[indexModulo[0].getName()] = height;
     shaderParameterNameTBOSizeMap[indexModulo[1].getName()] = width;
     
-    shaderParameterNameTBOPositionMap[widthVec.getName()] = dimensionsSum * 3;
-    shaderParameterNameTBOPositionMap[heightVec.getName()] = (dimensionsSum * 3) + height;
+    shaderParameterNameTBOPositionMap[widthVec.getName()] = dimensionsSum * 8;
+    shaderParameterNameTBOPositionMap[heightVec.getName()] = (dimensionsSum * 8) + height;
     shaderParameterNameTBOSizeMap[widthVec.getName()] = height;
     shaderParameterNameTBOSizeMap[heightVec.getName()] = width;
 }
