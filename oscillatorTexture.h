@@ -48,10 +48,7 @@ private:
     
     void setParametersInfoMaps();
     
-    void setOscillatorShaderIntParameterDataToTBO();
-    void setOscillatorShaderFloatParameterDataToTBO();
-    void setScalingShaderIntParameterDataToTBO();
-    void setScalingShaderFloatParameterDataToTBO();
+    void setOscillatorShaderParameterDataToTBO();
     
     vector<float> newRandomValuesVector();
     
@@ -59,7 +56,6 @@ private:
     
     void newPhasorIn(float &f);
     void sizeChangedListener(int &i);
-    void newWaveSelectParam(int &i);
     
     
     ofParameter<bool>       reloadShaderParam;
@@ -71,98 +67,52 @@ private:
     
     ofEventListeners listeners;
     
+    
+    ofParameter<ofTexture*> indexs;
     ofParameter<vector<int>> widthVec;
     ofParameter<vector<int>> heightVec;
-    ofParameter<vector<float>>   indexNumWaves[2];
-    ofParameter<vector<float>>   indexInvert[2];
-    ofParameter<vector<int>>   indexSymmetry[2];
-    ofParameter<vector<float>>   indexRandom[2];
-    ofParameter<vector<float>>   indexOffset[2];
-    ofParameter<vector<int>>   indexQuantization[2];
-    ofParameter<vector<float>>   indexCombination[2];
-    ofParameter<vector<int>>   indexModulo[2];
-    
     ofParameter<vector<float>>   phaseOffset[2];
+    ofParameter<vector<float>>   roundness[2];
+    ofParameter<vector<float>>   pulseWidth[2];
+    ofParameter<vector<float>>   skew[2];
     ofParameter<vector<float>>   randomAddition[2];
     ofParameter<vector<float>>   scale[2];
     ofParameter<vector<float>>   offset[2];
     ofParameter<vector<float>>   pow[2];
     ofParameter<vector<float>>   bipow[2];
     ofParameter<vector<int>>     quantization[2];
-    ofParameter<vector<float>>   pulseWidth[2];
-    ofParameter<vector<float>>   skew[2];
     ofParameter<vector<float>>   fader[2];
     ofParameter<vector<float>>   invert[2];
-    ofParameter<vector<float>>  waveform[2];
-    ofParameter<int>            waveformDropdown[2];
-    
-    ofParameter<int>      waveSelect_Param;
-
     
     ofParameter<ofTexture*>      oscillatorOut;
     
-    map<string, int> oscillatorShaderIntParameterNameTBOPositionMap;
-    map<string, int> oscillatorShaderFloatParameterNameTBOPositionMap;
-    map<string, int> scalingShaderIntParameterNameTBOPositionMap;
-    map<string, int> scalingShaderFloatParameterNameTBOPositionMap;
+    map<string, int> oscillatorShaderParameterNameTBOPositionMap;
     
     map<string, int> oscillatorShaderParameterNameTBOSizeMap;
-    map<string, int> scalingShaderParameterNameTBOSizeMap;
 
     sharedResources* resources;
     
-    unsigned int oscillatorShaderIntParametersTextureLocation;
-    unsigned int oscillatorShaderFloatParametersTextureLocation;
-    unsigned int scalingShaderIntParametersTextureLocation;
-    unsigned int scalingShaderFloatParametersTextureLocation;
-    
-    unsigned int randomIndexsTextureLocation;
-    
-    unsigned int randomInfoOscillatorShaderTextureLocation;
-    unsigned int randomInfoScalingShaderTextureLocation;
+    unsigned int oscillatorShaderParametersTextureLocation;
+    unsigned int indexsTextureLocation;
     
     ofShader shaderOscillator;
-    ofShader shaderScaling;
     ofFbo   fbo;
     ofFbo   fboBuffer;
+    ofFbo   blackIndexs;
     
     
     //Listeners
-    ofEventListeners oscillatorShaderIntListeners;
-    ofEventListeners oscillatorShaderFloatListeners;
-    ofEventListeners scalingShaderIntListeners;
-    ofEventListeners scalingShaderFloatListeners;
+    ofEventListeners oscillatorShaderListeners;
     
-    void onOscillatorShaderIntParameterChanged(ofAbstractParameter &p, vector<int> &vi);
-    void onOscillatorShaderFloatParameterChanged(ofAbstractParameter &p, vector<float> &vf);
-    void onScalingShaderIntParameterChanged(ofAbstractParameter &p, vector<int> &vi);
-    void onScalingShaderFloatParameterChanged(ofAbstractParameter &p, vector<float> &vf);
+    void onOscillatorShaderParameterChanged(ofAbstractParameter &p, vector<float> &vf);
     
     //TBOs
-    
-    ofTexture               oscillatorShaderIntTexture;
-    ofBufferObject          oscillatorShaderIntBuffer;
-    
-    ofTexture               oscillatorShaderFloatTexture;
-    ofBufferObject          oscillatorShaderFloatBuffer;
-    
-    ofTexture               scalingShaderIntTexture;
-    ofBufferObject          scalingShaderIntBuffer;
-    
-    ofTexture               scalingShaderFloatTexture;
-    ofBufferObject          scalingShaderFloatBuffer;
-    
-    //Index Random Values
-    ofTexture               indexRandomValuesTexture;
-    ofBufferObject          indexRandomValuesBuffer;
+    ofTexture               oscillatorShaderTexture;
+    ofBufferObject          oscillatorShaderBuffer;
     
     bool isFirstPassAfterSetup;
     
-    vector<pair<string, vector<int>>> changedOscillatorIntParameters;
-    vector<pair<string, vector<float>>> changedOscillatorFloatParameters;
-    
-    vector<pair<string, vector<int>>> changedScalingIntParameters;
-    vector<pair<string, vector<float>>> changedScalingFloatParameters;
+    vector<pair<string, vector<float>>> changedOscillatorParameters;
     
     bool sizeChanged;
 };

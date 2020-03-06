@@ -6,28 +6,23 @@ R"(
 uniform float phase;
 uniform float time;
 uniform float createRandoms;
-uniform sampler2D randomInfo;
+uniform sampler2D indexs;
 
-uniform usamplerBuffer intParameters;
-uniform samplerBuffer floatParameters;
+uniform samplerBuffer parameters;
 
-uniform samplerBuffer indexRandomValues;
-
-int indexNumWavesPosition = 0;
-int indexInvertPosition = 1;
-int indexSymmetryPosition = 0;
-int indexRandomPosition = 2;
-int indexOffsetPosition = 3;
-int indexQuantizationPosition = 1;
-int indexCombinationPosition = 4;
-int indexModuloPosition = 2;
-int phaseOffsetPosition = 5;
-int pulseWidthPosition = 6;
-int skewPosition = 7;
-int waveformPosition = 8;
-int sizePosition = 3;
-
-
+int sizePosition = 0;
+int phaseOffsetPosition = 1;
+int roundnessPosition = 2;
+int pulseWidthPosition = 3;
+int skewPosition = 4;
+int randomAdditionPosition = 5;
+int scalePosition = 6;
+int offsetPosition = 7;
+int powPosition = 8;
+int bipowPosition = 9;
+int quantizationPosition = 10;
+int faderPosition = 11;
+int invertPosition = 12;
 
 out vec4 out_color;
 
@@ -113,8 +108,24 @@ float random (in vec2 _st) {
                  43758.5453123);
 }
 
+float map(float value, float istart, float istop, float ostart, float ostop, bool clampVal) {
+    float val = ostart + (ostop - ostart) * ((value - istart) / (istop - istart));
+    if(clampVal){
+        return clamp(val, ostart, ostop);
+    }
+    return val;
+}
+
 float map(float value, float istart, float istop, float ostart, float ostop) {
-    return ostart + (ostop - ostart) * ((value - istart) / (istop - istart));
+    return map(value, istart, istop, ostart, ostop, false);
+}
+
+float customPow(float value, float pow){
+    float k1 = 2*pow*0.99999;
+    float k2 = (k1/((-pow*0.999999)+1));
+    float k3 = k2 * abs(value) + 1;
+    value = value * (k2+1) / k3;
+    return value;
 }
 
 highp float rrrand(vec2 co, float time)
@@ -151,156 +162,47 @@ void main(){
 	//we grab the x and y and store them in an int
 	int xVal = int(gl_FragCoord.x);
 	int yVal = int(gl_FragCoord.y);
-    int width = textureSize(randomInfo, 0).x;
-    int height = textureSize(randomInfo, 0).y;
+    int width = textureSize(indexs, 0).x;
+    int height = textureSize(indexs, 0).y;
     int dimensionsSum = width+height;
     
     //Compute Index
     int xIndex = xVal;
     int yIndex = yVal;
-    uint xQuantization = texelFetch(intParameters, yVal + (dimensionsSum*indexQuantizationPosition)).r;
-    uint yQuantization = texelFetch(intParameters, xVal + (dimensionsSum*indexQuantizationPosition) + height).r;
-    uint xSymmetry = texelFetch(intParameters, yVal + (dimensionsSum*indexSymmetryPosition)).r;
-    uint ySymmetry = texelFetch(intParameters, xVal + (dimensionsSum*indexSymmetryPosition)+ height).r;
-    float xIndexOffset = texelFetch(floatParameters, yVal + (dimensionsSum*indexOffsetPosition)).r;
-    float yIndexOffset = texelFetch(floatParameters, xVal + (dimensionsSum*indexOffsetPosition) + height).r;
-    float xIndexRandom = texelFetch(floatParameters, yVal + (dimensionsSum*indexRandomPosition)).r;
-    float yIndexRandom = texelFetch(floatParameters, xVal + (dimensionsSum*indexRandomPosition) + height).r;
-    float xIndexCombination = texelFetch(floatParameters, yVal + (dimensionsSum*indexCombinationPosition)).r;
-    float yIndexCombination = texelFetch(floatParameters, xVal + (dimensionsSum*indexCombinationPosition) + height).r;
-    uint xIndexModulo = texelFetch(intParameters, yVal + (dimensionsSum*indexModuloPosition)).r;
-    uint yIndexModulo = texelFetch(intParameters, xVal + (dimensionsSum*indexModuloPosition) + height).r;
-    float xNumWaves = texelFetch(floatParameters, yVal + (dimensionsSum*indexNumWavesPosition)).r;
-    float yNumWaves = texelFetch(floatParameters, xVal + (dimensionsSum*indexNumWavesPosition) + height).r;
-    float xInvert = texelFetch(floatParameters, yVal + (dimensionsSum*indexInvertPosition)).r;
-    float yInvert = texelFetch(floatParameters, xVal + (dimensionsSum*indexInvertPosition) + height).r;
-    int widthItem = int(texelFetch(intParameters, yVal + (dimensionsSum*sizePosition)).r);
-    int heightItem = int(texelFetch(intParameters, xVal + (dimensionsSum*sizePosition) + height).r);
     
-    //Offset
-    xIndex = int(mod((xIndex - round(xIndexOffset)), widthItem));
-    yIndex = int(mod((yIndex - round(yIndexOffset)), heightItem));
-    
-    xQuantization = min(xQuantization, widthItem);
-    yQuantization = min(yQuantization, heightItem);
-    
-    //Quantization
-    xIndex = int(floor(float(xIndex)/(float(widthItem)/float(xQuantization))));
-    yIndex = int(floor(float(yIndex)/(float(heightItem)/float(yQuantization))));
-
-    //Symmetry
-    while (xSymmetry > xQuantization-1) {
-        xSymmetry--;
-    }
-    
-    while (ySymmetry > yQuantization-1) {
-        ySymmetry--;
-    }
-
-
-    //X
-    bool odd = false;
-    
-    if(abs(xIndexOffset) - int(abs(xIndexOffset)) > 0.5){
-        //odd = !odd;
-    }
-    
-    if(int((xIndex/(xQuantization/(xSymmetry+1))))%2 == 1){
-        odd = true;
-    }
-
-    int veusSym = int(xQuantization)/int(xSymmetry+1);
-    xIndex = veusSym-int(abs(float((xIndex/veusSym)%2) * float(veusSym)-(float(xIndex%veusSym))));
-
-    if(xQuantization % 2 == 0){
-        if(odd) xIndex += 1;
-    }
-    else if(xSymmetry > 0){
-        xIndex += xInvert < 1 ? 0 : 1;
-        xIndex %= int(xQuantization);
-    }
-
-    //Y
-    odd = false;
-
-    if(abs(yIndexOffset) - int(abs(yIndexOffset)) > 0.5){
-        //odd = !odd;
-    }
-    
-    if(int((yIndex/(yQuantization/(ySymmetry+1))))%2 == 1){
-        odd = true;
-    }
-
-    veusSym = int(yQuantization)/int(ySymmetry+1);
-    yIndex = veusSym-int(abs(((int(yIndex/veusSym)%2) * veusSym)-(yIndex%veusSym)));
-
-
-    if(yQuantization % 2 == 0){
-        if(odd) yIndex += 1;
-    }
-    else if(ySymmetry > 0){
-        yIndex += yInvert < 1 ? 0 : 1;
-        yIndex %= int(yQuantization);
-    }
+    int widthItem = int(texelFetch(parameters, yVal + (dimensionsSum*sizePosition)).r);
+    int heightItem = int(texelFetch(parameters, xVal + (dimensionsSum*sizePosition) + height).r);
     
     
-    //Combination
-    xIndex = int(abs(((xIndex%2)*widthItem*xIndexCombination)-xIndex));
-    yIndex = int(abs(((yIndex%2)*heightItem*yIndexCombination)-yIndex));
-    
-    //Random
-//    double(index)*(1-indexRand_Param) + (double(indexRand[index-1] + 1)*indexRand_Param)
-    float xIndexf = float(xIndex)*(1.0-xIndexRandom) + (float((texelFetch(indexRandomValues, xIndex).r) +1 ) * xIndexRandom);
-    float yIndexf = float(yIndex)*(1.0-yIndexRandom) + (float((texelFetch(indexRandomValues, yIndex + width).r) +1 ) * yIndexRandom);
-    
-    //Invert
-    float nonInvertIndex = (xIndexf-1.0);
-    float invertedIndex = ((float(xQuantization)/(xSymmetry+1))-xIndexf);
-    xIndexf = (map(xInvert, -1, 1, 1, 0)*invertedIndex + (1-map(xInvert, -1, 1, 1, 0))*nonInvertIndex);
-    
-    nonInvertIndex = float(yIndexf-1);
-    invertedIndex = ((float(yQuantization)/(ySymmetry+1))-float(yIndexf));
-    yIndexf = (map(yInvert, -1, 1, 1, 0)*invertedIndex + (1-map(yInvert, -1, 1, 1, 0))*nonInvertIndex);
-    
-
-    //Modulo
-    if(xIndexModulo != widthItem)
-        xIndexf = mod(xIndexf, xIndexModulo);
-    if(yIndexModulo != heightItem)
-        yIndexf = mod(yIndexf, yIndexModulo);
-
-    xIndexf = ((float(xIndexf)/float(widthItem)))*(xNumWaves)*(float(widthItem)/float(xQuantization))*(xSymmetry+1);
-    yIndexf = ((float(yIndexf)/float(heightItem)))*(yNumWaves)*(float(heightItem)/float(yQuantization))*(ySymmetry+1);
-
-
-    float index = xIndexf + yIndexf;
+    float index = texelFetch(indexs, ivec2(xVal, yVal), 0).r;
     
     //Compute parameters of current coord;
-    float phaseOffsetParam = texelFetch(floatParameters, xVal + (dimensionsSum*phaseOffsetPosition)).r + texelFetch(floatParameters, yVal + (dimensionsSum*phaseOffsetPosition) + width).r;
-    float pulseWidthParam = texelFetch(floatParameters, xVal + (dimensionsSum*pulseWidthPosition)).r * texelFetch(floatParameters, yVal + (dimensionsSum*pulseWidthPosition) + width).r;
-    float skewParam = texelFetch(floatParameters, xVal + (dimensionsSum*skewPosition)).r + texelFetch(floatParameters, yVal + (dimensionsSum*skewPosition) + width).r;
+    float phaseOffsetParam = texelFetch(parameters, xVal + (dimensionsSum*phaseOffsetPosition)).r + texelFetch(parameters, yVal + (dimensionsSum*phaseOffsetPosition) + width).r;
+    float roundnessParamX = texelFetch(parameters, xVal + (dimensionsSum*roundnessPosition)).r;
+    float roundnessParamY = texelFetch(parameters, yVal + (dimensionsSum*roundnessPosition) + width).r;
+    float roundnessParam = map(map(roundnessParamX, 0, 1, -1, 1) + map(roundnessParamY, 0, 1, -1, 1), -1, 1, 0, 1, true);
+    float pulseWidthParamX = texelFetch(parameters, xVal + (dimensionsSum*pulseWidthPosition)).r;
+    float pulseWidthParamY = texelFetch(parameters, yVal + (dimensionsSum*pulseWidthPosition) + width).r;
+    float pulseWidthParam = map(map(pulseWidthParamX, 0, 1, -1, 1) + map(pulseWidthParamY, 0, 1, -1, 1), -1, 1, 0, 1, true);
+    float skewParam = texelFetch(parameters, xVal + (dimensionsSum*skewPosition)).r + texelFetch(parameters, yVal + (dimensionsSum*skewPosition) + width).r;
     
-    //How to blend waveform Parameter???
-    float waveformParam = max(texelFetch(floatParameters, xVal + (dimensionsSum*waveformPosition)).r, texelFetch(floatParameters, yVal + (dimensionsSum*waveformPosition) + width).r);
-    
-    
-    //randon Info
-    vec4 r_info = texelFetch(randomInfo, ivec2(xVal, yVal), 0);
-    float oldValue = r_info.r;
-    float oldPhasor = r_info.g;
-    float pastRandom = r_info.b;
-    float newRandom = r_info.a;
-    
-    
-    //If we have changed size or initialized the texture we have to insert new items for pastRandom and newRandom, as we have no random data.
-    if(createRandoms == 1){
-        pastRandom = hash13(vec3(xIndex, yIndex, time*2));
-        newRandom = hash13(vec3(xIndex, yIndex, time));
-    }
     
     float linPhase = phase + index + phaseOffsetParam;
     
     linPhase = mod(linPhase, 1);
+    
+    if(pulseWidthParam < 0.5){
+        linPhase = map(linPhase, 0.5-pulseWidthParam, 0.5+pulseWidthParam, 0, 1, true);
+        if(skewParam < 0 && linPhase == 1) linPhase = 0;
+    }else if (pulseWidthParam == 1){
+        linPhase = 0.5;
+    }else{
+        if(linPhase < 0.5){
+            linPhase = map(linPhase, 0, 1-pulseWidthParam, 0, 0.5, true);
+        }else{
+            linPhase = map(linPhase, pulseWidthParam, 1, 0.5, 1, true);
+        }
+    }
     
     float skewedLinPhase = linPhase;
     
@@ -319,118 +221,74 @@ void main(){
     
     linPhase = skewedLinPhase;
     
-    float noPulseWidthPhase = linPhase; //Used for square wave
-    linPhase = map(linPhase, (1-pulseWidthParam), 1, 0.0, 1);
-    linPhase = clamp(linPhase, 0.0, 1.0);
-    
     //get phasor to be w (radial freq)
     float w = linPhase * 2*M_PI;
-    
-    /*
-    //get phasor to be w (radial freq)
-    float w = (phase * 2 * M_PI);
-    
-    float k = (index + phaseOffsetParam) * 2 * M_PI;
-    
-    w = w + k;
-    while(w > 2*M_PI){
-        w -= 2*M_PI;
-    }
-    while(w < 0){
-        w += 2*M_PI;
-    }
-
-    if(pulseWidthParam != 1){
-        w = map(w, (1-pulseWidthParam)*2*M_PI, 2*M_PI, 0, 2*M_PI);
-        w = clamp(w, 0.0, 2*M_PI);
-    }
-
-    float w_skewed = w;
-
-
-    if(skewParam < 0){
-        if(w < M_PI+((abs(skewParam))*M_PI)){
-            w_skewed = map(w, 0, M_PI+((abs(skewParam))*M_PI), 0, M_PI);
-        }
-        else{
-            w_skewed = map(w, M_PI+((abs(skewParam))*M_PI), 2*M_PI, M_PI, 2*M_PI);
-        }
-    }
-    else if(skewParam > 0){
-        if(w > ((1-abs(skewParam))*M_PI)){
-            w_skewed = map(w, (1-abs(skewParam))*M_PI, 2*M_PI, M_PI, 2*M_PI);
-        }
-        else{
-            w_skewed = map(w, 0, ((1-abs(skewParam))*M_PI), 0, M_PI);
-        }
-    }
-
-    w = clamp(w_skewed, 0.0, 2*M_PI);
-    
-    float linPhase =  w / (2*M_PI);
-     */
-    float val1 = 0;
-    float val2 = 0;
-    if(waveformParam >= 0 && waveformParam < 1){ //SIN
-        val1 = (sin(w) + 1 ) / 2;
-    }
-    if(waveformParam > 0 && waveformParam < 2){ //COS
-        val2 = (cos(w) + 1 ) / 2;
-    }
-    if(waveformParam > 1 && waveformParam < 3){ //TRI
-        val1 = 1-(abs((linPhase * (-2)) + 1));
-    }
-    if(waveformParam > 2 && waveformParam < 4){ //SQUARE
-        if(pulseWidthParam != 1){
-            val2 = (linPhase > 0) ? 1 : 0;
-        }else{
-            val2 = 1;
-        }
-    }
-    if(waveformParam > 3 && waveformParam < 5){ //SAW
-        val1 = 1-linPhase;
-    }
-    if(waveformParam > 4 && waveformParam < 6){ //INVERTED SAW
-        val2 = linPhase;
-    }
-    if(waveformParam > 5 && waveformParam < 7){ //Random
-        if(linPhase < oldPhasor){
-            pastRandom = hash13(vec3(xIndex, yIndex, time));
-        }
-        val1 = pastRandom;
-    }
-    if(waveformParam > 6 && waveformParam < 8){
-        if(linPhase < oldPhasor){
-            pastRandom = newRandom;
-            newRandom = hash13(vec3(xIndex, yIndex, time));
-            val2 = pastRandom;
-        }
-        else{
-            val2 = (pastRandom*(1-linPhase)) + (newRandom*linPhase);
-        }
-    }
-    if(waveformParam > 7 && waveformParam <= 8){
-//        if(linPhase < oldPhasor){
-//            pastRandom = newRandom;
-//            newRandom = hash13(vec3(xIndex, yIndex, time));
-//            val1 = pastRandom;
-//        }
-//        else{
-//            float smoothPhase = 1 - (cos(w/2) + 1)/ 2;
-//            val1 = (pastRandom*(1-smoothPhase)) + (newRandom*smoothPhase);
-//        }
-        val1 = snoise(vec2(linPhase*25.31, linPhase*10));
-    }
-    
     float val = 0;
-    float waveInterp = waveformParam - int(waveformParam);
-    if(int(waveformParam)%2 == 0){
-        val = val1 * (1-waveInterp) + val2 * waveInterp;
-    }
-    else{
-        val = val1 * waveInterp + val2 * (1-waveInterp);
+    if(roundnessParam == 0){
+        val = 1-(abs((linPhase * (-2)) + 1));
+    }else if(roundnessParam == 0.5){
+        val = (cos(w+M_PI) + 1 ) / 2;
+    }else if(roundnessParam == 1){
+        val = linPhase < 0.25 || linPhase >= 0.75 ? 0 : 1;
+    }else if(roundnessParam < 0.5){
+        float tri_val = 1-(abs((linPhase * (-2)) + 1));
+        float cos_val = (cos(w+M_PI) + 1 ) / 2;
+        val = mix(tri_val, cos_val, roundnessParam*2);
+    }else{
+        float cos_val = cos(w+M_PI);
+        cos_val = customPow(cos_val, (roundnessParam-0.5)*2);
+        cos_val = map(cos_val, -1.0, 1.0, 0.0, 1.0);
+        val = cos_val;
     }
     
-    out_color = vec4(val, linPhase, pastRandom, newRandom);
+    float randomAdditionParam = texelFetch(parameters, xVal + (dimensionsSum*randomAdditionPosition)).r + texelFetch(parameters, yVal + (dimensionsSum*randomAdditionPosition) + width).r;
+    float scaleParam = texelFetch(parameters, xVal + (dimensionsSum*scalePosition)).r * texelFetch(parameters, yVal + (dimensionsSum*scalePosition) + width).r;
+    float offsetParam = texelFetch(parameters, xVal + (dimensionsSum*offsetPosition)).r + texelFetch(parameters, yVal + (dimensionsSum*offsetPosition) + width).r;
+    float powParam = texelFetch(parameters, xVal + (dimensionsSum*powPosition)).r + texelFetch(parameters, yVal + (dimensionsSum*powPosition) + width).r;
+    float bipowParam = texelFetch(parameters, xVal + (dimensionsSum*bipowPosition)).r + texelFetch(parameters, yVal + (dimensionsSum*bipowPosition) + width).r;
+    int quantizationParam = int(min(texelFetch(parameters, xVal + (dimensionsSum*quantizationPosition)).r, texelFetch(parameters, yVal + (dimensionsSum*quantizationPosition) + width).r));
+    float faderParam = texelFetch(parameters, xVal + (dimensionsSum*faderPosition)).r * texelFetch(parameters, yVal + (dimensionsSum*faderPosition) + width).r;
+    float invertParam = max(texelFetch(parameters, xVal + (dimensionsSum*invertPosition)).r, texelFetch(parameters, yVal + (dimensionsSum*invertPosition) + width).r);
+    
+    //random Add
+    if(randomAdditionParam != 0){
+        val = val + randomAdditionParam*hash13(vec3(xVal, yVal, time));
+    }
+    
+    val = clamp(val, 0.0, 1.0);
+    
+    //pow
+    if(powParam != 0)
+        val = customPow(val, powParam);
+    
+    //bipow
+    if(bipowParam != 0){
+        val = (val*2) -1;
+        val = customPow(val, bipowParam);
+        val = (val+1) * 0.5;
+    }
+    
+    val = clamp(val, 0.0, 1.0);
+    
+    //Quantization
+    if(quantizationParam < 255){
+        val = (1.0/(float(quantizationParam-1)))*float(floor(val*quantizationParam));
+    }
+    
+    //SCALE
+    val *= scaleParam;
+    
+    //OFFSET
+    val += offsetParam;
+    
+    val = clamp(val, 0.0, 1.0);
+    
+    val *= faderParam;
+    
+    float invertedValue = 1-val;
+    float nonInvertedValue = val;
+    val = (invertParam * invertedValue) + ((1-invertParam) * nonInvertedValue);
+    
+    out_color = vec4(val, val, val, 1);
 }
 )"
