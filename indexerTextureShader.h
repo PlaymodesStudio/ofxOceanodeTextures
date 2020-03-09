@@ -95,7 +95,7 @@ void main(){
         if(odd) xIndex += 1;
     }
     else if(xSymmetry > 0){
-        xIndex += xInvert < 1 ? 0 : 1;
+        xIndex += xInvert < 0.5 ? 0 : 1;
         xIndex %= int(xQuantization);
     }
     
@@ -118,7 +118,7 @@ void main(){
         if(odd) yIndex += 1;
     }
     else if(ySymmetry > 0){
-        yIndex += yInvert < 1 ? 0 : 1;
+        yIndex += yInvert < 0.5 ? 0 : 1;
         yIndex %= int(yQuantization);
     }
     
@@ -135,11 +135,11 @@ void main(){
     //Invert
     float nonInvertIndex = (xIndexf-1.0);
     float invertedIndex = ((float(xQuantization)/(xSymmetry+1))-xIndexf);
-    xIndexf = (map(xInvert, -1, 1, 1, 0)*invertedIndex + (1-map(xInvert, -1, 1, 1, 0))*nonInvertIndex);
+    xIndexf = (xInvert*invertedIndex + (1-xInvert)*nonInvertIndex);
     
     nonInvertIndex = float(yIndexf-1);
     invertedIndex = ((float(yQuantization)/(ySymmetry+1))-float(yIndexf));
-    yIndexf = (map(yInvert, -1, 1, 1, 0)*invertedIndex + (1-map(yInvert, -1, 1, 1, 0))*nonInvertIndex);
+    yIndexf = (yInvert*invertedIndex + (1-yInvert)*nonInvertIndex);
     
     
     //Modulo

@@ -51,7 +51,7 @@ void indexerTexture::setup(){
     parameters->add(indexNumWaves[0].set("Num Waves X", vector<float>(1, 1), vector<float>(1, 0), vector<float>(1, width)));
     parameters->add(indexNumWaves[1].set("Num Waves Y", vector<float>(1, 1), vector<float>(1, 0), vector<float>(1, height)));
     
-    setAndBindXYParamsVecFloat(indexInvert, "Index Invert", 1, -1, 1);
+    setAndBindXYParamsVecFloat(indexInvert, "Index Invert", 0, 0, 1);
     
     parameters->add(indexSymmetry[0].set("Symmetry X", vector<int>(1, 0), vector<int>(1, 0), vector<int>(1, width/2)));
     parameters->add(indexSymmetry[1].set("Symmetry Y", vector<int>(1, 0), vector<int>(1, 0), vector<int>(1, height/2)));
