@@ -396,7 +396,6 @@ void indexerTexture::loadShader(bool &b){
     randomIndexsTextureLocation = resources->getNextAvailableShaderTextureLocation();
     
     shader.begin();
-    shader.setUniform2i("size", width, height);
     shader.setUniformTexture("parameters", shaderParametersTexture, shaderParametersTextureLocation);
     shader.setUniformTexture("indexRandomValues", indexRandomValuesTexture, randomIndexsTextureLocation);
     shader.end();
@@ -439,6 +438,7 @@ ofTexture& indexerTexture::computeBank(){
     fbo.begin();
     ofClear(0, 0, 0, 255);
     shader.begin();
+    shader.setUniform2i("size", width, height);
     shader.setUniform1f("time", ofGetElapsedTimef());
     ofDrawRectangle(0, 0, width, height);
     shader.end();
