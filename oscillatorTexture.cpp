@@ -15,6 +15,7 @@ oscillatorTexture::oscillatorTexture() : ofxOceanodeNodeModel("Oscillator Textur
     isSetup = false;
     isFirstPassAfterSetup = true;
     sizeChanged = false;
+    color = ofColor(0, 127, 255);
 }
 
 oscillatorTexture::~oscillatorTexture(){
@@ -482,7 +483,7 @@ ofTexture& oscillatorTexture::computeBank(float phasor){
     shaderOscillator.begin();
     shaderOscillator.setUniform1f("phase", phasor);
     shaderOscillator.setUniform1f("time", ofGetElapsedTimef());
-    if(indexs.get() != nullptr){
+    if(indexs.get() != nullptr && indexs.get()->getWidth() == width && indexs.get()->getHeight() == height){
         shaderOscillator.setUniformTexture("indexs", *indexs.get(), indexsTextureLocation);
     }else{
         shaderOscillator.setUniformTexture("indexs", blackIndexs.getTexture(), indexsTextureLocation);

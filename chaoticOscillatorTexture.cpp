@@ -14,6 +14,7 @@ chaoticOscillatorTexture::chaoticOscillatorTexture() : ofxOceanodeNodeModel("Cha
     isSetup = false;
     isFirstPassAfterSetup = true;
     sizeChanged = false;
+    color = ofColor(0, 200, 255);
 }
 
 chaoticOscillatorTexture::~chaoticOscillatorTexture(){
@@ -483,7 +484,7 @@ ofTexture& chaoticOscillatorTexture::computeBank(float phasor){
     shaderOscillator.setUniform1f("phase", phasor);
     shaderOscillator.setUniform1f("time", ofGetElapsedTimef());
     shaderOscillator.setUniform1f("createRandoms", isFirstPassAfterSetup ? 1 : 0);
-    if(indexs.get() != nullptr){
+    if(indexs.get() != nullptr && indexs.get()->getWidth() == width && indexs.get()->getHeight() == height){
         shaderOscillator.setUniformTexture("indexs", *indexs.get(), indexsTextureLocation);
     }else{
         shaderOscillator.setUniformTexture("indexs", blackIndexs.getTexture(), indexsTextureLocation);
