@@ -7,6 +7,7 @@
 //
 
 #include "waveScope.h"
+#include "sharedInfo.h"
 
 waveScope::waveScope() : ofxOceanodeNodeModelExternalWindow("Texture Scope"){
     
@@ -15,9 +16,30 @@ waveScope::waveScope() : ofxOceanodeNodeModelExternalWindow("Texture Scope"){
         ofNotifyEvent(parameterGroupChanged);
     });
     color = ofColor::lightGray;
+    storedShape = sharedInfo::getInstance().getRect("ScopeWindowRect");
 }
 
+waveScope::~waveScope(){
+    if(getNumIdentifier() == 1){
+        ofRectangle windowShape(0,0,0,0);
+        if(externalWindow != nullptr){
+            windowShape.setPosition(glm::vec3(externalWindow->getWindowPosition(), 0));
+            windowShape.setSize(externalWindow->getWidth(), externalWindow->getHeight());
+        }else{
+            windowShape = externalWindowRect;
+        }
+        sharedInfo::getInstance().setRect("ScopeWindowRect", windowShape);
+    }
+}
+
+
 void waveScope::drawInExternalWindow(ofEventArgs &e){
+    if(getNumIdentifier() == 1 && storedShape != ofRectangle(0,0,0,0)){
+        setExternalWindowPosition(storedShape.x, storedShape.y);
+        setExternalWindowShape(storedShape.width, storedShape.height);
+        saveStateOnPreset = false;
+        storedShape = ofRectangle(0,0,0,0);
+    }
     ofBackground(0);
     ofSetColor(255);
     //

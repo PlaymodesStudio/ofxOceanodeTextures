@@ -118,7 +118,7 @@ private:
 class waveScope : public ofxOceanodeNodeModelExternalWindow{
 public:
     waveScope();
-    ~waveScope(){};
+    ~waveScope();
     
     virtual void presetSave(ofJson &json) override{
         texturesInput.saveParameterArrange(json);
@@ -143,6 +143,8 @@ private:
     int mousePressInititalX;
     bool isInMovableRegion;
     bool hasColor;
+    
+    ofRectangle storedShape;
 };
 
 #endif /* waveScope_h */
