@@ -14,6 +14,7 @@ waveScope::waveScope() : ofxOceanodeNodeModelExternalWindow("Texture Scope"){
     listener = texturesInput.parameterGroupChanged.newListener([&](){
         ofNotifyEvent(parameterGroupChanged);
     });
+    color = ofColor::lightGray;
 }
 
 void waveScope::drawInExternalWindow(ofEventArgs &e){

@@ -14,6 +14,7 @@ indexerTexture::indexerTexture() : ofxOceanodeNodeModel("Indexer Texture"){
     isSetup = false;
     isFirstPassAfterSetup = true;
     sizeChanged = false;
+    color = ofColor::orange;
 }
 
 indexerTexture::~indexerTexture(){

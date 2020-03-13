@@ -128,9 +128,8 @@ void main(){
     yIndex = int(abs(((yIndex%2)*heightItem*yIndexCombination)-yIndex));
     
     //Random
-    //    double(index)*(1-indexRand_Param) + (double(indexRand[index-1] + 1)*indexRand_Param)
-    float xIndexf = float(xIndex)*(1.0-xIndexRandom) + (float((texelFetch(indexRandomValues, xIndex).r) +1 ) * xIndexRandom);
-    float yIndexf = float(yIndex)*(1.0-yIndexRandom) + (float((texelFetch(indexRandomValues, yIndex + width).r) +1 ) * yIndexRandom);
+    float xIndexf = float(xIndex)*(1.0-xIndexRandom) + (float((texelFetch(indexRandomValues, xIndex-1).r) +1 ) * xIndexRandom);
+    float yIndexf = float(yIndex)*(1.0-yIndexRandom) + (float((texelFetch(indexRandomValues, yIndex + width-1).r) +1 ) * yIndexRandom);
     
     //Invert
     float nonInvertIndex = (xIndexf-1.0);
