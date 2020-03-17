@@ -57,6 +57,7 @@ public:
                 if(parameterVector.count(i) == 0){
                     parameterVector[i] = ofParameter<T>();
                     parameterVector[i].set(baseParameter.getName() + " " + ofToString(i), baseParameter);
+                    lastValueVector[i] = baseParameter;
                     group->add(parameterVector[i]);
                     listeners[i] = parameterVector[i].newListener([&, i](T &val){
                         inputListener(i);
@@ -89,7 +90,7 @@ private:
             ifNewCreatedChecker[index] = true;
             ofNotifyEvent(parameterGroupChanged);
         }
-        else if(parameterVector[index].get() == nullptr){
+        else if(parameterVector[index].get() == nullptr && lastValueVector[index] != nullptr){
             int removeIndex = -1;
             for(auto param : parameterVector){
                 if(param.second == nullptr && param.first > removeIndex){
@@ -105,11 +106,13 @@ private:
             }
             ofNotifyEvent(parameterGroupChanged);
         }
+        lastValueVector[index] = parameterVector[index].get();
     }
     
     shared_ptr<ofParameterGroup> group;
     ofParameter<T> baseParameter;
     map<int, ofParameter<T>> parameterVector;
+    map<int, T> lastValueVector;
     map<int, bool> ifNewCreatedChecker;
     
     map<int, ofEventListener> listeners;
