@@ -53,15 +53,17 @@ void chaoticOscillatorTexture::setup(){
     parameters->add(indexs.set("Indexs", nullptr, nullptr, nullptr));
     
     setAndBindXYParamsVecFloat(phaseOffset, "Phase Offset", 0, 0, 1);
+    setAndBindXYParamsVecFloat(length, "Length", 1, 1, 100);
     setAndBindXYParamsVecFloat(roundness, "Roundness", .5, 0, 1);
     setAndBindXYParamsVecFloat(pulseWidth, "Pulse Width", 0.5, 0, 1);
     setAndBindXYParamsVecFloat(skew, "Skew", 0, -1, 1);
-    setAndBindXYParamsVecFloat(randomAddition, "Rnd Add", 0, -1, 1);
     setAndBindXYParamsVecFloat(scale, "Scale", 1, 0, 2);
     setAndBindXYParamsVecFloat(offset, "Offset", 0, -1, 1);
     setAndBindXYParamsVecFloat(pow, "Pow", 0, -1, 1);
     setAndBindXYParamsVecFloat(bipow, "Bi Pow", 0, -1, 1);
     setAndBindXYParamsVecInt(quantization, "Quantize", 255, 2, 255);
+    setAndBindXYParamsVecInt(seed, "Seed", 0, INT_MIN, INT_MAX);
+    setAndBindXYParamsVecFloat(randomAddition, "Rnd Add", 0, -1, 1);
     setAndBindXYParamsVecFloat(fader, "Fader", 1, 0, 1);
     setAndBindXYParamsVecFloat(invert, "Invert", 0, 0, 1);
     
@@ -172,6 +174,24 @@ void chaoticOscillatorTexture::setup(){
     }));
     oscillatorShaderListeners.push(invert[1].newListener([&](vector<float> &vf){
         onOscillatorShaderParameterChanged(invert[1], vf);
+    }));
+    
+    oscillatorShaderListeners.push(length[0].newListener([&](vector<float> &vf){
+        onOscillatorShaderParameterChanged(length[0], vf);
+    }));
+    oscillatorShaderListeners.push(length[1].newListener([&](vector<float> &vf){
+        onOscillatorShaderParameterChanged(length[1], vf);
+    }));
+    
+    oscillatorShaderListeners.push(seed[0].newListener([&](vector<int> &vi){
+        newSeed = true;
+        vector<float> vf(vi.begin(), vi.end());
+        onOscillatorShaderParameterChanged(seed[0], vf);
+    }));
+    oscillatorShaderListeners.push(seed[1].newListener([&](vector<int> &vi){
+        newSeed = true;
+        vector<float> vf(vi.begin(), vi.end());
+        onOscillatorShaderParameterChanged(seed[1], vf);
     }));
     
     isFirstPassAfterSetup = true;
@@ -357,6 +377,16 @@ void chaoticOscillatorTexture::setParametersInfoMaps(){
     oscillatorShaderParameterNameTBOPositionMap[invert[1].getName()] = (dimensionsSum * 12) + width;
     oscillatorShaderParameterNameTBOSizeMap[invert[0].getName()] = width;
     oscillatorShaderParameterNameTBOSizeMap[invert[1].getName()] = height;
+    
+    oscillatorShaderParameterNameTBOPositionMap[length[0].getName()] = dimensionsSum * 13;
+    oscillatorShaderParameterNameTBOPositionMap[length[1].getName()] = (dimensionsSum * 13) + width;
+    oscillatorShaderParameterNameTBOSizeMap[length[0].getName()] = width;
+    oscillatorShaderParameterNameTBOSizeMap[length[1].getName()] = height;
+    
+    oscillatorShaderParameterNameTBOPositionMap[seed[0].getName()] = dimensionsSum * 14;
+    oscillatorShaderParameterNameTBOPositionMap[seed[1].getName()] = (dimensionsSum * 14) + width;
+    oscillatorShaderParameterNameTBOSizeMap[seed[0].getName()] = width;
+    oscillatorShaderParameterNameTBOSizeMap[seed[1].getName()] = height;
 }
 
 void chaoticOscillatorTexture::setOscillatorShaderParameterDataToTBO(){
@@ -427,6 +457,16 @@ void chaoticOscillatorTexture::setOscillatorShaderParameterDataToTBO(){
     vector<float> invertY_tempVec(height, invert[1].get()[0]);
     accumulateParametersOscillatorShaderParameters.insert(accumulateParametersOscillatorShaderParameters.end(), invertY_tempVec.begin(), invertY_tempVec.end());
     
+    vector<float> lengthX_tempVec(width, length[0].get()[0]);
+    accumulateParametersOscillatorShaderParameters.insert(accumulateParametersOscillatorShaderParameters.end(), lengthX_tempVec.begin(), lengthX_tempVec.end());
+    vector<float> lengthY_tempVec(height, length[1].get()[0]);
+    accumulateParametersOscillatorShaderParameters.insert(accumulateParametersOscillatorShaderParameters.end(), lengthY_tempVec.begin(), lengthY_tempVec.end());
+    
+    vector<float> seedX_tempVec(width, seed[0].get()[0]);
+    accumulateParametersOscillatorShaderParameters.insert(accumulateParametersOscillatorShaderParameters.end(), seedX_tempVec.begin(), seedX_tempVec.end());
+    vector<float> seedY_tempVec(height, seed[1].get()[0]);
+    accumulateParametersOscillatorShaderParameters.insert(accumulateParametersOscillatorShaderParameters.end(), seedY_tempVec.begin(), seedY_tempVec.end());
+    
     oscillatorShaderBuffer.setData(accumulateParametersOscillatorShaderParameters, GL_STREAM_DRAW);
 }
 
@@ -473,7 +513,18 @@ void chaoticOscillatorTexture::presetRecallBeforeSettingParameters(ofJson &json)
     isFirstPassAfterSetup = true;
 }
 
-ofTexture& chaoticOscillatorTexture::computeBank(float phasor){
+ofTexture& chaoticOscillatorTexture::computeBank(float phasor, bool isZeroComputeBank){    
+    bool haveToRetrigerRandoms = isFirstPassAfterSetup || isZeroComputeBank;
+    if(!haveToRetrigerRandoms){
+        if(newSeed && !isZeroComputeBank){
+            if(phasor < oldPhasor){
+                computeBank(0, true);
+//                haveToRetrigerRandoms = true;
+                newSeed = false;
+            }
+        }
+    }
+    
     ofPushStyle();
     ofDisableAlphaBlending();
     ofSetColor(255, 255);
@@ -483,7 +534,7 @@ ofTexture& chaoticOscillatorTexture::computeBank(float phasor){
     shaderOscillator.begin();
     shaderOscillator.setUniform1f("phase", phasor);
     shaderOscillator.setUniform1f("time", ofGetElapsedTimef());
-    shaderOscillator.setUniform1f("createRandoms", isFirstPassAfterSetup ? 1 : 0);
+    shaderOscillator.setUniform1f("createRandoms", haveToRetrigerRandoms ? 1 : 0);
     if(indexs.get() != nullptr && indexs.get()->getWidth() == width && indexs.get()->getHeight() == height){
         shaderOscillator.setUniformTexture("indexs", *indexs.get(), indexsTextureLocation);
     }else{
@@ -508,7 +559,7 @@ ofTexture& chaoticOscillatorTexture::computeBank(float phasor){
     ofPopStyle();
     
     isFirstPassAfterSetup = false;
-
+    oldPhasor = phasor;
     return fbo.getTexture(0);
 }
 

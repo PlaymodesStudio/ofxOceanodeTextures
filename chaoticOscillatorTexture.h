@@ -20,10 +20,14 @@ public:
     void update(ofEventArgs &a) override;
     void draw(ofEventArgs &a) override;
     
+    void resetPhase() override{
+        newSeed = true;
+    }
+    
     void presetRecallBeforeSettingParameters(ofJson &json) override;
 private:
     bool isSetup;
-    ofTexture&  computeBank(float phasor);
+    ofTexture&  computeBank(float phasor, bool isZeroComputeBank = false);
     
     template<typename T>
     void changeMinMaxOfVecParameter(ofParameter<vector<T>> &param, T min = -1, T max = -1, bool scaleValue = false){
@@ -82,6 +86,8 @@ private:
     ofParameter<vector<int>>     quantization[2];
     ofParameter<vector<float>>   fader[2];
     ofParameter<vector<float>>   invert[2];
+    ofParameter<vector<float>>   length[2];
+    ofParameter<vector<int>>  seed[2];
     
     ofParameter<ofTexture*>      oscillatorOut;
     
@@ -113,6 +119,9 @@ private:
     ofBufferObject          oscillatorShaderBuffer;
     
     bool isFirstPassAfterSetup;
+    bool newSeed = false;
+    
+    float oldPhasor = 0;
     
     vector<pair<string, vector<float>>> changedOscillatorParameters;
     

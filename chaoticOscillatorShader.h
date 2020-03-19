@@ -27,6 +27,8 @@ int bipowPosition = 9;
 int quantizationPosition = 10;
 int faderPosition = 11;
 int invertPosition = 12;
+int lengthPosition = 13;
+int seedPosition = 14;
 
 layout(location = 0) out vec4 out_color;
 layout(location = 1) out vec4 out_randomInfo;
@@ -133,6 +135,27 @@ float customPow(float value, float pow){
     return (value * (k2+1) / k3);
 }
 
+float modulateRandom(float value, float powValue, float bipowValue, int quantizationValue){
+    //pow
+    if(powValue != 0)
+        value = customPow(value, powValue);
+    
+    //bipow
+    if(bipowValue != 0){
+        value = (value*2) -1;
+        value = customPow(value, bipowValue);
+        value = (value+1) * 0.5;
+    }
+    
+    value = clamp(value, 0.0, 1.0);
+    
+    //Quantization
+    if(quantizationValue < 255){
+        value = (1.0/(float(quantizationValue-1)))*float(floor(value*quantizationValue));
+    }
+    return value;
+}
+
 highp float rrrand(vec2 co, float time)
 {
     highp float a = 12.9898;
@@ -196,26 +219,54 @@ void main(){
     int quantizationParam = int(min(texelFetch(parameters, xVal + (dimensionsSum*quantizationPosition)).r, texelFetch(parameters, yVal + (dimensionsSum*quantizationPosition) + width).r));
     float faderParam = texelFetch(parameters, xVal + (dimensionsSum*faderPosition)).r * texelFetch(parameters, yVal + (dimensionsSum*faderPosition) + width).r;
     float invertParam = max(texelFetch(parameters, xVal + (dimensionsSum*invertPosition)).r, texelFetch(parameters, yVal + (dimensionsSum*invertPosition) + width).r);
+    float length = texelFetch(parameters, xVal + (dimensionsSum*lengthPosition)).r * texelFetch(parameters, yVal + (dimensionsSum*lengthPosition) + width).r;
+    int seed = int(texelFetch(parameters, xVal + (dimensionsSum*seedPosition)).r + texelFetch(parameters, yVal + (dimensionsSum*seedPosition) + width).r);
     
     //randon Info
     vec4 r_info = texelFetch(randomInfo, ivec2(xVal, yVal), 0);
-    float pastRandom = r_info.r;
-    float newRandom = r_info.g;
-    float oldRandom = r_info.b;
-    float futureRandom = r_info.a;
+    float pastRandomPreMod = r_info.r;
+    float newRandomPreMod = r_info.g;
+    float oldRandomPreMod = r_info.b;
+    float futureRandomPreMod = r_info.a;
     
-    float oldPhasor = texelFetch(oldPhaseInfo, ivec2(xVal, yVal), 0).r;
+    
+    float randomCountStep = 0.001;
+    float maxFloat = 3.402823466e+38;
+    vec4 phasor_info = texelFetch(oldPhaseInfo, ivec2(xVal, yVal), 0);
+    float oldPhasor = phasor_info.r;
+    float randomCount = phasor_info.g;
+    float accumulateCycles = phasor_info.b;
     
     
     //If we have changed size or initialized the texture we have to insert new items for pastRandom, newRandom, futureRandom and oldRandom, as we have no random data.
     if(createRandoms == 1){
-        pastRandom = hash13(vec3(xIndex, yIndex, time*2));
-        newRandom = hash13(vec3(xIndex, yIndex, time));
-        oldRandom = hash13(vec3(xIndex, yIndex, time*3));
-        futureRandom = hash13(vec3(xIndex, yIndex, time*4));
+        randomCount = 0;
+        accumulateCycles = 0;
+        if(seed > 0){
+            oldPhasor = -1;
+            pastRandomPreMod = 0;
+            newRandomPreMod = hash13(vec3(seed, seed, randomCount));
+            oldRandomPreMod = 0;
+            futureRandomPreMod = hash13(vec3(seed, seed, randomCount));
+        }else if(seed == 0){
+            pastRandomPreMod = hash13(vec3(xIndex, yIndex, time*2));
+            newRandomPreMod = hash13(vec3(xIndex, yIndex, time));
+            oldRandomPreMod = hash13(vec3(xIndex, yIndex, time*3));
+            futureRandomPreMod = hash13(vec3(xIndex, yIndex, time*4));
+        }else{
+            pastRandomPreMod = hash13(vec3(xIndex*seed, yIndex*seed, time*2));
+            newRandomPreMod = hash13(vec3(xIndex*seed, yIndex*seed, time));
+            oldRandomPreMod = hash13(vec3(xIndex*seed, yIndex*seed, time*3));
+            futureRandomPreMod = hash13(vec3(xIndex*seed, yIndex*seed, time*4));
+        }
     }
     
-    float linPhase = phase + index + phaseOffsetParam;
+    float pastRandom = modulateRandom(pastRandomPreMod, powParam, bipowParam, quantizationParam);
+    float newRandom = modulateRandom(newRandomPreMod, powParam, bipowParam, quantizationParam);
+    float oldRandom = modulateRandom(oldRandomPreMod, powParam, bipowParam, quantizationParam);
+    float futureRandom = modulateRandom(futureRandomPreMod, powParam, bipowParam, quantizationParam);
+    
+    float linPhase = phase + (index*length) + phaseOffsetParam;
     
     linPhase = mod(linPhase, 1);
     
@@ -251,57 +302,56 @@ void main(){
     
     float val = 0;
     if(linPhase < oldPhasor){
+        pastRandomPreMod = oldRandomPreMod;
+        oldRandomPreMod = newRandomPreMod;
+        newRandomPreMod = futureRandomPreMod;
+        
         pastRandom = oldRandom;
         oldRandom = newRandom;
         newRandom = futureRandom;
-//        if(customDiscreteDistribution.size() > 1){
-//            std::discrete_distribution<float> disdist(customDiscreteDistribution.begin(), customDiscreteDistribution.end());
-//            futureRandom = disdist(mt)/(customDiscreteDistribution.size()-1);
-//        }else{
-            futureRandom = hash13(vec3(xIndex, yIndex, time));
-//        }
-        //pow
-        if(powParam != 0)
-            futureRandom = customPow(futureRandom, powParam);
         
-        //bipow
-        if(bipowParam != 0){
-            futureRandom = (futureRandom*2) -1;
-            futureRandom = customPow(futureRandom, bipowParam);
-            futureRandom = (futureRandom+1) * 0.5;
+        double indexPosShifted = (1-mod(index+phaseOffsetParam, 1))*length;
+        if(indexPosShifted == floor(indexPosShifted)) indexPosShifted-=1;
+        if(accumulateCycles >= floor(indexPosShifted)){
+            if(seed == 0){
+                futureRandomPreMod = hash13(vec3(xIndex, yIndex, time));
+            }else if(seed < 0){
+                futureRandomPreMod = hash13(vec3(xIndex*seed, yIndex*seed, randomCount));
+            }else{
+                futureRandomPreMod = hash13(vec3(seed, seed, randomCount));
+            }
+            
+            if(maxFloat - randomCount < randomCountStep){
+                randomCount = 0;
+            }else{
+                randomCount++;
+            }
+            futureRandom = modulateRandom(futureRandomPreMod, powParam, bipowParam, quantizationParam);
+        }
+        else{
+            accumulateCycles+=1;
         }
         
-        futureRandom = clamp(futureRandom, 0.0, 1.0);
-        
-        //Quantization
-        if(quantizationParam < 255){
-            futureRandom = (1.0/(float(quantizationParam-1)))*float(floor(futureRandom*quantizationParam));
-        }
-        
-        
-        val = oldRandom;
     }
-    else{
-        //rand2
-        float lin_interp = oldRandom*(1-linPhase) + newRandom*linPhase;
-        
-        //rand3
-        float x = linPhase;
-        if(roundnessParam > 0.5){
-            x = (x*2) - 1;
-            x = customPow(x, (roundnessParam-0.5) * 2);
-            x = (x + 1) / 2.0;
-        }
-        float L0 = (newRandom - pastRandom) * 0.5;
-        float L1 = L0 + (oldRandom-newRandom);
-        float L2 = L1 + ((futureRandom - oldRandom)*0.5) + (oldRandom - newRandom);
-        float curve_interp = oldRandom + (x * (L0 + (x * ((x * L2) - (L1 + L2)))));
-        
-        if(roundnessParam < 0.5){
-            val = (1-(roundnessParam*2)) * lin_interp + (roundnessParam*2)*curve_interp;
-        }else{
-            val = curve_interp;
-        }
+    //rand2
+    float lin_interp = oldRandom*(1-linPhase) + newRandom*linPhase;
+    
+    //rand3
+    float x = linPhase;
+    if(roundnessParam > 0.5){
+        x = (x*2) - 1;
+        x = customPow(x, (roundnessParam-0.5) * 2);
+        x = (x + 1) / 2.0;
+    }
+    float L0 = (newRandom - pastRandom) * 0.5;
+    float L1 = L0 + (oldRandom-newRandom);
+    float L2 = L1 + ((futureRandom - oldRandom)*0.5) + (oldRandom - newRandom);
+    float curve_interp = oldRandom + (x * (L0 + (x * ((x * L2) - (L1 + L2)))));
+    
+    if(roundnessParam < 0.5){
+        val = (1-(roundnessParam*2)) * lin_interp + (roundnessParam*2)*curve_interp;
+    }else{
+        val = curve_interp;
     }
     
     //random Add
@@ -331,7 +381,7 @@ void main(){
 //    out_randomInfo = vec4(val, val, val, 1.0);
 //    out_oldPhase = vec4(val, val, val, 1.0);
     
-    out_randomInfo = vec4(pastRandom, newRandom, oldRandom, futureRandom);
-    out_oldPhase = vec4(linPhase, 0.0, 0.0, 1.0);
+    out_randomInfo = vec4(pastRandomPreMod, newRandomPreMod, oldRandomPreMod, futureRandomPreMod);
+    out_oldPhase = vec4(linPhase, randomCount, accumulateCycles, 1.0);
 }
 )"
