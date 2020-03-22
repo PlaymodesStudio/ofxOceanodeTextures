@@ -195,12 +195,13 @@ void main(){
         linPhase = map(linPhase, 0.5-pulseWidthParam, 0.5+pulseWidthParam, 0, 1, true);
         if(skewParam < 0 && linPhase == 1) linPhase = 0;
     }else if (pulseWidthParam == 1){
-        linPhase = 0.5;
+        linPhase = map(skewParam, -1, 1, 1, 0);
     }else{
-        if(linPhase < 0.5){
-            linPhase = map(linPhase, 0, 1-pulseWidthParam, 0, 0.5, true);
+        float midpoint = map(skewParam, -1, 1, 1, 0);
+        if(linPhase < midpoint){
+            linPhase = map(linPhase, 0, map(1-pulseWidthParam, 0, 0.5, 0, midpoint), 0, midpoint, true);
         }else{
-            linPhase = map(linPhase, pulseWidthParam, 1, 0.5, 1, true);
+            linPhase = map(linPhase, map(pulseWidthParam, 0.5, 1, midpoint, 1), 1, midpoint, 1, true);
         }
     }
     
@@ -208,15 +209,15 @@ void main(){
     
     if(skewParam < 0){
         if(linPhase < 0.5+((abs(skewParam))*0.5))
-            skewedLinPhase = map(linPhase, 0.0, 0.5+((abs(skewParam))*0.5), 0.0, 0.5);
+            skewedLinPhase = map(linPhase, 0.0, 0.5+((abs(skewParam))*0.5), 0.0, 0.5, true);
         else
-            skewedLinPhase = map(linPhase, 0.5+((abs(skewParam))*0.5), 1, 0.5, 1);
+            skewedLinPhase = map(linPhase, 0.5+((abs(skewParam))*0.5), 1, 0.5, 1, true);
     }
     else if(skewParam > 0){
         if(linPhase > ((1-abs(skewParam))*0.5))
-            skewedLinPhase = map(linPhase, (1-abs(skewParam))*0.5, 1, 0.5, 1);
+            skewedLinPhase = map(linPhase, (1-abs(skewParam))*0.5, 1, 0.5, 1, true);
         else
-            skewedLinPhase = map(linPhase, 0, ((1-abs(skewParam))*0.5), 0.0, 0.5);
+            skewedLinPhase = map(linPhase, 0, ((1-abs(skewParam))*0.5), 0.0, 0.5, true);
     }
     
     linPhase = skewedLinPhase;
