@@ -31,9 +31,9 @@ chaoticOscillatorTexture::~chaoticOscillatorTexture(){
 void chaoticOscillatorTexture::setup(){
     resources = &sharedResources::getInstance();
     
-    addParameterToGroupAndInfo(phasorIn.set("Phasor In", 0, 0, 1)).isSavePreset = false;
-    addParameterToGroupAndInfo(widthVec.set("Tex Width", {100}, {1}, {5120}));
-    addParameterToGroupAndInfo(heightVec.set("Tex Height", {100}, {1}, {2880}));
+    addParameter(phasorIn.set("Phasor In", 0, 0, 1), ofxOceanodeParameterFlags_DisableSavePreset);
+    addParameter(widthVec.set("Tex Width", {100}, {1}, {5120}));
+    addParameter(heightVec.set("Tex Height", {100}, {1}, {2880}));
     width = 100;
     height = 100;
     
@@ -41,16 +41,16 @@ void chaoticOscillatorTexture::setup(){
     previousHeight = height;
     
     auto setAndBindXYParamsVecFloat = [this](ofParameter<vector<float>> *p, string name, float val, float min, float max) -> void{
-        parameters->add(p[0].set(name + " X", vector<float>(1, val), vector<float>(1, min), vector<float>(1, max)));
-        parameters->add(p[1].set(name + " Y", vector<float>(1, val), vector<float>(1, min), vector<float>(1, max)));
+        addParameter(p[0].set(name + " X", vector<float>(1, val), vector<float>(1, min), vector<float>(1, max)));
+        addParameter(p[1].set(name + " Y", vector<float>(1, val), vector<float>(1, min), vector<float>(1, max)));
     };
     
     auto setAndBindXYParamsVecInt = [this](ofParameter<vector<int>> *p, string name, int val, int min, int max) -> void{
-        parameters->add(p[0].set(name + " X", vector<int>(1, val), vector<int>(1, min), vector<int>(1, max)));
-        parameters->add(p[1].set(name + " Y", vector<int>(1, val), vector<int>(1, min), vector<int>(1, max)));
+        addParameter(p[0].set(name + " X", vector<int>(1, val), vector<int>(1, min), vector<int>(1, max)));
+        addParameter(p[1].set(name + " Y", vector<int>(1, val), vector<int>(1, min), vector<int>(1, max)));
     };
     
-    parameters->add(indexs.set("Indexs", nullptr, nullptr, nullptr));
+    addParameter(indexs.set("Indexs", nullptr, nullptr, nullptr));
     
     setAndBindXYParamsVecFloat(phaseOffset, "Phase Offset", 0, 0, 1);
     setAndBindXYParamsVecFloat(length, "Length", 1, 1, 100);
@@ -62,14 +62,14 @@ void chaoticOscillatorTexture::setup(){
     setAndBindXYParamsVecFloat(pow, "Pow", 0, -1, 1);
     setAndBindXYParamsVecFloat(bipow, "Bi Pow", 0, -1, 1);
     setAndBindXYParamsVecInt(quantization, "Quantize", 255, 2, 255);
-    setAndBindXYParamsVecInt(seed, "Seed", 0, INT_MIN, INT_MAX);
+    setAndBindXYParamsVecInt(seed, "Seed", 0, (INT_MIN+1)/2, (INT_MAX-1)/2);
     setAndBindXYParamsVecFloat(randomAddition, "Rnd Add", 0, -1, 1);
     setAndBindXYParamsVecFloat(fader, "Fader", 1, 0, 1);
     setAndBindXYParamsVecFloat(invert, "Invert", 0, 0, 1);
     
     setParametersInfoMaps();
     
-    parameters->add(oscillatorOut.set("Oscillator Out", nullptr, nullptr, nullptr));
+    addParameter(oscillatorOut.set("Oscillator Out", nullptr, nullptr, nullptr));
     
     
     //Listeners
@@ -519,7 +519,6 @@ ofTexture& chaoticOscillatorTexture::computeBank(float phasor, bool isZeroComput
         if(newSeed && !isZeroComputeBank){
             if(phasor < oldPhasor){
                 computeBank(0, true);
-//                haveToRetrigerRandoms = true;
                 newSeed = false;
             }
         }

@@ -14,20 +14,31 @@
 template<typename T>
 class multiDynamicParameters{
 public:
-    multiDynamicParameters(){};
-    ~multiDynamicParameters(){};
-    
-    void setup(shared_ptr<ofParameterGroup> _group, ofParameter<T> _baseParameter){
-        group = _group;
+    multiDynamicParameters(ofParameterGroup& _group, ofParameter<T> _baseParameter): group(_group){
         baseParameter.set(_baseParameter.getName(), _baseParameter.get());
         parameterVector[0] = baseParameter;
         parameterVector[0].setName(baseParameter.getName() + " 0");
-        group->add(parameterVector[0]);
+        auto oceaParam = make_shared<ofxOceanodeParameter<T>>();
+        oceaParam->bindParameter(parameterVector[0]);
+        group.add(*oceaParam);
         ifNewCreatedChecker[0] = false;
         listeners[0] = parameterVector[0].newListener([&](T &val){
             inputListener(0);
         });
-    }
+    };
+    ~multiDynamicParameters(){};
+    
+//    void setup(shared_ptr<ofParameterGroup> _group, ofParameter<T> _baseParameter){
+//        group = _group;
+//        baseParameter.set(_baseParameter.getName(), _baseParameter.get());
+//        parameterVector[0] = baseParameter;
+//        parameterVector[0].setName(baseParameter.getName() + " 0");
+//        group->add(parameterVector[0]);
+//        ifNewCreatedChecker[0] = false;
+//        listeners[0] = parameterVector[0].newListener([&](T &val){
+//            inputListener(0);
+//        });
+//    }
     
     map<int, ofParameter<T>> &getParameters(){return parameterVector;};
     
@@ -45,7 +56,7 @@ public:
             for(auto param : parameterVector){
                 auto result = std::find(indexs.begin(), indexs.end(), param.first);
                 if(result == indexs.end()){
-                    group->remove(param.second.getEscapedName());
+                    group.remove(param.second.getEscapedName());
                     listeners.erase(param.first);
                     ifNewCreatedChecker.erase(param.first);
                 }
@@ -58,7 +69,9 @@ public:
                     parameterVector[i] = ofParameter<T>();
                     parameterVector[i].set(baseParameter.getName() + " " + ofToString(i), baseParameter);
                     lastValueVector[i] = baseParameter;
-                    group->add(parameterVector[i]);
+                    auto oceaParam = make_shared<ofxOceanodeParameter<T>>();
+                    oceaParam->bindParameter(parameterVector[i]);
+                    group.add(*oceaParam);
                     listeners[i] = parameterVector[i].newListener([&, i](T &val){
                         inputListener(i);
                     });
@@ -83,7 +96,9 @@ private:
             parameterVector[newCreatedIndex] = ofParameter<T>();
             parameterVector[newCreatedIndex].set(baseParameter.getName() + " " + ofToString(newCreatedIndex), baseParameter);
             ifNewCreatedChecker[newCreatedIndex] = false;
-            group->add(parameterVector[newCreatedIndex]);
+            auto oceaParam = make_shared<ofxOceanodeParameter<T>>();
+            oceaParam->bindParameter(parameterVector[newCreatedIndex]);
+            group.add(*oceaParam);
             listeners[newCreatedIndex] = parameterVector[newCreatedIndex].newListener([&, newCreatedIndex](T &val){
                 inputListener(newCreatedIndex);
             });
@@ -97,7 +112,7 @@ private:
                     removeIndex = param.first;
                 }
             }
-            group->remove(parameterVector[removeIndex].getEscapedName());
+            group.remove(parameterVector[removeIndex].getEscapedName());
             listeners.erase(removeIndex);
             parameterVector.erase(removeIndex);
             ifNewCreatedChecker.erase(removeIndex);
@@ -109,7 +124,7 @@ private:
         lastValueVector[index] = parameterVector[index].get();
     }
     
-    shared_ptr<ofParameterGroup> group;
+    ofParameterGroup& group;
     ofParameter<T> baseParameter;
     map<int, ofParameter<T>> parameterVector;
     map<int, T> lastValueVector;
@@ -124,7 +139,7 @@ public:
     ~waveScope();
     
     virtual void presetSave(ofJson &json) override{
-        texturesInput.saveParameterArrange(json);
+        texturesInput->saveParameterArrange(json);
     };
     
 //    virtual void presetRecallBeforeSettingParameters(ofJson &json) override{
@@ -132,7 +147,7 @@ public:
 //    };
     
     void loadBeforeConnections(ofJson &json) override{
-        texturesInput.loadParameterArrange(json);
+        texturesInput->loadParameterArrange(json);
     }
 
 private:
@@ -140,7 +155,7 @@ private:
     
     ofEventListener listener;
     
-    multiDynamicParameters<ofTexture*>  texturesInput;
+    std::unique_ptr<multiDynamicParameters<ofTexture*>>  texturesInput;
     
     int contentWidthOffset;
     int mousePressInititalX;

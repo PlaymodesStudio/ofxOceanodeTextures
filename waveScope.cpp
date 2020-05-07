@@ -10,11 +10,7 @@
 #include "sharedInfo.h"
 
 waveScope::waveScope() : ofxOceanodeNodeModelExternalWindow("Texture Scope"){
-    
-    texturesInput.setup(parameters, ofParameter<ofTexture*>("Group In", nullptr));
-    listener = texturesInput.parameterGroupChanged.newListener([&](){
-        ofNotifyEvent(parameterGroupChanged);
-    });
+    texturesInput = make_unique<multiDynamicParameters<ofTexture*>>(getParameterGroup(), ofParameter<ofTexture*>("Group In", nullptr));
     color = ofColor::lightGray;
     storedShape = sharedInfo::getInstance().getRect("ScopeWindowRect");
 }
@@ -47,7 +43,7 @@ void waveScope::drawInExternalWindow(ofEventArgs &e){
     
     
     int numActiveGroups = 0;
-    for(auto texture : texturesInput.getParameters()){
+    for(auto texture : texturesInput->getParameters()){
         if(texture.second != nullptr){
             numActiveGroups++;
         }
@@ -58,7 +54,7 @@ void waveScope::drawInExternalWindow(ofEventArgs &e){
         int oscDrawIndex = 0;
         
         //Draw the groups
-        for(auto texture : texturesInput.getParameters()){
+        for(auto texture : texturesInput->getParameters()){
             if(texture.second != nullptr){
                 int topPosition = (elementHeight * oscDrawIndex);
                 texture.second.get()->draw(0,topPosition, ofGetWidth(), elementHeight);

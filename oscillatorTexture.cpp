@@ -30,9 +30,9 @@ oscillatorTexture::~oscillatorTexture(){
 void oscillatorTexture::setup(){
     resources = &sharedResources::getInstance();
     
-    addParameterToGroupAndInfo(phasorIn.set("Phasor In", 0, 0, 1)).isSavePreset = false;
-    addParameterToGroupAndInfo(widthVec.set("Tex Width", {100}, {1}, {5120}));
-    addParameterToGroupAndInfo(heightVec.set("Tex Height", {100}, {1}, {2880}));
+    addParameter(phasorIn.set("Phasor In", 0, 0, 1), ofxOceanodeParameterFlags_DisableSavePreset);
+    addParameter(widthVec.set("Tex Width", {100}, {1}, {5120}));
+    addParameter(heightVec.set("Tex Height", {100}, {1}, {2880}));
     width = 100;
     height = 100;
     
@@ -40,16 +40,16 @@ void oscillatorTexture::setup(){
     previousHeight = height;
     
     auto setAndBindXYParamsVecFloat = [this](ofParameter<vector<float>> *p, string name, float val, float min, float max) -> void{
-        parameters->add(p[0].set(name + " X", vector<float>(1, val), vector<float>(1, min), vector<float>(1, max)));
-        parameters->add(p[1].set(name + " Y", vector<float>(1, val), vector<float>(1, min), vector<float>(1, max)));
+        addParameter(p[0].set(name + " X", vector<float>(1, val), vector<float>(1, min), vector<float>(1, max)));
+        addParameter(p[1].set(name + " Y", vector<float>(1, val), vector<float>(1, min), vector<float>(1, max)));
     };
     
     auto setAndBindXYParamsVecInt = [this](ofParameter<vector<int>> *p, string name, int val, int min, int max) -> void{
-        parameters->add(p[0].set(name + " X", vector<int>(1, val), vector<int>(1, min), vector<int>(1, max)));
-        parameters->add(p[1].set(name + " Y", vector<int>(1, val), vector<int>(1, min), vector<int>(1, max)));
+        addParameter(p[0].set(name + " X", vector<int>(1, val), vector<int>(1, min), vector<int>(1, max)));
+        addParameter(p[1].set(name + " Y", vector<int>(1, val), vector<int>(1, min), vector<int>(1, max)));
     };
     
-    parameters->add(indexs.set("Indexs", nullptr, nullptr, nullptr));
+    addParameter(indexs.set("Indexs", nullptr, nullptr, nullptr));
     
     setAndBindXYParamsVecFloat(phaseOffset, "Phase Offset", 0, 0, 1);
     setAndBindXYParamsVecFloat(roundness, "Roundness", .5, 0, 1);
@@ -66,7 +66,7 @@ void oscillatorTexture::setup(){
     
     setParametersInfoMaps();
     
-    parameters->add(oscillatorOut.set("Oscillator Out", nullptr, nullptr, nullptr));
+    addParameter(oscillatorOut.set("Oscillator Out", nullptr, nullptr, nullptr));
     
     
     //Listeners
