@@ -265,7 +265,7 @@ void chaoticOscillatorTexture::update(ofEventArgs &a){
         settings.textureTarget = GL_TEXTURE_2D;
         
         fbo.allocate(settings);
-        fbo.activateAllDrawBuffers();
+        //fbo.activateAllDrawBuffers();
         fbo.begin();
         ofClear(0, 0, 0, 255);
         fbo.end();
@@ -307,7 +307,7 @@ void chaoticOscillatorTexture::update(ofEventArgs &a){
 }
 
 void chaoticOscillatorTexture::draw(ofEventArgs &a){
-    oscillatorOut = &computeBank(phasorIn);
+    if(isSetup) oscillatorOut = &computeBank(phasorIn);
 }
 
 void chaoticOscillatorTexture::setParametersInfoMaps(){
@@ -556,6 +556,11 @@ ofTexture& chaoticOscillatorTexture::computeBank(float phasor, bool isZeroComput
     oldPhaseFbo.end();
     
     ofPopStyle();
+    
+    GLenum err;
+    while ((err = glGetError()) != GL_NO_ERROR) {
+        ofLog() << "OpenGL error: " << err;
+    }
     
     isFirstPassAfterSetup = false;
     oldPhasor = phasor;
