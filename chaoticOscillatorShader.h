@@ -232,6 +232,8 @@ void main(){
     
     float randomCountStep = 0.001;
     float maxFloat = 3.402823466e+38;
+
+
     vec4 phasor_info = texelFetch(oldPhaseInfo, ivec2(xVal, yVal), 0);
     float oldPhasor = phasor_info.r;
     float randomCount = phasor_info.g;
@@ -249,10 +251,10 @@ void main(){
             oldRandomPreMod = 0;
             futureRandomPreMod = hash13(vec3(seed, seed, randomCount));
         }else if(seed == 0){
-            pastRandomPreMod = hash13(vec3(xIndex, yIndex, time*2));
-            newRandomPreMod = hash13(vec3(xIndex, yIndex, time));
-            oldRandomPreMod = hash13(vec3(xIndex, yIndex, time*3));
-            futureRandomPreMod = hash13(vec3(xIndex, yIndex, time*4));
+            pastRandomPreMod = hash13(vec3(index, index, time*2));
+            newRandomPreMod = hash13(vec3(index, index, time));
+            oldRandomPreMod = hash13(vec3(index, index, time*3));
+            futureRandomPreMod = hash13(vec3(index, index, time*4));
         }else{
             pastRandomPreMod = hash13(vec3(xIndex*seed, yIndex*seed, time*2));
             newRandomPreMod = hash13(vec3(xIndex*seed, yIndex*seed, time));
@@ -315,17 +317,17 @@ void main(){
         if(indexPosShifted == floor(indexPosShifted)) indexPosShifted-=1;
         if(accumulateCycles >= floor(indexPosShifted)){
             if(seed == 0){
-                futureRandomPreMod = hash13(vec3(xIndex, yIndex, time));
+                futureRandomPreMod = hash13(vec3(index, index, time));
             }else if(seed < 0){
                 futureRandomPreMod = hash13(vec3(xIndex*seed, yIndex*seed, randomCount));
             }else{
                 futureRandomPreMod = hash13(vec3(seed, seed, randomCount));
             }
             
-            if(maxFloat - randomCount < randomCountStep){
+            if(maxFloat - randomCount < 1){ //randomCountStep){
                 randomCount = 0;
             }else{
-                randomCount++;
+                randomCount = randomCount + 1;//randomCountStep;
             }
             futureRandom = modulateRandom(futureRandomPreMod, powParam, bipowParam, quantizationParam);
         }
@@ -378,11 +380,13 @@ void main(){
     
 //    val = oldPhasor;
     
-    out_color = vec4(val, val, val, 1.0);
+    //out_color = vec4(randomCount /255.0f, mod(randomCount, 255.0f)/255.0f, mod(randomCount, 255.0f)/255.0f, 1.0);
+    out_color = vec4(val, val , val, 1.0f);
 //    out_randomInfo = vec4(val, val, val, 1.0);
 //    out_oldPhase = vec4(val, val, val, 1.0);
     
     out_randomInfo = vec4(pastRandomPreMod, newRandomPreMod, oldRandomPreMod, futureRandomPreMod);
+    //out_randomInfo = vec4(mod(randomCount, 255.0f)/255.0f, newRandomPreMod, oldRandomPreMod, futureRandomPreMod);
     out_oldPhase = vec4(linPhase, randomCount, accumulateCycles, 1.0);
 }
 )"
