@@ -85,6 +85,13 @@ void chaoticOscillatorTexture::setup(){
         onOscillatorShaderParameterChanged(heightVec, vf);
     }));
     
+    listeners.push(indexs.newListener([this](ofTexture* &tex){
+        if(tex != nullptr){
+            if(width != tex->getWidth()) widthVec = {(int)tex->getWidth()};
+            if(height != tex->getHeight()) heightVec = {(int)tex->getHeight()};
+        }
+    }));
+    
     listeners.push(width.newListener(this, &chaoticOscillatorTexture::sizeChangedListener));
     listeners.push(height.newListener(this, &chaoticOscillatorTexture::sizeChangedListener));
     

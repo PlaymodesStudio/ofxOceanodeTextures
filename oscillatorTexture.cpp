@@ -82,6 +82,13 @@ void oscillatorTexture::setup(){
         onOscillatorShaderParameterChanged(heightVec, vf);
     }));
     
+    listeners.push(indexs.newListener([this](ofTexture* &tex){
+        if(tex != nullptr){
+            if(width != tex->getWidth()) widthVec = {(int)tex->getWidth()};
+            if(height != tex->getHeight()) heightVec = {(int)tex->getHeight()};
+        }
+    }));
+    
     listeners.push(width.newListener(this, &oscillatorTexture::sizeChangedListener));
     listeners.push(height.newListener(this, &oscillatorTexture::sizeChangedListener));
     

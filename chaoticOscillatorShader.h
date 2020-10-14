@@ -200,6 +200,11 @@ void main(){
     int widthItem = int(texelFetch(parameters, yVal + (dimensionsSum*sizePosition)).r);
     int heightItem = int(texelFetch(parameters, xVal + (dimensionsSum*sizePosition) + height).r);
     
+    if(xVal >= widthItem || yVal >= heightItem){
+        out_color = vec4(0, 0, 0, 1);
+        return;
+    }
+
     float index = texelFetch(indexs, ivec2(xVal, yVal), 0).r;
     
     //Compute parameters of current coord;
