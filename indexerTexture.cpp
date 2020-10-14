@@ -30,8 +30,8 @@ indexerTexture::~indexerTexture(){
 void indexerTexture::setup(){
     resources = &sharedResources::getInstance();
     
-    addParameter(widthVec.set("Size X", {100}, {1}, {5120}));
-    addParameter(heightVec.set("Size Y", {100}, {1}, {2880}));
+    addParameter(widthVec.set("Size.X", {100}, {1}, {5120}));
+    addParameter(heightVec.set("Size.Y", {100}, {1}, {2880}));
     width = 100;
     height = 100;
     
@@ -39,25 +39,25 @@ void indexerTexture::setup(){
     previousHeight = height;
     
     auto setAndBindXYParamsVecFloat = [this](ofParameter<vector<float>> *p, string name, float val, float min, float max) -> void{
-        addParameter(p[0].set(name + "X", vector<float>(1, val), vector<float>(1, min), vector<float>(1, max)));
-        addParameter(p[1].set(name + "Y", vector<float>(1, val), vector<float>(1, min), vector<float>(1, max)));
+        addParameter(p[0].set(name + ".X", vector<float>(1, val), vector<float>(1, min), vector<float>(1, max)));
+        addParameter(p[1].set(name + ".Y", vector<float>(1, val), vector<float>(1, min), vector<float>(1, max)));
     };
     
     auto setAndBindXYParamsVecInt = [this](ofParameter<vector<int>> *p, string name, int val, int min, int max) -> void{
-        addParameter(p[0].set(name + "X", vector<int>(1, val), vector<int>(1, min), vector<int>(1, max)));
-        addParameter(p[1].set(name + "Y", vector<int>(1, val), vector<int>(1, min), vector<int>(1, max)));
+        addParameter(p[0].set(name + ".X", vector<int>(1, val), vector<int>(1, min), vector<int>(1, max)));
+        addParameter(p[1].set(name + ".Y", vector<int>(1, val), vector<int>(1, min), vector<int>(1, max)));
     };
     
     
     addParameter(indexNumWaves[0].set("NumW.X", vector<float>(1, 1), vector<float>(1, 0), vector<float>(1, width)));
     addParameter(indexNumWaves[1].set("NumW.Y", vector<float>(1, 1), vector<float>(1, 0), vector<float>(1, height)));
     
-    setAndBindXYParamsVecFloat(indexInvert, "Inv.", 0, 0, 1);
+    setAndBindXYParamsVecFloat(indexInvert, "Inv", 0, 0, 1);
     
     addParameter(indexSymmetry[0].set("Sym.X", vector<int>(1, 0), vector<int>(1, 0), vector<int>(1, width/2)));
     addParameter(indexSymmetry[1].set("Sym.Y", vector<int>(1, 0), vector<int>(1, 0), vector<int>(1, height/2)));
     
-    setAndBindXYParamsVecFloat(indexRandom, "Rndm.", 0, 0, 1);
+    setAndBindXYParamsVecFloat(indexRandom, "Rndm", 0, 0, 1);
     
     addParameter(indexOffset[0].set("Offs.X", vector<float>(1, 0), vector<float>(1, -width/2), vector<float>(1, width/2)));
     addParameter(indexOffset[1].set("Offs.Y", vector<float>(1, 0), vector<float>(1, -height/2), vector<float>(1, height/2)));
@@ -65,7 +65,7 @@ void indexerTexture::setup(){
     addParameter(indexQuantization[0].set("Quant.X", vector<int>(1, width), vector<int>(1, 1), vector<int>(1, width)));
     addParameter(indexQuantization[1].set("Quant.Y", vector<int>(1, height), vector<int>(1, 1), vector<int>(1, height)));
     
-    setAndBindXYParamsVecFloat(indexCombination, "Comb.", 0, 0, 1);
+    setAndBindXYParamsVecFloat(indexCombination, "Comb", 0, 0, 1);
     
     addParameter(indexModulo[0].set("Mod.X", vector<int>(1, width), vector<int>(1, 1), vector<int>(1, width)));
     addParameter(indexModulo[1].set("Mod.Y", vector<int>(1, height), vector<int>(1, 1), vector<int>(1, height)));

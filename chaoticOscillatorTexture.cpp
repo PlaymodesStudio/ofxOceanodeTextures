@@ -10,7 +10,7 @@
 
 #define STRINGIFY(x) #x
 
-chaoticOscillatorTexture::chaoticOscillatorTexture() : ofxOceanodeNodeModel("Random Osc.Texture"){
+chaoticOscillatorTexture::chaoticOscillatorTexture() : ofxOceanodeNodeModel("Random Osc Texture"){
     isSetup = false;
     isFirstPassAfterSetup = true;
     sizeChanged = false;
@@ -41,31 +41,31 @@ void chaoticOscillatorTexture::setup(){
     previousHeight = height;
     
     auto setAndBindXYParamsVecFloat = [this](ofParameter<vector<float>> *p, string name, float val, float min, float max) -> void{
-        addParameter(p[0].set(name + "X", vector<float>(1, val), vector<float>(1, min), vector<float>(1, max)));
-        addParameter(p[1].set(name + "Y", vector<float>(1, val), vector<float>(1, min), vector<float>(1, max)));
+        addParameter(p[0].set(name + ".X", vector<float>(1, val), vector<float>(1, min), vector<float>(1, max)));
+        addParameter(p[1].set(name + ".Y", vector<float>(1, val), vector<float>(1, min), vector<float>(1, max)));
     };
     
     auto setAndBindXYParamsVecInt = [this](ofParameter<vector<int>> *p, string name, int val, int min, int max) -> void{
-        addParameter(p[0].set(name + "X", vector<int>(1, val), vector<int>(1, min), vector<int>(1, max)));
-        addParameter(p[1].set(name + "Y", vector<int>(1, val), vector<int>(1, min), vector<int>(1, max)));
+        addParameter(p[0].set(name + ".X", vector<int>(1, val), vector<int>(1, min), vector<int>(1, max)));
+        addParameter(p[1].set(name + ".Y", vector<int>(1, val), vector<int>(1, min), vector<int>(1, max)));
     };
     
     addParameter(indexs.set("Indexs", nullptr, nullptr, nullptr));
     
-    setAndBindXYParamsVecFloat(phaseOffset, "Ph Off.", 0, 0, 1);
-    setAndBindXYParamsVecFloat(length, "Length.", 1, 1, 100);
-    setAndBindXYParamsVecFloat(roundness, "Round.", .5, 0, 1);
-    setAndBindXYParamsVecFloat(pulseWidth, "PulseW.", 0.5, 0, 1);
-    setAndBindXYParamsVecFloat(skew, "Skew.", 0, -1, 1);
-    setAndBindXYParamsVecFloat(scale, "Scale.", 1, 0, 2);
-    setAndBindXYParamsVecFloat(offset, "Offset.", 0, -1, 1);
-    setAndBindXYParamsVecFloat(pow, "Pow.", 0, -1, 1);
-    setAndBindXYParamsVecFloat(bipow, "BiPow.", 0, -1, 1);
-    setAndBindXYParamsVecInt(quantization, "Quant.", 255, 2, 255);
-    setAndBindXYParamsVecInt(seed, "Seed.", 0, (INT_MIN+1)/2, (INT_MAX-1)/2);
-    setAndBindXYParamsVecFloat(randomAddition, "RndAdd.", 0, -1, 1);
-    setAndBindXYParamsVecFloat(fader, "Fader.", 1, 0, 1);
-    setAndBindXYParamsVecFloat(invert, "Inv.", 0, 0, 1);
+    setAndBindXYParamsVecFloat(phaseOffset, "Ph Off", 0, 0, 1);
+    setAndBindXYParamsVecFloat(length, "Length", 1, 1, 100);
+    setAndBindXYParamsVecFloat(roundness, "Round", .5, 0, 1);
+    setAndBindXYParamsVecFloat(pulseWidth, "PulseW", 0.5, 0, 1);
+    setAndBindXYParamsVecFloat(skew, "Skew", 0, -1, 1);
+    setAndBindXYParamsVecFloat(scale, "Scale", 1, 0, 2);
+    setAndBindXYParamsVecFloat(offset, "Offset", 0, -1, 1);
+    setAndBindXYParamsVecFloat(pow, "Pow", 0, -1, 1);
+    setAndBindXYParamsVecFloat(bipow, "BiPow", 0, -1, 1);
+    setAndBindXYParamsVecInt(quantization, "Quant", 255, 2, 255);
+    setAndBindXYParamsVecInt(seed, "Seed", 0, (INT_MIN+1)/2, (INT_MAX-1)/2);
+    setAndBindXYParamsVecFloat(randomAddition, "RndAdd", 0, -1, 1);
+    setAndBindXYParamsVecFloat(fader, "Fader", 1, 0, 1);
+    setAndBindXYParamsVecFloat(invert, "Inv", 0, 0, 1);
     
     setParametersInfoMaps();
     
