@@ -49,7 +49,7 @@ private:
     
     void setShaderParameterDataToTBO();
     
-    vector<float> newRandomValuesVector();
+    vector<float> newRandomValuesVector(bool x = true, bool y = true);
     
     void loadShader(bool &b);
     
@@ -112,6 +112,9 @@ private:
     vector<pair<string, vector<float>>> changedParameters;
     
     bool sizeChanged;
+    
+    vector<float> randomValuesXStore;
+    vector<float> randomValuesYStore;
 };
 
 #endif /* indexerTexture_h */

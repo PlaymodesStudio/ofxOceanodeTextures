@@ -255,12 +255,14 @@ void indexerTexture::update(ofEventArgs &a){
         
         if(parameter.first == indexRandom[0].getName() || parameter.first == indexRandom[1].getName()){
             if(vf.size() == size){
-                if(std::accumulate(vf.begin(), vf.end(), 0) == 0){
-                    indexRandomValuesBuffer.setData(newRandomValuesVector(), GL_STREAM_DRAW);
+                if(std::accumulate(vf.begin(), vf.end(), 0.0f) == 0){
+                    bool isX = parameter.first == indexRandom[0].getName();
+                    indexRandomValuesBuffer.setData(newRandomValuesVector(isX, !isX), GL_STREAM_DRAW);
                 }
             }else{
                 if(vf[0] == 0){
-                    indexRandomValuesBuffer.setData(newRandomValuesVector(), GL_STREAM_DRAW);
+                    bool isX = parameter.first == indexRandom[0].getName();
+                    indexRandomValuesBuffer.setData(newRandomValuesVector(isX, !isX), GL_STREAM_DRAW);
                 }
             }
         }
@@ -451,19 +453,26 @@ ofTexture& indexerTexture::computeBank(){
     return fbo.getTexture();
 }
 
-vector<float> indexerTexture::newRandomValuesVector(){
-    vector<float> randomValuesVecX(width, 0);
-    vector<float> randomValuesVecY(height, 0);
-    iota(randomValuesVecX.begin(), randomValuesVecX.end(), 0);
-    iota(randomValuesVecY.begin(), randomValuesVecY.end(), 0);
-    
+vector<float> indexerTexture::newRandomValuesVector(bool x, bool y){
     mt19937 g(static_cast<uint32_t>(time(0)));
-    shuffle(randomValuesVecX.begin(), randomValuesVecX.end(), g);
-    shuffle(randomValuesVecY.begin(), randomValuesVecY.end(), g);
+    if(x){
+        vector<float> randomValuesVecX(width, 0);
+        iota(randomValuesVecX.begin(), randomValuesVecX.end(), 0);
+        shuffle(randomValuesVecX.begin(), randomValuesVecX.end(), g);
+        randomValuesXStore = randomValuesVecX;
+    }
+    if(y){
+        vector<float> randomValuesVecY(height, 0);
+        iota(randomValuesVecY.begin(), randomValuesVecY.end(), 0);
+        shuffle(randomValuesVecY.begin(), randomValuesVecY.end(), g);
+        randomValuesYStore = randomValuesVecY;
+    }
     
-    randomValuesVecX.insert(randomValuesVecX.end(), randomValuesVecY.begin(), randomValuesVecY.end());
+    vector<float> accumulate = randomValuesXStore;
     
-    return randomValuesVecX;
+    accumulate.insert(accumulate.end(), randomValuesYStore.begin(), randomValuesYStore.end());
+    
+    return accumulate;
 }
 
 
