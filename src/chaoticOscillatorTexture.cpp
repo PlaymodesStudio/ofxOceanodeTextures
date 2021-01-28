@@ -20,17 +20,10 @@ chaoticOscillatorTexture::chaoticOscillatorTexture() : ofxOceanodeNodeModel("Ran
 chaoticOscillatorTexture::~chaoticOscillatorTexture(){
     if(isSetup){
         oscillatorShaderTexture.clear();
-        
-        resources->makeTextureLocationAvailable(oscillatorShaderParametersTextureLocation);
-        resources->makeTextureLocationAvailable(indexsTextureLocation);
-        resources->makeTextureLocationAvailable(randomInfoOscillatorShaderTextureLocation);
-        resources->makeTextureLocationAvailable(oldPhasorOscillatorShaderTextureLocation);
     }
 }
 
 void chaoticOscillatorTexture::setup(){
-    resources = &sharedResources::getInstance();
-    
     addParameter(phasorIn.set("Phase", 0, 0, 1), ofxOceanodeParameterFlags_DisableSavePreset);
     addParameter(widthVec.set("Size.X", {100}, {1}, {5120}));
     addParameter(heightVec.set("Size.Y", {100}, {1}, {2880}));
@@ -491,15 +484,6 @@ void chaoticOscillatorTexture::loadShader(bool &b){
     shaderOscillator.setupShaderFromSource(GL_FRAGMENT_SHADER, oscillatorFragSource);
     shaderOscillator.bindDefaults();
     shaderOscillator.linkProgram();
-    
-    oscillatorShaderParametersTextureLocation = resources->getNextAvailableShaderTextureLocation();
-    indexsTextureLocation = resources->getNextAvailableShaderTextureLocation();
-    randomInfoOscillatorShaderTextureLocation = resources->getNextAvailableShaderTextureLocation();
-    oldPhasorOscillatorShaderTextureLocation = resources->getNextAvailableShaderTextureLocation();
-    
-    shaderOscillator.begin();
-    shaderOscillator.setUniformTexture("parameters", oscillatorShaderTexture, oscillatorShaderParametersTextureLocation);
-    shaderOscillator.end();
 }
 
 void chaoticOscillatorTexture::presetRecallBeforeSettingParameters(ofJson &json){
@@ -542,12 +526,13 @@ ofTexture& chaoticOscillatorTexture::computeBank(float phasor, bool isZeroComput
     shaderOscillator.setUniform1f("time", ofGetElapsedTimef());
     shaderOscillator.setUniform1f("createRandoms", haveToRetrigerRandoms ? 1 : 0);
     if(indexs.get() != nullptr && indexs.get()->getWidth() == width && indexs.get()->getHeight() == height){
-        shaderOscillator.setUniformTexture("indexs", *indexs.get(), indexsTextureLocation);
+        shaderOscillator.setUniformTexture("indexs", *indexs.get(), 0);
     }else{
-        shaderOscillator.setUniformTexture("indexs", blackIndexs.getTexture(), indexsTextureLocation);
+        shaderOscillator.setUniformTexture("indexs", blackIndexs.getTexture(), 0);
     }
-    shaderOscillator.setUniformTexture("randomInfo", randomInfoFbo.getTexture(), randomInfoOscillatorShaderTextureLocation);
-    shaderOscillator.setUniformTexture("oldPhaseInfo", oldPhaseFbo.getTexture(), oldPhasorOscillatorShaderTextureLocation);
+    shaderOscillator.setUniformTexture("parameters", oscillatorShaderTexture, 1);
+    shaderOscillator.setUniformTexture("randomInfo", randomInfoFbo.getTexture(), 2);
+    shaderOscillator.setUniformTexture("oldPhaseInfo", oldPhaseFbo.getTexture(), 3);
     ofDrawRectangle(0, 0, width, height);
     shaderOscillator.end();
     fbo.end();

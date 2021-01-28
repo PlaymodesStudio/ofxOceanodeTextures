@@ -9,7 +9,6 @@
 #ifndef oscillatorTexture_h
 #define oscillatorTexture_h
 
-#include "sharedResources.h"
 #include "ofxOceanode.h"
 
 class oscillatorTexture : public ofxOceanodeNodeModel{
@@ -89,11 +88,6 @@ private:
     map<string, int> oscillatorShaderParameterNameTBOPositionMap;
     
     map<string, int> oscillatorShaderParameterNameTBOSizeMap;
-
-    sharedResources* resources;
-    
-    unsigned int oscillatorShaderParametersTextureLocation;
-    unsigned int indexsTextureLocation;
     
     ofShader shaderOscillator;
     ofFbo   fbo;

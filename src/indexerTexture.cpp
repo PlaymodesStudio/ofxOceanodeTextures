@@ -21,15 +21,10 @@ indexerTexture::~indexerTexture(){
     if(isSetup){
         shaderParametersTexture.clear();
         indexRandomValuesTexture.clear();
-        
-        resources->makeTextureLocationAvailable(shaderParametersTextureLocation);
-        resources->makeTextureLocationAvailable(randomIndexsTextureLocation);;
     }
 }
 
 void indexerTexture::setup(){
-    resources = &sharedResources::getInstance();
-    
     addParameter(widthVec.set("Size.X", {100}, {1}, {5120}));
     addParameter(heightVec.set("Size.Y", {100}, {1}, {2880}));
     width = 100;
@@ -394,14 +389,6 @@ void indexerTexture::loadShader(bool &b){
     shader.setupShaderFromSource(GL_FRAGMENT_SHADER, fragSource);
     shader.bindDefaults();
     shader.linkProgram();
-    
-    shaderParametersTextureLocation = resources->getNextAvailableShaderTextureLocation();
-    randomIndexsTextureLocation = resources->getNextAvailableShaderTextureLocation();
-    
-    shader.begin();
-    shader.setUniformTexture("parameters", shaderParametersTexture, shaderParametersTextureLocation);
-    shader.setUniformTexture("indexRandomValues", indexRandomValuesTexture, randomIndexsTextureLocation);
-    shader.end();
 }
 
 void indexerTexture::presetRecallBeforeSettingParameters(ofJson &json){
@@ -441,6 +428,8 @@ ofTexture& indexerTexture::computeBank(){
     fbo.begin();
     ofClear(0, 0, 0, 255);
     shader.begin();
+    shader.setUniformTexture("parameters", shaderParametersTexture, 0);
+    shader.setUniformTexture("indexRandomValues", indexRandomValuesTexture, 1);
     shader.setUniform2i("size", width, height);
     shader.setUniform1f("time", ofGetElapsedTimef());
     ofDrawRectangle(0, 0, width, height);

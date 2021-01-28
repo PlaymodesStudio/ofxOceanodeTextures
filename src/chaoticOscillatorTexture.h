@@ -8,7 +8,6 @@
 #ifndef chaoticOscillatorTexture_h
 #define chaoticOscillatorTexture_h
 
-#include "sharedResources.h"
 #include "ofxOceanode.h"
 
 class chaoticOscillatorTexture : public ofxOceanodeNodeModel{
@@ -94,13 +93,6 @@ private:
     map<string, int> oscillatorShaderParameterNameTBOPositionMap;
     
     map<string, int> oscillatorShaderParameterNameTBOSizeMap;
-    
-    sharedResources* resources;
-    
-    unsigned int oscillatorShaderParametersTextureLocation;
-    unsigned int indexsTextureLocation;
-    unsigned int randomInfoOscillatorShaderTextureLocation;
-    unsigned int oldPhasorOscillatorShaderTextureLocation;
     
     ofShader shaderOscillator;
     ofFbo   fbo;

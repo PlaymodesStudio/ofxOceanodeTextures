@@ -8,7 +8,6 @@
 #ifndef indexerTexture_h
 #define indexerTexture_h
 
-#include "sharedResources.h"
 #include "ofxOceanodeNodeModel.h"
 
 class indexerTexture : public ofxOceanodeNodeModel{
@@ -79,14 +78,6 @@ private:
     map<string, int> shaderParameterNameTBOPositionMap;
     
     map<string, int> shaderParameterNameTBOSizeMap;
-    
-    sharedResources* resources;
-    
-    unsigned int shaderParametersTextureLocation;
-    
-    unsigned int randomIndexsTextureLocation;
-    
-    unsigned int randomInfoShaderTextureLocation;
     
     ofShader shader;
     ofFbo   fbo;

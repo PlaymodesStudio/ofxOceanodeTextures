@@ -21,15 +21,10 @@ oscillatorTexture::oscillatorTexture() : ofxOceanodeNodeModel("Oscillator Textur
 oscillatorTexture::~oscillatorTexture(){
     if(isSetup){
         oscillatorShaderTexture.clear();
-        
-        resources->makeTextureLocationAvailable(oscillatorShaderParametersTextureLocation);
-        resources->makeTextureLocationAvailable(indexsTextureLocation);
     }
 }
 
 void oscillatorTexture::setup(){
-    resources = &sharedResources::getInstance();
-    
     addParameter(phasorIn.set("Phase", 0, 0, 1), ofxOceanodeParameterFlags_DisableSavePreset);
     addParameter(widthVec.set("Size.X", {100}, {1}, {5120}));
     addParameter(heightVec.set("Size.Y", {100}, {1}, {2880}));
@@ -452,13 +447,6 @@ void oscillatorTexture::loadShader(bool &b){
     shaderOscillator.setupShaderFromSource(GL_FRAGMENT_SHADER, oscillatorFragSource);
     shaderOscillator.bindDefaults();
     shaderOscillator.linkProgram();
-    
-    oscillatorShaderParametersTextureLocation = resources->getNextAvailableShaderTextureLocation();
-    indexsTextureLocation = resources->getNextAvailableShaderTextureLocation();
-    
-    shaderOscillator.begin();
-    shaderOscillator.setUniformTexture("parameters", oscillatorShaderTexture, oscillatorShaderParametersTextureLocation);
-    shaderOscillator.end();
 }
 
 void oscillatorTexture::presetRecallBeforeSettingParameters(ofJson &json){
@@ -491,10 +479,11 @@ ofTexture& oscillatorTexture::computeBank(float phasor){
     shaderOscillator.setUniform1f("phase", phasor);
     shaderOscillator.setUniform1f("time", ofGetElapsedTimef());
     if(indexs.get() != nullptr && indexs.get()->getWidth() == width && indexs.get()->getHeight() == height){
-        shaderOscillator.setUniformTexture("indexs", *indexs.get(), indexsTextureLocation);
+        shaderOscillator.setUniformTexture("indexs", *indexs.get(), 0);
     }else{
-        shaderOscillator.setUniformTexture("indexs", blackIndexs.getTexture(), indexsTextureLocation);
+        shaderOscillator.setUniformTexture("indexs", blackIndexs.getTexture(), 0);
     }
+    shaderOscillator.setUniformTexture("parameters", oscillatorShaderTexture, 1);
     ofDrawRectangle(0, 0, width, height);
     shaderOscillator.end();
     fboBuffer.end();
