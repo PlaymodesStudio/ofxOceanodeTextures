@@ -11,6 +11,9 @@
 #include "indexerTexture.h"
 #include "oscillatorTexture.h"
 #include "chaoticOscillatorTexture.h"
+#include "imageLoader.h"
+#include "mixer.h"
+#include "textureHelpers.h"
 //#include "senderManager.h"
 //#include "colorApplier.h"
 //#include "textureRecorder.h"
@@ -28,6 +31,9 @@ static void registerModels(ofxOceanode &o){
     o.registerModel<indexerTexture>("Textures");
     o.registerModel<oscillatorTexture>("Textures");
     o.registerModel<chaoticOscillatorTexture>("Textures");
+    o.registerModel<imageLoader>("Textures");
+    o.registerModel<mixer>("Textures");
+    o.registerModel<interactiveCanvas>("Textures");
 }
 static void registerType(ofxOceanode &o){
     o.registerType<ofTexture*>();//"Texture");
