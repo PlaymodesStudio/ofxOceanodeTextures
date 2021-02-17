@@ -18,14 +18,16 @@ public:
     mixer() : ofxOceanodeNodeModel("Mixer"){};
     
     void setup(){
-        addInspectorParameter(numColors.set("Num Textures", 5, 2, 20));
+        addInspectorParameter(numTextures.set("Num Textures", 5, 2, 20));
+        addParameter(width.set("Width", 100, 1, 50000));
+        addParameter(height.set("Height", 100, 1, 50000));
         //addParameter(input.set("Input", nullptr));
         addOutputParameter(output.set("Output", nullptr));
         
-        inputs.resize(numColors);
-        blendmodes.resize(numColors, 0);
-        opacities.resize(numColors, 1);
-        textures.resize(numColors, nullptr);
+        inputs.resize(numTextures);
+        blendmodes.resize(numTextures, 0);
+        opacities.resize(numTextures, 1);
+        textures.resize(numTextures, nullptr);
         
         auto vector_getter = [](void* vec, int idx, const char** out_text)
         {
@@ -36,7 +38,7 @@ public:
         };
         
         
-        for(int i = 0; i < numColors; i++){
+        for(int i = 0; i < numTextures; i++){
             auto parameterRef = addParameter(inputs[i].set("In " + ofToString(i), [i, vector_getter, this](){
                 ImGui::SetNextItemWidth(250);
                 //ImGui::Separator();
@@ -96,9 +98,9 @@ public:
     }
     
     void draw(ofEventArgs &a){
-        int i = numColors-1;
+        int i = numTextures-1;
         ofTexture* bottom;
-        bottom = textures[numColors-1];
+        bottom = textures[numTextures-1];
         while(bottom == nullptr){
             i--;
             if(i < 0) break;
@@ -108,30 +110,32 @@ public:
             ofPushStyle();
             ofSetColor(255, 255, 255, 255);
             int fboIndex = 0;
-            if(!fbos[0].isAllocated() || fbos[0].getWidth() != bottom->getWidth() || fbos[0].getHeight() != bottom->getHeight()){
+            if(!baseFbo.isAllocated() || baseFbo.getWidth() != width || baseFbo.getHeight() != height){
                 ofFbo::Settings fboSettings;
-                fboSettings.width = bottom->getWidth();
-                fboSettings.height = bottom->getHeight();
+                fboSettings.width = width;
+                fboSettings.height = height;
                 fboSettings.internalformat = GL_RGBA;
                 //fboSettings.numSamples = 4;
                 fboSettings.useDepth = false;
                 fboSettings.useStencil = false;
                 fboSettings.textureTarget = GL_TEXTURE_2D;
-                //fboSettings.minFilter = GL_LINEAR;
-                //fboSettings.maxFilter = GL_LINEAR;
+                fboSettings.maxFilter = GL_NEAREST;
+                fboSettings.minFilter = GL_NEAREST;
                 //fboSettings.wrapModeHorizontal = GL_CLAMP_TO_EDGE;
                 //fboSettings.wrapModeVertical = GL_CLAMP_TO_EDGE;
-                fbos[0].allocate(fboSettings);
-                fbos[1].allocate(fboSettings);
+                baseFbo.allocate(fboSettings);
+                canvasFbo.allocate(fboSettings);
             }
             
-            fbos[!fboIndex].begin();
+            baseFbo.begin();
+            ofSetColor(0, 0, 0, 255);
+            ofDrawRectangle(0, 0, width, height);
             ofSetColor(255, 255, 255, 255*opacities[i]);
-            bottom->draw(0, 0);
-            fbos[!fboIndex].end();
+            bottom->draw(0, 0, width, height);
+            baseFbo.end();
             ofSetColor(255, 255, 255, 255);
             
-            for(i-1; i >= 0; i--){
+            for(i--; i >= 0; i--){
                 ofTexture* up;
                 up = textures[i];
                 while(up == nullptr){
@@ -140,28 +144,29 @@ public:
                     up = textures[i];
                 }
                 if(up != nullptr){
-                    fbos[fboIndex].begin();
+//                    targetFbo.begin();
+//                    up->draw(0, 0, width, height);
+//                    targetFbo.end();
+                    canvasFbo.begin();
                     shader.begin();
                     ofSetColor(255, 255, 255, 255);
-                    shader.setUniformTexture("base", fbos[!fboIndex].getTexture(), 1);
+                    shader.setUniformTexture("base", baseFbo.getTexture(), 1);
                     shader.setUniformTexture("blendTgt", *up, 2);
                     shader.setUniform1i("mode", blendmodes[i]);
                     //shader.setUniform1f("opacity", opacities[i]);
-                    ofDrawRectangle(0, 0, fbos[fboIndex].getWidth(), fbos[fboIndex].getHeight());
+                    ofDrawRectangle(0, 0, width, height);
                     shader.end();
-                    fbos[fboIndex].end();
+                    canvasFbo.end();
                     
-                    fbos[!fboIndex].begin();
+                    baseFbo.begin();
                     ofEnableAlphaBlending();
                     ofSetColor(255, 255, 255, 255*opacities[i]);
-                    fbos[fboIndex].draw(0, 0);
+                    canvasFbo.draw(0, 0);
                     ofDisableAlphaBlending();
-                    fbos[!fboIndex].end();
-                    
-                    //fboIndex = !fboIndex;
+                    baseFbo.end();
                 }
             }
-            output = &fbos[!fboIndex].getTexture();
+            output = &baseFbo.getTexture();
             GLenum err;
             while ((err = glGetError()) != GL_NO_ERROR) {
                 ofLog() << "OpenGL error: " << err;
@@ -174,14 +179,14 @@ private:
     ofShader shader;
     
     ofParameter<ofTexture*> output;
-    
-    ofParameter<int> numColors;
+    ofParameter<int> width, height;
+    ofParameter<int> numTextures;
     vector<customGuiRegion> inputs;
     vector<ofTexture*> textures;
     vector<int> blendmodes;
     vector<float> opacities;
     
-    ofFbo fbos[2];
+    ofFbo baseFbo, canvasFbo;//, targetFbo;
 };
 
 #endif /* mixer_h */

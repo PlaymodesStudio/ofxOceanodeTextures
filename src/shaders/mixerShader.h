@@ -177,7 +177,7 @@ out vec4 fragColor;
 void main()
 {
     vec4 baseCol = texelFetch(base, ivec2(gl_FragCoord.xy), 0);
-    vec4 blendCol = texelFetch(blendTgt, ivec2(gl_FragCoord.xy), 0);
+    vec4 blendCol = texture(blendTgt, vec2(gl_FragCoord.xy / textureSize(base, 0).xy), 0);
     
     vec3 result;
     if (mode == 0)
@@ -285,13 +285,7 @@ void main()
         result = BlendNormal(baseCol.rgb, blendCol.rgb);
     }
     
-    if (blendCol.a <= 0.0)
-    {
-        fragColor = vec4(0.0,0.0,0.0,0.0);
-    }
-    else
-    {
-        fragColor = vec4(result, 1.0);
-    }
+    
+    fragColor = vec4(result, 1.0);
 }
 )"
