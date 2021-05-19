@@ -21,7 +21,6 @@ public:
         addInspectorParameter(numTextures.set("Num Textures", 5, 2, 20));
         addParameter(width.set("Width", 100, 1, 50000));
         addParameter(height.set("Height", 100, 1, 50000));
-        //addParameter(input.set("Input", nullptr));
         addOutputParameter(output.set("Output", nullptr));
         
         inputs.resize(numTextures);
@@ -29,59 +28,83 @@ public:
         opacities.resize(numTextures, 1);
         textures.resize(numTextures, nullptr);
         
-        auto vector_getter = [](void* vec, int idx, const char** out_text)
-        {
-            auto& vector = *static_cast<std::vector<std::string>*>(vec);
-            if (idx < 0 || idx >= static_cast<int>(vector.size())) { return false; }
-            *out_text = vector.at(idx).c_str();
-            return true;
+        auto createNewParams = [this](int start, int size){
+            auto vector_getter = [](void* vec, int idx, const char** out_text)
+            {
+                auto& vector = *static_cast<std::vector<std::string>*>(vec);
+                if (idx < 0 || idx >= static_cast<int>(vector.size())) { return false; }
+                *out_text = vector.at(idx).c_str();
+                return true;
+            };
+            
+            
+            for(int i = start; i < (size+start); i++){
+                auto parameterRef = addParameter(inputs[i].set("In " + ofToString(i), [i, vector_getter, this](){
+                    ImGui::SetNextItemWidth(250);
+                    //ImGui::Separator();
+                    ImGui::Text("%s", ("Layer " + ofToString(i)).c_str());
+                    
+                    vector<string> options = {"Normal",
+                        "Multiply",
+                        "Average",
+                        "Add",
+                        "Substract",
+                        "Difference",
+                        "Negation",
+                        "Exclusion",
+                        "Screen",
+                        "Overlay",
+                        "SoftLight",
+                        "HardLight",
+                        "ColorDodge",
+                        "ColorBurn",
+                        "LinearLight",
+                        "VividLight",
+                        "PinLight",
+                        "HardMix",
+                        "Reflect",
+                        "Glow",
+                        "Phoenix",
+                        "Hue",
+                        "Saturation",
+                        "Color",
+                        "Luminosity"};
+                    ImGui::Combo("##Dropdown", &blendmodes[i], vector_getter, static_cast<void*>(&options), options.size());
+                    ImGui::SameLine();
+                    ImGui::SliderFloat("##Slider", &opacities[i], 0, 1);
+                }));
+                
+                parameterRef->addReceiveFunc<ofTexture*>([this, i](ofTexture *const &tex){
+                    textures[i] = (ofTexture*)tex;
+                });
+                
+                parameterRef->addDisconnectFunc([this, i](){
+                    textures[i] = nullptr;
+                });
+            }
         };
         
+        createNewParams(0, numTextures);
         
-        for(int i = 0; i < numTextures; i++){
-            auto parameterRef = addParameter(inputs[i].set("In " + ofToString(i), [i, vector_getter, this](){
-                ImGui::SetNextItemWidth(250);
-                //ImGui::Separator();
-                ImGui::Text("%s", ("Layer " + ofToString(i)).c_str());
+        
+        listener = numTextures.newListener([this, createNewParams](int &i){
+            if(inputs.size() != i){
+                int oldSize = inputs.size();
+                bool remove = oldSize > i;
+                inputs.resize(numTextures);
+                blendmodes.resize(numTextures, 0);
+                opacities.resize(numTextures, 1);
+                textures.resize(numTextures, nullptr);
                 
-                vector<string> options = {"Normal",
-                    "Multiply",
-                    "Average",
-                    "Add",
-                    "Substract",
-                    "Difference",
-                    "Negation",
-                    "Exclusion",
-                    "Screen",
-                    "Overlay",
-                    "SoftLight",
-                    "HardLight",
-                    "ColorDodge",
-                    "ColorBurn",
-                    "LinearLight",
-                    "VividLight",
-                    "PinLight",
-                    "HardMix",
-                    "Reflect",
-                    "Glow",
-                    "Phoenix",
-                    "Hue",
-                    "Saturation",
-                    "Color",
-                    "Luminosity"};
-                ImGui::Combo("##Dropdown", &blendmodes[i], vector_getter, static_cast<void*>(&options), options.size());
-                ImGui::SameLine();
-                ImGui::SliderFloat("##Slider", &opacities[i], 0, 1);
-            }));
-            
-            parameterRef->addReceiveFunc<ofTexture*>([this, i](ofTexture *const &tex){
-                textures[i] = (ofTexture*)tex;
-            });
-            
-            parameterRef->addDisconnectFunc([this, i](){
-                textures[i] = nullptr;
-            });
-        }
+                if(remove){
+                    for(int j = oldSize-1; j >= i; j--){
+                        removeParameter("In " + ofToString(j));
+                    }
+                }else{
+                    createNewParams(oldSize, i-oldSize);
+                }
+            }
+        });
         
         string defaultVertSource =
         #include "defaultVertexShader.h"
@@ -144,9 +167,6 @@ public:
                     up = textures[i];
                 }
                 if(up != nullptr){
-//                    targetFbo.begin();
-//                    up->draw(0, 0, width, height);
-//                    targetFbo.end();
                     canvasFbo.begin();
                     shader.begin();
                     ofSetColor(255, 255, 255, 255);
@@ -175,6 +195,34 @@ public:
         }
     }
     
+    void presetSave(ofJson &json){
+        for(int i = 0; i < numTextures; i++){
+            json["LayerInfo"][i]["Blend"] = blendmodes[i];
+            json["LayerInfo"][i]["Opacity"] = opacities[i];
+        }
+    }
+	
+	void loadBeforeConnections(ofJson &json){
+		deserializeParameter(json, numTextures);
+	}
+    
+    void presetRecallAfterSettingParameters(ofJson &json){
+        for(int i = 0; i < numTextures; i++){
+            try{
+                blendmodes[i] = json["LayerInfo"][i]["Blend"];
+            }catch (ofJson::exception& e)
+            {
+                ofLog() << e.what();
+            }
+            try{
+                opacities[i] = json["LayerInfo"][i]["Opacity"];
+            }catch (ofJson::exception& e)
+            {
+                ofLog() << e.what();
+            }
+        }
+    }
+    
 private:
     ofShader shader;
     
@@ -186,7 +234,9 @@ private:
     vector<int> blendmodes;
     vector<float> opacities;
     
-    ofFbo baseFbo, canvasFbo;//, targetFbo;
+    ofEventListener listener;
+    
+    ofFbo baseFbo, canvasFbo;
 };
 
 #endif /* mixer_h */

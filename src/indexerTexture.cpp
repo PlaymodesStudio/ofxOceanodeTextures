@@ -43,7 +43,6 @@ void indexerTexture::setup(){
         addParameter(p[1].set(name + ".Y", vector<int>(1, val), vector<int>(1, min), vector<int>(1, max)));
     };
     
-    
     addParameter(indexNumWaves[0].set("NumW.X", vector<float>(1, 1), vector<float>(1, 0), vector<float>(1, width)));
     addParameter(indexNumWaves[1].set("NumW.Y", vector<float>(1, 1), vector<float>(1, 0), vector<float>(1, height)));
     
@@ -67,7 +66,7 @@ void indexerTexture::setup(){
     
     setParametersInfoMaps();
     
-    addParameter(indexsOut.set("Output", nullptr, nullptr, nullptr));
+    addOutputParameter(indexsOut.set("Output", nullptr, nullptr, nullptr));
     
     
     //Listeners

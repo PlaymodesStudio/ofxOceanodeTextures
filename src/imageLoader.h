@@ -15,25 +15,45 @@ public:
     imageLoader() : ofxOceanodeNodeModel("Image Loader"){}
     
     void setup(){
-        addParameter(filename.set("File", ""));
-        addParameter(texture.set("Output", nullptr));
+        loaded = false;
         
-        listener = filename.newListener([this](string &s){
-            image.load(s);
+        ofDirectory dir;
+        dir.open("Images");
+        dir.sort();
+        vector<string> files = {"None"};
+        for(int i = 0; i < dir.listDir(); i++){
+            files.push_back(dir.getName(i));
+        }
+        
+        addParameterDropdown(fileIndex, "File", 0, files);
+        addOutputParameter(texture.set("Output", nullptr));
+        
+        listener = fileIndex.newListener([this, files](int &i){
+            string filename = files[i];
+            if(filename == "None"){
+                loaded = false;
+            }else{
+                loaded = image.load("Images/" + filename);
+            }
         });
     }
     
     void draw(ofEventArgs &a){
-        texture = &image.getTexture();
+        if(loaded){
+            texture = &image.getTexture();
+        }else{
+            texture = nullptr;
+        }
     }
     
 private:
-    ofParameter<string> filename;
+    ofParameter<int> fileIndex;
     ofParameter<ofTexture*> texture;
     
     ofEventListener listener;
     
     ofImage image;
+    bool loaded;
 };
 
 

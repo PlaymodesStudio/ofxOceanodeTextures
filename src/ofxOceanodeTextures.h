@@ -14,6 +14,10 @@
 #include "imageLoader.h"
 #include "mixer.h"
 #include "textureHelpers.h"
+#include "videoPlayer.h"
+#include "noiseTexture.h"
+#include "textureSender.h"
+#include "Gradient.h"
 //#include "senderManager.h"
 //#include "colorApplier.h"
 //#include "textureRecorder.h"
@@ -34,9 +38,16 @@ static void registerModels(ofxOceanode &o){
     o.registerModel<imageLoader>("Textures");
     o.registerModel<mixer>("Textures");
     o.registerModel<interactiveCanvas>("Textures");
+    o.registerModel<videoPlayer>("Textures");
+    o.registerModel<noiseTexture>("Textures");
+    o.registerModel<textureSender>("Textures");
+	o.registerModel<vectorToTexture>("Textures");
+	o.registerModel<textureReader>("Textures");
+	o.registerModel<Gradient>("Textures");
+	//o.registerModel<textureRecorder>("Textures");
 }
 static void registerType(ofxOceanode &o){
-    o.registerType<ofTexture*>();//"Texture");
+    o.registerType<ofTexture*>("Texture");
 }
 static void registerScope(ofxOceanode &o){
     o.registerScope<ofTexture*>([](ofxOceanodeAbstractParameter *p, ImVec2 size){
