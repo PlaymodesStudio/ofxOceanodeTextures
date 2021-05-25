@@ -25,7 +25,7 @@ public:
         
         inputs.resize(numTextures);
         blendmodes.resize(numTextures, 0);
-        opacities.resize(numTextures, 1);
+        opacities.resize(numTextures);
         textures.resize(numTextures, nullptr);
         
         auto createNewParams = [this](int start, int size){
@@ -41,9 +41,9 @@ public:
             for(int i = start; i < (size+start); i++){
                 auto parameterRef = addParameter(inputs[i].set("In " + ofToString(i), [i, vector_getter, this](){
                     ImGui::SetNextItemWidth(250);
-                    //ImGui::Separator();
-                    ImGui::Text("%s", ("Layer " + ofToString(i)).c_str());
-                    
+					ImGui::Dummy(ImVec2(10, 1));
+                    ImGui::Text("%s", ("Layer " + ofToString(i+1, 2, '0')).c_str());
+                    ImGui::SameLine(90);
                     vector<string> options = {"Normal",
                         "Multiply",
                         "Average",
@@ -70,9 +70,11 @@ public:
                         "Color",
                         "Luminosity"};
                     ImGui::Combo("##Dropdown", &blendmodes[i], vector_getter, static_cast<void*>(&options), options.size());
-                    ImGui::SameLine();
-                    ImGui::SliderFloat("##Slider", &opacities[i], 0, 1);
+                    //ImGui::SameLine();
+                    //ImGui::SliderFloat("##Slider", &opacities[i], 0, 1);
                 }));
+				
+				addParameter(opacities[i].set("Opac " + ofToString(i+1), 1, 0, 1));
                 
                 parameterRef->addReceiveFunc<ofTexture*>([this, i](ofTexture *const &tex){
                     textures[i] = (ofTexture*)tex;
@@ -81,6 +83,8 @@ public:
                 parameterRef->addDisconnectFunc([this, i](){
                     textures[i] = nullptr;
                 });
+				
+				
             }
         };
         
@@ -93,12 +97,13 @@ public:
                 bool remove = oldSize > i;
                 inputs.resize(numTextures);
                 blendmodes.resize(numTextures, 0);
-                opacities.resize(numTextures, 1);
+                opacities.resize(numTextures);
                 textures.resize(numTextures, nullptr);
                 
                 if(remove){
                     for(int j = oldSize-1; j >= i; j--){
                         removeParameter("In " + ofToString(j));
+						removeParameter("Opac " + ofToString(j+1));
                     }
                 }else{
                     createNewParams(oldSize, i-oldSize);
@@ -133,7 +138,7 @@ public:
             ofPushStyle();
             ofSetColor(255, 255, 255, 255);
             int fboIndex = 0;
-            if(!baseFbo.isAllocated() || baseFbo.getWidth() != width || baseFbo.getHeight() != height){
+            if(!pingPongFbo[0].isAllocated() || pingPongFbo[0].getWidth() != width || pingPongFbo[0].getHeight() != height){
                 ofFbo::Settings fboSettings;
                 fboSettings.width = width;
                 fboSettings.height = height;
@@ -146,16 +151,20 @@ public:
                 fboSettings.minFilter = GL_NEAREST;
                 //fboSettings.wrapModeHorizontal = GL_CLAMP_TO_EDGE;
                 //fboSettings.wrapModeVertical = GL_CLAMP_TO_EDGE;
-                baseFbo.allocate(fboSettings);
-                canvasFbo.allocate(fboSettings);
+				pingPongFbo[0].allocate(fboSettings);
+				pingPongFbo[1].allocate(fboSettings);
             }
+			
+			pingPongIndex = 0;
             
-            baseFbo.begin();
+            pingPongFbo[pingPongIndex].begin();
+			ofEnableAlphaBlending();
             ofSetColor(0, 0, 0, 255);
             ofDrawRectangle(0, 0, width, height);
             ofSetColor(255, 255, 255, 255*opacities[i]);
             bottom->draw(0, 0, width, height);
-            baseFbo.end();
+			ofDisableBlendMode();
+            pingPongFbo[pingPongIndex].end();
             ofSetColor(255, 255, 255, 255);
             
             for(i--; i >= 0; i--){
@@ -167,26 +176,21 @@ public:
                     up = textures[i];
                 }
                 if(up != nullptr){
-                    canvasFbo.begin();
+                    pingPongFbo[!pingPongIndex].begin();
                     shader.begin();
                     ofSetColor(255, 255, 255, 255);
-                    shader.setUniformTexture("base", baseFbo.getTexture(), 1);
+                    shader.setUniformTexture("base", pingPongFbo[pingPongIndex].getTexture(), 1);
                     shader.setUniformTexture("blendTgt", *up, 2);
                     shader.setUniform1i("mode", blendmodes[i]);
-                    //shader.setUniform1f("opacity", opacities[i]);
+                    shader.setUniform1f("opacity", opacities[i]);
                     ofDrawRectangle(0, 0, width, height);
                     shader.end();
-                    canvasFbo.end();
-                    
-                    baseFbo.begin();
-                    ofEnableAlphaBlending();
-                    ofSetColor(255, 255, 255, 255*opacities[i]);
-                    canvasFbo.draw(0, 0);
-                    ofDisableAlphaBlending();
-                    baseFbo.end();
+                    pingPongFbo[!pingPongIndex].end();
+					
+					pingPongIndex = !pingPongIndex;
                 }
             }
-            output = &baseFbo.getTexture();
+            output = &pingPongFbo[pingPongIndex].getTexture();
             GLenum err;
             while ((err = glGetError()) != GL_NO_ERROR) {
                 ofLog() << "OpenGL error: " << err;
@@ -198,7 +202,7 @@ public:
     void presetSave(ofJson &json){
         for(int i = 0; i < numTextures; i++){
             json["LayerInfo"][i]["Blend"] = blendmodes[i];
-            json["LayerInfo"][i]["Opacity"] = opacities[i];
+//            json["LayerInfo"][i]["Opacity"] = opacities[i];
         }
     }
 	
@@ -230,13 +234,16 @@ private:
     ofParameter<int> width, height;
     ofParameter<int> numTextures;
     vector<customGuiRegion> inputs;
+	vector<ofParameter<float>> opacities;
     vector<ofTexture*> textures;
     vector<int> blendmodes;
-    vector<float> opacities;
+//    vector<float> opacities;
     
     ofEventListener listener;
     
     ofFbo baseFbo, canvasFbo;
+	ofFbo pingPongFbo[2];
+	int pingPongIndex;
 };
 
 #endif /* mixer_h */
