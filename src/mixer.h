@@ -218,12 +218,6 @@ public:
             {
                 ofLog() << e.what();
             }
-            try{
-                opacities[i] = json["LayerInfo"][i]["Opacity"];
-            }catch (ofJson::exception& e)
-            {
-                ofLog() << e.what();
-            }
         }
     }
     
