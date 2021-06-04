@@ -81,7 +81,9 @@ public:
                 });
                 
                 parameterRef->addDisconnectFunc([this, i](){
-                    textures[i] = nullptr;
+					if(i < textures.size()){
+						textures[i] = nullptr;
+					}
                 });
 				
 				
