@@ -144,7 +144,7 @@ public:
             vector<string> dimensions = ofSplitString(size, "x");
             width = ofToInt(dimensions[0]);
             height = ofToInt(dimensions[1]);
-            fbo.allocate(width, height, GL_RGBA);
+            fbo.allocate(width, height, GL_RGB);
             fbo.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
             changedSize = false;
         }
