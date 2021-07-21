@@ -65,6 +65,7 @@ class textureReader : public ofxOceanodeNodeModel{
 public:
     textureReader() : ofxOceanodeNodeModel("Texture Reader"){
         addParameter(input.set("Input", nullptr));
+		addInspectorParameter(separator.set("Add Separator", false));
 		addParameter(r.set("Red", {0}, {0}, {1}));
 		addParameter(g.set("Green", {0}, {0}, {1}));
 		addParameter(b.set("Blue", {0}, {0}, {1}));
@@ -72,26 +73,35 @@ public:
         listener = input.newListener([this](ofTexture* &tex){
             if(tex != nullptr){
 				if(tex->getWidth() == 0 || tex->getHeight() == 0) return;
-                if(tempOutput.size() != tex->getWidth() * tex->getHeight()){
-                    tempOutput.resize(tex->getWidth() * tex->getHeight(), 0);
-					temp_r.resize(tex->getWidth() * tex->getHeight(), 0);
-					temp_g.resize(tex->getWidth() * tex->getHeight(), 0);
-					temp_b.resize(tex->getWidth() * tex->getHeight(), 0);
+                if(tempOutput.size() != (tex->getWidth()+separator) * tex->getHeight()){
+                    tempOutput.resize((tex->getWidth()+separator) * tex->getHeight(), 0);
+					temp_r.resize((tex->getWidth()+separator) * tex->getHeight(), 0);
+					temp_g.resize((tex->getWidth()+separator) * tex->getHeight(), 0);
+					temp_b.resize((tex->getWidth()+separator) * tex->getHeight(), 0);
                 }
                 ofFloatPixels pixels;
                 tex->readToPixels(pixels);
                 float *p = pixels.begin();
-                int pixelSize = pixels.getPixelFormat();
-				if(pixelSize >= 3){
+				int numChannels = pixels.getNumChannels();
+				if(numChannels >= 3){
+					int j = 0;
 					for(int i = 0; i < tex->getWidth() * tex->getHeight(); i++){
-						temp_r[i] = p[i*pixelSize];
-						temp_g[i] = p[(i*pixelSize)+1];
-						temp_b[i] = p[(i*pixelSize)+2];
-						tempOutput[i] = max(max(temp_r[i], temp_g[i]), temp_b[i]);
+						temp_r[j] = p[i*numChannels];
+						temp_g[j] = p[(i*numChannels)+1];
+						temp_b[j] = p[(i*numChannels)+2];
+						tempOutput[j] = max(max(temp_r[j], temp_g[j]), temp_b[j]);
+						j++;
+						if(separator && ((i+1) % int(tex->getWidth()) == 0)){
+							temp_r[j] = -1;
+							temp_g[j] = -1;
+							temp_b[j] = -1;
+							tempOutput[j] = max(max(temp_r[j], temp_g[j]), temp_b[j]);
+							j++;
+						}
 					}
 				}else{
 					for(int i = 0; i < tex->getWidth() * tex->getHeight(); i++){
-						tempOutput[i] = p[i*pixelSize];
+						tempOutput[i] = p[i*numChannels];
 					}
 				}
 				r = temp_r;
@@ -107,7 +117,7 @@ public:
 private:
     ofParameter<ofTexture*> input;
     ofParameter<vector<float>> output, r, g, b;
-	
+	ofParameter<bool> separator;
     
     vector<float> tempOutput, temp_r, temp_g, temp_b;
     ofEventListener listener;
