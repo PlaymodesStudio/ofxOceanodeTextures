@@ -553,3 +553,420 @@ void oscillatorTexture::sizeChangedListener(int &i){
 }
 
 
+
+
+
+
+
+
+
+
+
+oscillatorTexture2::oscillatorTexture2() : ofxOceanodeNodeModel("Oscillator Texture 2"){
+    isSetup = false;
+    isFirstPassAfterSetup = true;
+    sizeChanged = false;
+    color = ofColor(0, 127, 255);
+}
+
+void oscillatorTexture2::setup(){
+    addParameter(phasorIn.set("Phase", 0, 0, 1), ofxOceanodeParameterFlags_DisableSavePreset);
+    addParameter(width.set("Size.X", 100, 1, INT_MAX));
+    addParameter(height.set("Size.Y", 100, 1, INT_MAX));
+
+    previousWidth = width;
+    previousHeight = height;
+
+    addParameter(indexs.set("Indexs", nullptr));
+
+    auto phaseOffsetRef = addParameter(phaseOffset.set("Ph Off", 0, 0, 1));
+    phaseOffsetRef->addReceiveFunc<ofTexture*>([this](ofTexture *const &tex){
+        phaseOffset_texture = (ofTexture*)tex;
+    });
+    
+    phaseOffsetRef->addDisconnectFunc([this](){
+        phaseOffset_texture = nullptr;
+    });
+    
+    auto roundnessRef = addParameter(roundness.set("Round", .5, 0, 1));
+    roundnessRef->addReceiveFunc<ofTexture*>([this](ofTexture *const &tex){
+        roundness_texture = (ofTexture*)tex;
+    });
+    
+    roundnessRef->addDisconnectFunc([this](){
+        roundness_texture = nullptr;
+    });
+    
+    auto pulseWidthRef = addParameter(pulseWidth.set("PulseW", 0.5, 0, 1));
+    pulseWidthRef->addReceiveFunc<ofTexture*>([this](ofTexture *const &tex){
+        pulseWidth_texture = (ofTexture*)tex;
+    });
+    
+    pulseWidthRef->addDisconnectFunc([this](){
+        pulseWidth_texture = nullptr;
+    });
+    
+    auto skewRef = addParameter(skew.set("Skew", 0, -1, 1));
+    skewRef->addReceiveFunc<ofTexture*>([this](ofTexture *const &tex){
+        skew_texture = (ofTexture*)tex;
+    });
+    
+    skewRef->addDisconnectFunc([this](){
+        skew_texture = nullptr;
+    });
+    
+    auto randomAdditionRef = addParameter(randomAddition.set("RndAdd", 0, -1, 1));
+    randomAdditionRef->addReceiveFunc<ofTexture*>([this](ofTexture *const &tex){
+        randomAddition_texture = (ofTexture*)tex;
+    });
+    
+    randomAdditionRef->addDisconnectFunc([this](){
+        randomAddition_texture = nullptr;
+    });
+    
+    auto scaleRef = addParameter(scale.set("Scale", 1, 0, 2));
+    scaleRef->addReceiveFunc<ofTexture*>([this](ofTexture *const &tex){
+        scale_texture = (ofTexture*)tex;
+    });
+    
+    scaleRef->addDisconnectFunc([this](){
+        scale_texture = nullptr;
+    });
+    
+    auto offsetRef = addParameter(offset.set("Offset", 0, -1, 1));
+    offsetRef->addReceiveFunc<ofTexture*>([this](ofTexture *const &tex){
+        offset_texture = (ofTexture*)tex;
+    });
+    
+    offsetRef->addDisconnectFunc([this](){
+        offset_texture = nullptr;
+    });
+    
+    auto powRef = addParameter(pow.set("Pow", 0, -1, 1));
+    powRef->addReceiveFunc<ofTexture*>([this](ofTexture *const &tex){
+        pow_texture = (ofTexture*)tex;
+    });
+    
+    powRef->addDisconnectFunc([this](){
+        pow_texture = nullptr;
+    });
+    
+    auto bipowRef = addParameter(bipow.set("BiPow", 0, -1, 1));
+    bipowRef->addReceiveFunc<ofTexture*>([this](ofTexture *const &tex){
+        bipow_texture = (ofTexture*)tex;
+    });
+    
+    bipowRef->addDisconnectFunc([this](){
+        bipow_texture = nullptr;
+    });
+    
+    auto quantizationRef = addParameter(quantization.set("Quant", 255, 2, 255));
+    quantizationRef->addReceiveFunc<ofTexture*>([this](ofTexture *const &tex){
+        quantization_texture = (ofTexture*)tex;
+    });
+    
+    quantizationRef->addDisconnectFunc([this](){
+        quantization_texture = nullptr;
+    });
+    
+    auto faderRef = addParameter(fader.set("Fader", 1, 0, 1));
+    faderRef->addReceiveFunc<ofTexture*>([this](ofTexture *const &tex){
+        fader_texture = (ofTexture*)tex;
+    });
+    
+    faderRef->addDisconnectFunc([this](){
+        fader_texture = nullptr;
+    });
+    
+    auto invertRef = addParameter(invert.set("Inv", 0, 0, 1));
+    invertRef->addReceiveFunc<ofTexture*>([this](ofTexture *const &tex){
+        invert_texture = (ofTexture*)tex;
+    });
+    
+    invertRef->addDisconnectFunc([this](){
+        invert_texture = nullptr;
+    });
+    
+    addParameter(oscillatorOut.set("Output", nullptr));
+
+    
+    phaseOffset_texture = nullptr;
+    roundness_texture = nullptr;
+    pulseWidth_texture = nullptr;
+    skew_texture = nullptr;
+    randomAddition_texture = nullptr;
+    scale_texture = nullptr;
+    offset_texture = nullptr;
+    pow_texture = nullptr;
+    bipow_texture = nullptr;
+    quantization_texture = nullptr;
+    fader_texture = nullptr;
+    invert_texture = nullptr;
+
+    //Listeners
+
+    listeners.push(indexs.newListener([this](ofTexture* &tex){
+        if(tex != nullptr){
+            if(width != tex->getWidth()) width = (int)tex->getWidth();
+            if(height != tex->getHeight()) height = (int)tex->getHeight();
+        }
+    }));
+
+    listeners.push(width.newListener(this, &oscillatorTexture2::sizeChangedListener));
+    listeners.push(height.newListener(this, &oscillatorTexture2::sizeChangedListener));
+
+    isFirstPassAfterSetup = true;
+    
+    //LoadShader
+    loadShader();
+}
+
+void oscillatorTexture2::update(ofEventArgs &a){
+    if(!isSetup){
+        //Texture Allocation
+        ofFbo::Settings settings;
+        settings.height = height;
+        settings.width = width;
+        settings.internalformat = GL_RGBA32F;
+        settings.maxFilter = GL_NEAREST;
+        settings.minFilter = GL_NEAREST;
+        settings.numColorbuffers = 1;
+        settings.useDepth = false;
+        settings.useStencil = false;
+        settings.textureTarget = GL_TEXTURE_2D;
+
+        fbo.allocate(settings);
+        fbo.begin();
+        ofClear(0, 0, 0, 255);
+        fbo.end();
+
+        fboBuffer.allocate(settings);
+        fboBuffer.begin();
+        ofClear(0, 0, 0, 255);
+        fboBuffer.end();
+
+        blackIndexs.allocate(settings);
+        blackIndexs.begin();
+        ofClear(0, 0, 0, 255);
+        blackIndexs.end();
+        
+        blackTexture.allocate(1, 1, GL_RGBA32F);
+       
+        isSetup = true;
+    }
+
+    if(isFirstPassAfterSetup){
+        fbo.begin();
+        ofClear(0, 0, 0, 255);
+        fbo.end();
+
+        fboBuffer.begin();
+        ofClear(0, 0, 0, 255);
+        fboBuffer.end();
+
+        blackIndexs.begin();
+        ofClear(0, 0, 0, 255);
+        blackIndexs.end();
+    }
+
+    if(sizeChanged){
+        ofFbo::Settings settings;
+        settings.height = height;
+        settings.width = width;
+        settings.internalformat = GL_RGBA32F;
+        settings.maxFilter = GL_NEAREST;
+        settings.minFilter = GL_NEAREST;
+        settings.numColorbuffers = 1;
+        settings.useDepth = false;
+        settings.useStencil = false;
+        settings.textureTarget = GL_TEXTURE_2D;
+
+        fbo.allocate(settings);
+        fbo.begin();
+        ofClear(0, 0, 0, 255);
+        fbo.end();
+
+        fboBuffer.allocate(settings);
+        fboBuffer.begin();
+        ofClear(0, 0, 0, 255);
+        fboBuffer.end();
+
+        blackIndexs.allocate(settings);
+        blackIndexs.begin();
+        ofClear(0, 0, 0, 255);
+        blackIndexs.end();
+
+        isFirstPassAfterSetup = true;
+        sizeChanged = false;
+    }
+}
+
+void oscillatorTexture2::draw(ofEventArgs &a){
+    oscillatorOut = &computeBank(phasorIn);
+}
+
+
+void oscillatorTexture2::loadShader(){
+    string defaultVertSource =
+    #include "defaultVertexShader.h"
+    ;
+
+    string oscillatorFragSource =
+    #include "oscillator2FragShader.h"
+    ;
+
+    shaderOscillator.setupShaderFromSource(GL_VERTEX_SHADER, defaultVertSource);
+    shaderOscillator.setupShaderFromSource(GL_FRAGMENT_SHADER, oscillatorFragSource);
+    shaderOscillator.bindDefaults();
+    shaderOscillator.linkProgram();
+}
+
+void oscillatorTexture2::presetRecallBeforeSettingParameters(ofJson &json){
+    deserializeParameter(json, width);
+    deserializeParameter(json, height);
+    isFirstPassAfterSetup = true;
+}
+
+ofTexture& oscillatorTexture2::computeBank(float phasor){
+    ofPushStyle();
+    ofDisableAlphaBlending();
+    ofSetColor(255, 255);
+    fboBuffer.begin();
+    ofClear(0, 0, 0, 255);
+    
+    shaderOscillator.begin();
+    shaderOscillator.setUniform1f("phase", phasor);
+    shaderOscillator.setUniform1f("time", ofGetElapsedTimef());
+    if(indexs.get() != nullptr){
+        shaderOscillator.setUniformTexture("indexs", *indexs.get(), 0);
+    }else{
+        shaderOscillator.setUniformTexture("indexs", blackIndexs.getTexture(), 0);
+    }
+    
+    if(phaseOffset_texture != nullptr){
+        shaderOscillator.setUniformTexture("phaseOffset_tex", *phaseOffset_texture, 1);
+    }else{
+        shaderOscillator.setUniformTexture("phaseOffset_tex", blackTexture, 1);
+    }
+    
+    if(roundness_texture != nullptr){
+        shaderOscillator.setUniformTexture("roundness_tex", *roundness_texture, 2);
+    }else{
+        shaderOscillator.setUniformTexture("roundness_tex", blackTexture, 2);
+    }
+    
+    if(pulseWidth_texture != nullptr){
+        shaderOscillator.setUniformTexture("pulseWidth_tex", *pulseWidth_texture, 3);
+    }else{
+        shaderOscillator.setUniformTexture("pulseWidth_tex", blackTexture, 3);
+    }
+    
+    if(skew_texture != nullptr){
+        shaderOscillator.setUniformTexture("skew_tex", *skew_texture, 4);
+    }else{
+        shaderOscillator.setUniformTexture("skew_tex", blackTexture, 4);
+    }
+    
+    if(randomAddition_texture != nullptr){
+        shaderOscillator.setUniformTexture("randomAddition_tex", *randomAddition_texture, 5);
+    }else{
+        shaderOscillator.setUniformTexture("randomAddition_tex", blackTexture, 5);
+    }
+    
+    if(scale_texture != nullptr){
+        shaderOscillator.setUniformTexture("scale_tex", *scale_texture, 6);
+    }else{
+        shaderOscillator.setUniformTexture("scale_tex", blackTexture, 6);
+    }
+    
+    if(offset_texture != nullptr){
+        shaderOscillator.setUniformTexture("offset_tex", *offset_texture, 7);
+    }else{
+        shaderOscillator.setUniformTexture("offset_tex", blackTexture, 7);
+    }
+    
+    if(pow_texture != nullptr){
+        shaderOscillator.setUniformTexture("pow_tex", *pow_texture, 8);
+    }else{
+        shaderOscillator.setUniformTexture("pow_tex", blackTexture, 8);
+    }
+    
+    if(bipow_texture != nullptr){
+        shaderOscillator.setUniformTexture("bipow_tex", *bipow_texture, 9);
+    }else{
+        shaderOscillator.setUniformTexture("bipow_tex", blackTexture, 9);
+    }
+    
+    if(quantization_texture != nullptr){
+        shaderOscillator.setUniformTexture("quantization_tex", *quantization_texture, 10);
+    }else{
+        shaderOscillator.setUniformTexture("quantization_tex", blackTexture, 10);
+    }
+    
+    if(fader_texture != nullptr){
+        shaderOscillator.setUniformTexture("fader_tex", *fader_texture, 11);
+    }else{
+        shaderOscillator.setUniformTexture("fader_tex", blackTexture, 11);
+    }
+    
+    if(invert_texture != nullptr){
+        shaderOscillator.setUniformTexture("invert_tex", *invert_texture, 12);
+    }else{
+        shaderOscillator.setUniformTexture("invert_tex", blackTexture, 12);
+    }
+    
+    shaderOscillator.setUniform1f("phaseOffset", phaseOffset);
+    shaderOscillator.setUniform1f("roundness", roundness);
+    shaderOscillator.setUniform1f("pulseWidth", pulseWidth);
+    shaderOscillator.setUniform1f("skew", skew);
+    shaderOscillator.setUniform1f("randomAddition", randomAddition);
+    shaderOscillator.setUniform1f("scale", scale);
+    shaderOscillator.setUniform1f("offset", offset);
+    shaderOscillator.setUniform1f("pow", pow);
+    shaderOscillator.setUniform1f("bipow", bipow);
+    shaderOscillator.setUniform1i("quantization", quantization);
+    shaderOscillator.setUniform1f("fader", fader);
+    shaderOscillator.setUniform1f("invert", invert);
+    
+    ofDrawRectangle(0, 0, width, height);
+    shaderOscillator.end();
+    fboBuffer.end();
+
+    ofPopStyle();
+
+    isFirstPassAfterSetup = false;
+
+    return fboBuffer.getTexture();
+}
+
+vector<float> oscillatorTexture2::newRandomValuesVector(){
+    vector<float> randomValuesVecX(width, 0);
+    vector<float> randomValuesVecY(height, 0);
+    iota(randomValuesVecX.begin(), randomValuesVecX.end(), 0);
+    iota(randomValuesVecY.begin(), randomValuesVecY.end(), 0);
+
+    mt19937 g(static_cast<uint32_t>(time(0)));
+    shuffle(randomValuesVecX.begin(), randomValuesVecX.end(), g);
+    shuffle(randomValuesVecY.begin(), randomValuesVecY.end(), g);
+
+    randomValuesVecX.insert(randomValuesVecX.end(), randomValuesVecY.begin(), randomValuesVecY.end());
+
+    return randomValuesVecX;
+}
+
+
+#pragma mark Parameter Listeners
+
+void oscillatorTexture2::sizeChangedListener(int &i){
+    if(&i == &width.get()){
+        if(width != previousWidth){
+            sizeChanged = true;
+        }
+        previousWidth = width;
+    }else{
+        if(height != previousHeight){
+            sizeChanged = true;
+        }
+        previousHeight = height;
+    }
+}

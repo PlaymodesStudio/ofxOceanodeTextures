@@ -111,4 +111,84 @@ private:
     bool sizeChanged;
 };
 
+class oscillatorTexture2 : public ofxOceanodeNodeModel{
+public:
+    oscillatorTexture2();
+
+    void setup() override;
+    void update(ofEventArgs &a) override;
+    void draw(ofEventArgs &a) override;
+
+    void presetRecallBeforeSettingParameters(ofJson &json) override;
+private:
+    bool isSetup;
+    ofTexture&  computeBank(float phasor);
+
+    vector<float> newRandomValuesVector();
+
+    void loadShader();
+
+    void sizeChangedListener(int &i);
+
+
+    ofParameter<bool>       reloadShaderParam;
+    ofParameter<float>    phasorIn;
+
+    ofParameter<int> width;
+    ofParameter<int> height;
+    int previousWidth, previousHeight;
+
+    ofEventListeners listeners;
+
+
+    ofParameter<ofTexture*> indexs;
+    ofParameter<vector<int>> widthVec;
+    ofParameter<vector<int>> heightVec;
+    ofParameter<float>   phaseOffset;
+    ofParameter<float>   roundness;
+    ofParameter<float>   pulseWidth;
+    ofParameter<float>   skew;
+    ofParameter<float>   randomAddition;
+    ofParameter<float>   scale;
+    ofParameter<float>   offset;
+    ofParameter<float>   pow;
+    ofParameter<float>   bipow;
+    ofParameter<int>     quantization;
+    ofParameter<float>   fader;
+    ofParameter<float>   invert;
+    
+    ofTexture*  phaseOffset_texture;
+    ofTexture*  roundness_texture;
+    ofTexture*  pulseWidth_texture;
+    ofTexture*  skew_texture;
+    ofTexture*  randomAddition_texture;
+    ofTexture*  scale_texture;
+    ofTexture*  offset_texture;
+    ofTexture*  pow_texture;
+    ofTexture*  bipow_texture;
+    ofTexture*  quantization_texture;
+    ofTexture*  fader_texture;
+    ofTexture*  invert_texture;
+
+    ofParameter<ofTexture*>      oscillatorOut;
+
+    map<string, int> oscillatorShaderParameterNameTBOPositionMap;
+
+    map<string, int> oscillatorShaderParameterNameTBOSizeMap;
+
+    ofShader shaderOscillator;
+    ofFbo   fbo;
+    ofFbo   fboBuffer;
+    ofFbo   blackIndexs;
+
+    ofTexture blackTexture;
+    
+    //Listeners
+    ofEventListeners oscillatorShaderListeners;
+
+    bool isFirstPassAfterSetup;
+
+    bool sizeChanged;
+};
+
 #endif /* oscillatorTexture_h */
