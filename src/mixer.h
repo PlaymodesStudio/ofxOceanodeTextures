@@ -128,23 +128,43 @@ public:
     }
     
     void draw(ofEventArgs &a){
+        int numActive = 0;
+        int activeIndex = 0;
+        for(int i = 0; i < opacities.size(); i++){
+            if(opacities[i] != 0){
+                numActive++;
+                activeIndex = i;
+            }
+        }
+        if(numActive == 1 && opacities[activeIndex] == 1){
+            output = textures[activeIndex];
+        }else{
         int i = numTextures-1;
-        ofTexture* bottom;
+        ofTexture* bottom = nullptr;
         bottom = textures[numTextures-1];
-        while(bottom == nullptr){
+        while(bottom == nullptr || !bottom->isAllocated() || opacities[i] == 0){
             i--;
-            if(i < 0) break;
+            if(i < 0){
+//                pingPongFbo[!pingPongIndex].begin();
+//                ofClear(0, 0, 0, 255);
+//                ofSetColor(0, 0, 0, 255);
+//                ofDrawRectangle(0, 0, width, height);
+//                pingPongFbo[!pingPongIndex].end();
+//                output = &pingPongFbo[pingPongIndex].getTexture();
+//                return;
+                bottom = nullptr;
+                break;
+            }
             bottom = textures[i];
         }
-        if(bottom != nullptr){
-            ofPushStyle();
-            ofSetColor(255, 255, 255, 255);
             int fboIndex = 0;
+            pingPongIndex = 0;
             if(!pingPongFbo[0].isAllocated() || pingPongFbo[0].getWidth() != width || pingPongFbo[0].getHeight() != height){
                 ofFbo::Settings fboSettings;
                 fboSettings.width = width;
                 fboSettings.height = height;
-                fboSettings.internalformat = GL_RGBA;
+                fboSettings.internalformat = GL_RGBA32F;
+                fboSettings.numColorbuffers = 1;
                 //fboSettings.numSamples = 4;
                 fboSettings.useDepth = false;
                 fboSettings.useStencil = false;
@@ -153,13 +173,15 @@ public:
                 fboSettings.minFilter = GL_NEAREST;
                 //fboSettings.wrapModeHorizontal = GL_CLAMP_TO_EDGE;
                 //fboSettings.wrapModeVertical = GL_CLAMP_TO_EDGE;
-				pingPongFbo[0].allocate(fboSettings);
-				pingPongFbo[1].allocate(fboSettings);
+                pingPongFbo[0].allocate(fboSettings);
+                pingPongFbo[1].allocate(fboSettings);
             }
-			
-			pingPongIndex = 0;
+        if(bottom != nullptr){
+            ofPushStyle();
+            ofSetColor(255, 255, 255, 255);
             
             pingPongFbo[pingPongIndex].begin();
+			ofClear(0, 0, 0, 255);
 			ofEnableAlphaBlending();
             ofSetColor(0, 0, 0, 255);
             ofDrawRectangle(0, 0, width, height);
@@ -170,15 +192,16 @@ public:
             ofSetColor(255, 255, 255, 255);
             
             for(i--; i >= 0; i--){
-                ofTexture* up;
+                ofTexture* up = nullptr;
                 up = textures[i];
-                while(up == nullptr){
+                while(up == nullptr || !up->isAllocated() || opacities[i] == 0){
                     i--;
                     if(i < 0) break;
                     up = textures[i];
                 }
-                if(up != nullptr){
+                if(i >= 0 && up != nullptr && up->isAllocated() && opacities[i] != 0){
                     pingPongFbo[!pingPongIndex].begin();
+					ofClear(0, 0, 0,  255);
                     shader.begin();
                     ofSetColor(255, 255, 255, 255);
                     shader.setUniformTexture("base", pingPongFbo[pingPongIndex].getTexture(), 1);
@@ -198,6 +221,14 @@ public:
                 ofLog() << "OpenGL error: " << err;
             }
             ofPopStyle();
+        }else{
+            pingPongFbo[pingPongIndex].begin();
+            ofClear(0, 0, 0, 255);
+            ofSetColor(0, 0, 0, 255);
+            ofDrawRectangle(0, 0, width, height);
+            pingPongFbo[pingPongIndex].end();
+            output = &pingPongFbo[pingPongIndex].getTexture();
+        }
         }
     }
     
