@@ -129,24 +129,15 @@ public:
     
     void setup(){
         addParameter(input.set("Input", {0}, {0}, {1}));
-        addParameter(size.set("Size", "32x4"));
+        addParameter(width.set("Width", 32, 1, INT_MAX));
+        addParameter(height.set("Height", 4, 1, INT_MAX));
         addParameter(output.set("Output Tex", nullptr));
-        
-        listener = size.newListener([this](string &s){
-            changedSize = true;
-        });
-        
-        changedSize = true;
     }
     
     void draw(ofEventArgs &a){
-        if(changedSize){
-            vector<string> dimensions = ofSplitString(size, "x");
-            width = ofToInt(dimensions[0]);
-            height = ofToInt(dimensions[1]);
-            fbo.allocate(width, height, GL_RGB);
+        if(!fbo.isAllocated() || fbo.getWidth() != width || fbo.getHeight() != height){
+            fbo.allocate(width, height, GL_RGBA32F);
             fbo.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
-            changedSize = false;
         }
         vector<float> rgbInput(input->size()*3, 0);
         for(int i = 0; i < input->size(); i++){
@@ -157,25 +148,24 @@ public:
         tex.loadData(rgbInput.data(), width, height, GL_RGB);
         tex.setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
         fbo.begin();
+		ofClear(0, 0, 0, 255);
         tex.draw(0, 0, width, height);
         fbo.end();
         output = &fbo.getTexture();
     }
     
     void loadBeforeConnections(ofJson &json){
-        deserializeParameter(json, size);
+        deserializeParameter(json, width);
+        deserializeParameter(json, height);
     }
     
 private:
     ofParameter<vector<float>> input;
     ofParameter<ofTexture*> output;
-    ofParameter<string> size;
+    ofParameter<int> width, height;
     ofTexture tex;
     ofFbo fbo;
-    int width;
-    int height;
     
-    bool changedSize;
     ofEventListener listener;
 };
 
