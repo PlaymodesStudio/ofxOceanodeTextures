@@ -4,9 +4,17 @@ R"(
 uniform int type;
 uniform vec2 size;
 uniform float f;
+uniform vec2 pos;
 uniform vec2 scale;
+uniform vec2 offset;
 uniform float warping;
 uniform float modulator;
+
+uniform sampler2D scaleXTex;
+uniform sampler2D scaleYTex;
+uniform sampler2D offsetXTex;
+uniform sampler2D offsetYTex;
+uniform sampler2D fTex;
 
 out vec4 out_color;
 
@@ -435,15 +443,41 @@ void main()
     }else{
         warpingMod = fract(warping);
     }
-    
+
+
+	vec2 _scale = scale;
+	if(textureSize(scaleXTex, 0).xy != vec2(1.0f, 1.0f)){
+		_scale.x = texture(scaleXTex, gl_FragCoord.xy/size, 0).r;
+	}
+	if(textureSize(scaleYTex, 0).xy != vec2(1.0f, 1.0f)){
+		_scale.y = texture(scaleYTex, gl_FragCoord.xy/size, 0).r;
+	}
+
+	vec2 _offset = offset;
+	if(textureSize(offsetXTex, 0).xy != vec2(1.0f, 1.0f)){
+		_offset.x = texture(offsetXTex, gl_FragCoord.xy/size, 0).r;
+	}
+	if(textureSize(offsetYTex, 0).xy != vec2(1.0f, 1.0f)){
+		_offset.y = texture(offsetYTex, gl_FragCoord.xy/size, 0).r;
+	}
+
+	float _f = f;
+	if(textureSize(fTex, 0).xy != vec2(1.0f, 1.0f)){
+		_f = f * texture(fTex, gl_FragCoord.xy/size, 0).r;
+	}
+
+    vec2 _pos = gl_FragCoord.xy - pos;
+
     switch (type) {
         case 0://Perlin
             //Domain Warping (modified) from: https://www.iquilezles.org/www/articles/warp/warp.htm
             for(int i = 0; i < ceil(warping) ; i++){
                if(i == floor(warping)){
-                    result = ((1-fract(warping))*result) + (fract(warping)*cnoise(vec3(result) + vec3(((gl_FragCoord.xy/size)-0.5f) * scale, f)));
+                    result = ((1-fract(warping))*result) + (fract(warping)*cnoise(vec3(result) + vec3(((_pos)-(size/2)) * _scale, _f + (size.x * _offset.x) + (size.y * _offset.y))));
                 }else{
-                    result = cnoise(vec3(result) + vec3(((gl_FragCoord.xy/size)-0.5f) * scale, f));
+                    //result = cnoise(vec3(result) + vec3(((gl_FragCoord.xy)-(size/2)) * _scale, _f + (gl_FragCoord.x * _offset.x) + (gl_FragCoord.y * _offset.y)));
+					result = cnoise(vec3(result) + vec3((((_pos)-(size/2)) * _scale), _f + (size.x * _offset.x) + (size.y * _offset.y)));
+
                 }
             }
             result = (result + 1)/2;
@@ -451,18 +485,18 @@ void main()
         case 1://Voronoi
             for(int i = 0; i < ceil(warping) ; i++){
                if(i == floor(warping)){
-                    result = ((1-fract(warping))*result) + (fract(warping)*voronoi3d(vec3(result) + vec3(((gl_FragCoord.xy/size)-0.5f) * scale, f)).x);
+                    result = ((1-fract(warping))*result) + (fract(warping)*voronoi3d(vec3(result) + vec3(((_pos)-(size/2)) * _scale, _f + (size.x * _offset.x) + (size.y * _offset.y))).x);
                 }else{
-                    result = voronoi3d(vec3(result) + vec3(((gl_FragCoord.xy/size)-0.5f) * scale, f)).x;
+                    result = voronoi3d(vec3(result) + vec3(((_pos)-(size/2)) * _scale, _f + (size.x * _offset.x) + (size.y * _offset.y))).x;
                 }
             }
             break;
         case 2://Gradient
             for(int i = 0; i < ceil(warping) ; i++){
                if(i == floor(warping)){
-                    result = ((1-fract(warping))*result) + (fract(warping)*gradientNoise(vec3(result) + vec3(((gl_FragCoord.xy/size)-0.5f) * scale, f)));
+                    result = ((1-fract(warping))*result) + (fract(warping)*gradientNoise(vec3(result) + vec3(((_pos)-(size/2)) * _scale, _f + (size.x * _offset.x) + (size.y * _offset.y))));
                 }else{
-                    result = gradientNoise(vec3(result) + vec3(((gl_FragCoord.xy/size)-0.5f) * scale, f));
+                    result = gradientNoise(vec3(result) + vec3(((_pos)-(size/2)) * _scale, _f + (size.x * _offset.x) + (size.y * _offset.y)));
                 }
                 result *= 2;
             }
@@ -470,32 +504,32 @@ void main()
         case 3://Value
             for(int i = 0; i < ceil(warping) ; i++){
                if(i == floor(warping)){
-                    result = ((1-fract(warping))*result) + (fract(warping)*valueNoise(vec3(result) + vec3(((gl_FragCoord.xy/size)-0.5f) * scale, f)).x);
+                    result = ((1-fract(warping))*result) + (fract(warping)*valueNoise(vec3(result) + vec3(((_pos)-(size/2)) * _scale, _f + (size.x * _offset.x) + (size.y * _offset.y))).x);
                 }else{
-                    result = valueNoise(vec3(result) + vec3(((gl_FragCoord.xy/size)-0.5f) * scale, f)).x;
+                    result = valueNoise(vec3(result) + vec3(((_pos)-(size/2)) * _scale, _f + (size.x * _offset.x) + (size.y * _offset.y))).x;
                 }
             }
             break;
         case 4://Callular
             for(int i = 0; i < ceil(warping) ; i++){
                if(i == floor(warping)){
-                    result = ((1-fract(warping))*result) + (fract(warping)*smoothVoronoi(vec3(result) + vec3(((gl_FragCoord.xy/size)-0.5f) * scale, f)));
+                    result = ((1-fract(warping))*result) + (fract(warping)*smoothVoronoi(vec3(result) + vec3(((_pos)-(size/2)) * scale, f)));
                 }else{
-                    result = smoothVoronoi(vec3(result) + vec3(((gl_FragCoord.xy/size)-0.5f) * scale, f));
+                    result = smoothVoronoi(vec3(result) + vec3(((_pos)-(size/2)) * _scale, _f + (size.x * _offset.x) + (size.y * _offset.y)));
                 }
             }
             break;
         case 5://MetaBalls
             for(int i = 0; i < ceil(warping) ; i++){
                if(i == floor(warping)){
-                    result = ((1-fract(warping))*result) + (fract(warping)*metaballs(vec3(result) + vec3(((gl_FragCoord.xy/size)-0.5f) * scale, f)));
+                    result = ((1-fract(warping))*result) + (fract(warping)*metaballs(vec3(result) + vec3(((_pos)-(size/2)) * _scale, _f + (size.x * _offset.x) + (size.y * _offset.y))));
                 }else{
-                    result = metaballs(vec3(result) + vec3(((gl_FragCoord.xy/size)-0.5f) * scale, f));
+                    result = metaballs(vec3(result) + vec3(((_pos)-(size/2)) * _scale, _f + (size.x * _offset.x) + (size.y * _offset.y)));
                 }
             }
             break;
         case 6://Fbm
-            result = fbm(vec3(((gl_FragCoord.xy/size)-0.5) * scale, f), warping, modulator);
+            result = fbm(vec3(((_pos)-(size/2)) * _scale, _f + (size.x * _offset.x) + (size.y * _offset.y)), warping, modulator);
             break;
         default:
             break;
