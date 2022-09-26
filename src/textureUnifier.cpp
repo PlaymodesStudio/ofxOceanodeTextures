@@ -16,7 +16,8 @@ textureUnifier::textureUnifier() : ofxOceanodeNodeModel("Texture Unifier"){
 
 void textureUnifier::setup(){
     addParameter(triggerTextureIndex.set("Trig.Index", 0, 0, NUM_INPUTS));
-    addParameter(spacing.set("Spacing", 1, 0, 10));
+    addInspectorParameter(spacing.set("Spacing", 1, 0, INT_MAX));
+	addInspectorParameter(lastSpacing.set("Last Space", true));
     inputs.resize(NUM_INPUTS);
     customPositions.resize(NUM_INPUTS);
     opacities.resize(NUM_INPUTS);
@@ -52,6 +53,9 @@ void textureUnifier::computeOutput(ofTexture* &in){
                     }
                 }
             }
+			if(!lastSpacing){
+				fboRect.setHeight(fboRect.getHeight() - spacing);
+			}
             if(outputFbo.getHeight() != fboRect.getHeight() || outputFbo.getWidth() != fboRect.getWidth() || !outputFbo.isAllocated()){
                 if(fboRect.getHeight() != 0 && fboRect.getWidth() != 0){
                     outputFbo.clear();

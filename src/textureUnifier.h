@@ -25,6 +25,7 @@ private:
     
     ofParameter<int>    triggerTextureIndex;
     ofParameter<int>    spacing;
+	ofParameter<bool>	lastSpacing;
     vector<ofParameter<ofTexture*>>    inputs;
     vector<ofParameter<string>> customPositions;
     vector<ofParameter<float>> opacities;
