@@ -318,7 +318,7 @@ void main(){
         oldRandom = newRandom;
         newRandom = futureRandom;
         
-        double indexPosShifted = (1-mod(index+phaseOffsetParam, 1))*length;
+        float indexPosShifted = (1-mod(index+phaseOffsetParam, 1))*length;
         if(indexPosShifted == floor(indexPosShifted)) indexPosShifted-=1;
         if(accumulateCycles >= floor(indexPosShifted)){
             if(seed == 0){
