@@ -154,6 +154,10 @@ public:
         ofPopStyle();
     }
     
+    void deactivate(){
+        fbo.clear();
+    }
+    
 private:
     ofShader shader;
     

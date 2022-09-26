@@ -254,6 +254,13 @@ public:
         }
     }
     
+    void deactivate(){
+        baseFbo.clear();
+        canvasFbo.clear();
+        pingPongFbo[0].clear();
+        pingPongFbo[1].clear();
+    }
+    
 private:
     ofShader shader;
     

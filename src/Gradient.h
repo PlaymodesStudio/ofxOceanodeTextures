@@ -111,6 +111,10 @@ public:
 		deserializeParameter(json, numColors);
 	}
     
+    void deactivate(){
+        fbo.clear();
+    }
+    
 private:
     ofShader shader;
     

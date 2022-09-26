@@ -159,6 +159,10 @@ public:
         deserializeParameter(json, height);
     }
     
+    void deactivate(){
+        fbo.clear();
+    }
+    
 private:
     ofParameter<vector<float>> input;
     ofParameter<ofTexture*> output;

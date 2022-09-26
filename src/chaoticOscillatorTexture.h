@@ -24,6 +24,17 @@ public:
     }
     
     void presetRecallBeforeSettingParameters(ofJson &json) override;
+    
+    void deactivate(){
+        fbo.clear();
+        blackIndexs.clear();
+        randomInfoFbo.clear();
+        oldPhaseFbo.clear();
+        
+        isSetup = false;
+    }
+    
+    
 private:
     bool isSetup;
     ofTexture&  computeBank(float phasor, bool isZeroComputeBank = false);

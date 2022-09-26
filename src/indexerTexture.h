@@ -20,6 +20,13 @@ public:
     void draw(ofEventArgs &a) override;
     
     void presetRecallBeforeSettingParameters(ofJson &json) override;
+    
+    void deactivate(){
+        fbo.clear();
+        fboBuffer.clear();
+        
+        isSetup = false;
+    }
 private:
     bool isSetup;
     ofTexture&  computeBank();
@@ -119,6 +126,13 @@ public:
     void draw(ofEventArgs &a) override;
     
     void presetRecallBeforeSettingParameters(ofJson &json) override;
+    
+    void deactivate(){
+        fbo.clear();
+        fboBuffer.clear();
+        
+        isSetup = false;
+    }
 private:
     bool isSetup;
     ofTexture&  computeBank();

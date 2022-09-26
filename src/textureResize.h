@@ -51,6 +51,15 @@ public:
         resizeFbo();
         setupShader();
     }
+    
+    void activate(){
+        resizeFbo();
+    }
+    
+    void deactivate(){
+        fbo.clear();
+    }
+    
 private:
     
     void resizeFbo(){

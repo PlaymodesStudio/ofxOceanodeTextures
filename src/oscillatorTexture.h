@@ -21,6 +21,15 @@ public:
     void draw(ofEventArgs &a) override;
     
     void presetRecallBeforeSettingParameters(ofJson &json) override;
+    
+    void deactivate(){
+        fbo.clear();
+        fboBuffer.clear();
+        blackIndexs.clear();
+        
+        isSetup = false;
+    }
+    
 private:
     bool isSetup;
     ofTexture&  computeBank(float phasor);
@@ -120,6 +129,14 @@ public:
     void draw(ofEventArgs &a) override;
 
     void presetRecallBeforeSettingParameters(ofJson &json) override;
+    
+    void deactivate(){
+        fbo.clear();
+        fboBuffer.clear();
+        blackIndexs.clear();
+        
+        isSetup = false;
+    }
 private:
     bool isSetup;
     ofTexture&  computeBank(float phasor);
