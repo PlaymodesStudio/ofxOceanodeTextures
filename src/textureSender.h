@@ -28,8 +28,8 @@ public:
     };
     
     void setup(){
-        addParameter(enable.set("Enable", 1), ofxOceanodeParameterFlags_DisableSavePreset);
-        addParameter(syphonName.set("Server", "Texture"), ofxOceanodeParameterFlags_DisableSavePreset);
+        addParameter(enable.set("Enable", 0), ofxOceanodeParameterFlags_DisableSavePreset);
+        addParameter(syphonName.set("Server", "Texture"));
         addParameter(masterFader.set("Opacity", 1, 0, 1), ofxOceanodeParameterFlags_DisableSavePreset);
         addParameter(textureIn.set("Texture In", nullptr));
         
@@ -62,13 +62,17 @@ public:
         syphonServer->setName(syphonName);
     #endif
     }
+	
+	void presetHasLoaded(){
+		enable = true;
+	}
     
 private:
     void sendTexture(ofTexture *&info){
         #ifdef TARGET_OSX
             if(syphonServer != NULL && enable && info != nullptr){
                 if(colorFbo.getHeight() != info->getHeight() || colorFbo.getWidth() != info->getWidth()){
-                    colorFbo.allocate(info->getWidth(), info->getHeight(), GL_RGB);
+                    colorFbo.allocate(info->getWidth(), info->getHeight(), GL_RGBA32F);
                 }
                 colorFbo.begin();
                 ofClear(0, 0, 0, 255);
