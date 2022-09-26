@@ -184,12 +184,12 @@ void chaoticOscillatorTexture::setup(){
     }));
     
     oscillatorShaderListeners.push(seed[0].newListener([&](vector<int> &vi){
-        newSeed = true;
+        if(seedRetrig) newSeed = true;
         vector<float> vf(vi.begin(), vi.end());
         onOscillatorShaderParameterChanged(seed[0], vf);
     }));
     oscillatorShaderListeners.push(seed[1].newListener([&](vector<int> &vi){
-        newSeed = true;
+        if(seedRetrig) newSeed = true;
         vector<float> vf(vi.begin(), vi.end());
         onOscillatorShaderParameterChanged(seed[1], vf);
     }));

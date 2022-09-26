@@ -90,6 +90,8 @@ private:
     
     ofParameter<ofTexture*>      oscillatorOut;
     
+    ofParameter<bool> seedRetrig;
+    
     map<string, int> oscillatorShaderParameterNameTBOPositionMap;
     
     map<string, int> oscillatorShaderParameterNameTBOSizeMap;
