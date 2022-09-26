@@ -64,6 +64,7 @@ void chaoticOscillatorTexture::setup(){
     
     addParameter(oscillatorOut.set("Output", nullptr, nullptr, nullptr));
     
+    addInspectorParameter(seedRetrig.set("Seed Retrig", true));
     
     //Listeners
     listeners.push(widthVec.newListener([this](vector<int> &vi){
