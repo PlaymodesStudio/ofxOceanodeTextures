@@ -31,6 +31,7 @@ public:
                 }
                 if(width != fbo.getWidth() || height != fbo.getHeight()){
                     resizeFbo();
+                    resizeMesh();
                 }
                 fbo.begin();
                 if(interpolate){
@@ -72,6 +73,7 @@ private:
     }
     
     void resizeMesh(){
+        mesh.clear();
         float itemW = width / (inputSize.x);
         float itemH = height / inputSize.y;
         for(int i = 0 ; i < inputSize.y; i++){
