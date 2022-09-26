@@ -71,7 +71,22 @@ public:
     void draw(ofEventArgs &a){
         if(input.get() != nullptr){
             if(!fbo.isAllocated() || fbo.getWidth() != input.get()->getWidth() || fbo.getHeight() != input.get()->getHeight()){
-                fbo.allocate(input.get()->getWidth(), input.get()->getHeight(), GL_RGB);
+                
+                ofFbo::Settings settings;
+                settings.width = input.get()->getWidth();
+                settings.height = input.get()->getHeight();
+                settings.internalformat = GL_RGBA32F;
+                settings.maxFilter = GL_NEAREST;
+                settings.minFilter = GL_NEAREST;
+                settings.numColorbuffers = 1;
+                settings.useDepth = false;
+                settings.useStencil = false;
+                settings.textureTarget = GL_TEXTURE_2D;
+                
+                fbo.allocate(settings);
+                fbo.begin();
+                ofClear(0, 0, 0, 255);
+                fbo.end();
             }
             
             shader.begin();
