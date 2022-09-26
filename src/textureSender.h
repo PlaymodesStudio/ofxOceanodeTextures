@@ -16,6 +16,107 @@
 //#include "ofxSpout.h"
 #endif
 
+class textureReceiver : public ofxOceanodeNodeModel{
+public:
+	textureReceiver() : ofxOceanodeNodeModel("Texture Receiver"){}
+	
+	void setup(){
+		dir.setup();
+		client.setup();
+
+
+		directoriesStrings = {"None"};
+		for( auto& server : dir.getServerList()){
+			directoriesStrings.push_back(server.serverName + "-" + server.appName);
+		}
+
+		auto selectorRef = addParameterDropdown(syphonSelector, "Server", 0, directoriesStrings);
+		addOutputParameter(output.set("Texture", nullptr));
+
+		listeners.push(dir.events.serverAnnounced.newListener([this, selectorRef](ofxSyphonServerDirectoryEventArgs &arg){
+			directoriesStrings = {"None"};
+			for( auto& server : dir.getServerList()){
+				directoriesStrings.push_back(server.serverName + "-" + server.appName);
+			}
+			selectorRef->setDropdownOptions(directoriesStrings);
+			syphonSelector.setMax(directoriesStrings.size());
+		}));
+
+		listeners.push(dir.events.serverUpdated.newListener([this, selectorRef](ofxSyphonServerDirectoryEventArgs &arg){
+			directoriesStrings = {"None"};
+			for( auto& server : dir.getServerList()){
+				directoriesStrings.push_back(server.serverName + "-" + server.appName);
+			}
+			selectorRef->setDropdownOptions(directoriesStrings);
+			syphonSelector.setMax(directoriesStrings.size());
+		}));
+
+		listeners.push(dir.events.serverRetired.newListener([this, selectorRef](ofxSyphonServerDirectoryEventArgs &arg){
+			directoriesStrings = {"None"};
+			for( auto& server : dir.getServerList()){
+				directoriesStrings.push_back(server.serverName + "-" + server.appName);
+			}
+			selectorRef->setDropdownOptions(directoriesStrings);
+			syphonSelector.setMax(directoriesStrings.size());
+		}));
+
+		listeners.push(syphonSelector.newListener([this](int &i){
+			if(i > 0){
+				client.set(dir.getDescription(i-1));
+			}
+		}));
+	}
+	
+	void update(ofEventArgs &a){
+		if(dir.isValidIndex(syphonSelector-1)){
+			client.bind();
+			int width = client.getWidth();
+			int height = client.getHeight();
+			client.unbind();
+			if((!fbo.isAllocated()
+			   || fbo.getWidth() != width
+			   || fbo.getHeight() != height)
+			   && width != 0
+			   && height != 0){
+				ofFbo::Settings fboSettings;
+                fboSettings.width = width;
+                fboSettings.height = height;
+                fboSettings.internalformat = GL_RGBA32F;
+				fboSettings.numColorbuffers = 1;
+                fboSettings.useDepth = false;
+                fboSettings.useStencil = false;
+                fboSettings.textureTarget = GL_TEXTURE_2D;
+                fboSettings.maxFilter = GL_NEAREST;
+                fboSettings.minFilter = GL_NEAREST;
+				fbo.allocate(fboSettings);
+			}
+			fbo.begin();
+			ofClear(0, 0, 0, 255);
+			client.draw(0, 0);
+			fbo.end();
+
+			output = &fbo.getTexture();
+		}else{
+			output = nullptr;
+		}
+	}
+	
+	void serverAnnounced(ofxSyphonServerDirectoryEventArgs &arg);
+	void serverUpdated(ofxSyphonServerDirectoryEventArgs &args);
+	void serverRetired(ofxSyphonServerDirectoryEventArgs &arg);
+	
+private:
+	vector<string> directoriesStrings;
+	ofxSyphonServerDirectory dir;
+	ofxSyphonClient client;
+	ofParameter<int> syphonSelector;
+	ofParameter<ofTexture*> output;
+
+	ofFbo fbo;
+
+	ofEventListeners listeners;
+};
+
 class textureSender : public ofxOceanodeNodeModel{
 public:
     textureSender() : ofxOceanodeNodeModel("Texture Sender"){
