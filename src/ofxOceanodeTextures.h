@@ -28,6 +28,7 @@
 //#include "oscTextureSender.h"
 //#include "vectorToTexture.h"
 //#include "textureResize.h"
+#include "simpleEffect.h"
 
 #include "ofxOceanode.h"
 
@@ -52,6 +53,19 @@ static void registerModels(ofxOceanode &o){
 	o.registerModel<textureRecorder>("Textures");
     o.registerModel<oscillatorTexture2>("Textures");
     o.registerModel<indexerTexture2>("Textures");
+    
+    ofDirectory dir("Effects");
+    for(auto f : dir.getFiles()){
+        ofFile file(f.getAbsolutePath());
+        ofBuffer buffer(file);
+        std::string config = buffer.getFirstLine();
+        config.erase(0,2); //Removes First Character
+        
+        std::string fileName = file.getFileName();
+        fileName.erase(fileName.size()-5, 5); //Removes .glsl
+        
+        o.registerModel<simpleEffect>("Effects", fileName, config);
+    }
 }
 static void registerType(ofxOceanode &o){
     o.registerType<ofTexture*>("Texture");
