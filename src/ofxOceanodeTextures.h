@@ -28,6 +28,7 @@
 //#include "oscTextureSender.h"
 //#include "vectorToTexture.h"
 //#include "textureResize.h"
+#include "displayOutput.h"
 #include "simpleEffect.h"
 
 #include "ofxOceanode.h"
@@ -53,6 +54,7 @@ static void registerModels(ofxOceanode &o){
 	o.registerModel<textureRecorder>("Textures");
     o.registerModel<oscillatorTexture2>("Textures");
     o.registerModel<indexerTexture2>("Textures");
+    o.registerModel<displayOutput>("Textures");
     
     ofDirectory dir("Effects");
     for(auto f : dir.getFiles()){
