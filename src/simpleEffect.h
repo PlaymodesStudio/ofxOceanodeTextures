@@ -81,7 +81,7 @@ public:
                                      floatParams[i].set(
                                                         paramInfo[0],
                                                         ofToFloat(paramInfo[1]),
-                                                        paramInfo[2] == "min" ? FLT_MIN : ofToFloat(paramInfo[2]),
+                                                        paramInfo[2] == "min" ? -FLT_MAX : ofToFloat(paramInfo[2]),
                                                         paramInfo[3] == "max" ? FLT_MAX : ofToFloat(paramInfo[3])));
 
             pRef->addReceiveFunc<ofTexture*>([this, i](ofTexture *const &tex){
