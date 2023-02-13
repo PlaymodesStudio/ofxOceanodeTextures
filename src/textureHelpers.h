@@ -69,7 +69,7 @@ public:
 		addParameter(r.set("Red", {0}, {0}, {1}));
 		addParameter(g.set("Green", {0}, {0}, {1}));
 		addParameter(b.set("Blue", {0}, {0}, {1}));
-        addParameter(output.set("Output", {0}, {0}, {1}));
+        addOutputParameter(output.set("Output", {0}, {0}, {1}));
         listener = input.newListener([this](ofTexture* &tex){
             if(tex != nullptr){
 				if(tex->getWidth() == 0 || tex->getHeight() == 0) return;
@@ -131,7 +131,7 @@ public:
         addParameter(input.set("Input", {0}, {0}, {1}));
         addParameter(width.set("Width", 32, 1, INT_MAX));
         addParameter(height.set("Height", 4, 1, INT_MAX));
-        addParameter(output.set("Output Tex", nullptr));
+        addOutputParameter(output.set("Output Tex", nullptr));
     }
     
     void draw(ofEventArgs &a){

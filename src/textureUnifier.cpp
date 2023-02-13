@@ -32,7 +32,7 @@ void textureUnifier::setup(){
         }));
         listeners.push(inputs[i].newListener(this, &textureUnifier::computeOutput));
     }
-    addParameter(output.set("Output", nullptr));
+    addOutputParameter(output.set("Output", nullptr));
 }
 
 void textureUnifier::computeOutput(ofTexture* &in){

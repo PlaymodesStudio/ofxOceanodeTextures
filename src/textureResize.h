@@ -21,7 +21,7 @@ public:
         addParameter(width.set("Width", 100, 1, 5120));
         addParameter(height.set("Height", 100, 1, 2880));
         addParameter(interpolate.set("Interpol.", false));
-        addParameter(output.set("Output", nullptr));
+        addOutputParameter(output.set("Output", nullptr));
         listener = input.newListener([this](ofTexture* &tex){
             if(input != nullptr){
                 if(inputSize.x != input.get()->getWidth() || inputSize.y != input.get()->getHeight()){

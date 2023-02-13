@@ -61,7 +61,7 @@ void oscillatorTexture::setup(){
     
     setParametersInfoMaps();
     
-    addParameter(oscillatorOut.set("Output", nullptr, nullptr, nullptr));
+    addOutputParameter(oscillatorOut.set("Output", nullptr, nullptr, nullptr));
     
     
     //Listeners
@@ -687,7 +687,7 @@ void oscillatorTexture2::setup(){
         invert_texture = nullptr;
     });
     
-    addParameter(oscillatorOut.set("Output", nullptr));
+    addOutputParameter(oscillatorOut.set("Output", nullptr));
 
     
     phaseOffset_texture = nullptr;

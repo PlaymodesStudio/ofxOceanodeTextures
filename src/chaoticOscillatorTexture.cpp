@@ -62,7 +62,7 @@ void chaoticOscillatorTexture::setup(){
     
     setParametersInfoMaps();
     
-    addParameter(oscillatorOut.set("Output", nullptr, nullptr, nullptr));
+    addOutputParameter(oscillatorOut.set("Output", nullptr, nullptr, nullptr));
     
     addInspectorParameter(seedRetrig.set("Seed Retrig", true));
     
