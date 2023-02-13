@@ -22,34 +22,35 @@ public:
         addParameter(height.set("Height", 100, 1, 2880));
         addParameter(interpolate.set("Interpol.", false));
         addOutputParameter(output.set("Output", nullptr));
-        listener = input.newListener([this](ofTexture* &tex){
-            if(input != nullptr){
-                if(inputSize.x != input.get()->getWidth() || inputSize.y != input.get()->getHeight()){
-                    inputSize.x = input.get()->getWidth();
-                    inputSize.y = input.get()->getHeight();
-                    resizeMesh();
-                }
-                if(width != fbo.getWidth() || height != fbo.getHeight()){
-                    resizeFbo();
-                    resizeMesh();
-                }
-                fbo.begin();
-                if(interpolate){
-                    shader.begin();
-                    shader.setUniformTexture("textureIn", *input.get(), 0);
-                    mesh.draw();
-                    shader.end();
-                }else{
-                    input.get()->draw(0,0, width, height);
-                }
-                fbo.end();
-                output = &fbo.getTexture();
-            }
-        });
         
         inputSize = glm::vec2(0,0);
         resizeFbo();
         setupShader();
+    }
+    
+    void draw(ofEventArgs &a){
+        if(input != nullptr){
+            if(inputSize.x != input.get()->getWidth() || inputSize.y != input.get()->getHeight()){
+                inputSize.x = input.get()->getWidth();
+                inputSize.y = input.get()->getHeight();
+                resizeMesh();
+            }
+            if(width != fbo.getWidth() || height != fbo.getHeight()){
+                resizeFbo();
+                resizeMesh();
+            }
+            fbo.begin();
+            if(interpolate){
+                shader.begin();
+                shader.setUniformTexture("textureIn", *input.get(), 0);
+                mesh.draw();
+                shader.end();
+            }else{
+                input.get()->draw(0,0, width, height);
+            }
+            fbo.end();
+            output = &fbo.getTexture();
+        }
     }
     
     void activate(){
@@ -165,8 +166,6 @@ private:
     ofParameter<int> width;
     ofParameter<int> height;
     ofParameter<ofTexture*> output;
-    
-    ofEventListener listener;
     
     ofFbo fbo;
     
