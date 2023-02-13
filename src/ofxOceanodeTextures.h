@@ -79,7 +79,7 @@ static void registerScope(ofxOceanode &o){
 
         if(tex != nullptr){
             ImTextureID textureID = (ImTextureID)(uintptr_t)tex->texData.textureID;
-            ImGui::Image(textureID, size2);
+            ImGui::Image(textureID, size);
         }
     });
 }
