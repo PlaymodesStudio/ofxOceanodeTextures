@@ -26,6 +26,7 @@ public:
         fbo.clear();
         fboBuffer.clear();
         blackIndexs.clear();
+        oscillatorOut = nullptr;
         
         isSetup = false;
     }
@@ -134,6 +135,7 @@ public:
         fbo.clear();
         fboBuffer.clear();
         blackIndexs.clear();
+        oscillatorOut = nullptr;
         
         isSetup = false;
     }

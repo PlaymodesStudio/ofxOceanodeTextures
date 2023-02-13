@@ -67,6 +67,7 @@ public:
     
     void deactivate(){
         fbo.clear();
+        output = nullptr;
     }
     
     void addEffectParameters(){

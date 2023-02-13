@@ -156,6 +156,7 @@ public:
     
     void deactivate(){
         fbo.clear();
+        output = nullptr;
     }
     
 private:
