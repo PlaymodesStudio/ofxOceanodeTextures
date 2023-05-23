@@ -180,6 +180,7 @@ void main()
     vec4 blendCol = texture(blendTgt, vec2(gl_FragCoord.xy / textureSize(base, 0).xy), 0);
 	//blendCol = blendCol*vec4(opacity, opacity, opacity, 1.0f);
     
+    if (mode < 25){
     vec3 result;
     if (mode == 0)
     {
@@ -289,5 +290,9 @@ void main()
 	result = mix(baseCol.rgb, result, opacity);
     
     fragColor = vec4(result, 1.0);
-}
+    }
+    else{
+        fragColor = vec4(mix(baseCol.rgb, blendCol.rgb, blendCol.a * opacity), baseCol.a + (blendCol.a * opacity));
+    }
+    }
 )"

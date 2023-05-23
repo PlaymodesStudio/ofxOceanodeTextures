@@ -68,7 +68,9 @@ public:
                         "Hue",
                         "Saturation",
                         "Color",
-                        "Luminosity"};
+                        "Luminosity",
+                        "Alpha"
+                    };
                     ImGui::Combo("##Dropdown", &blendmodes[i], vector_getter, static_cast<void*>(&options), options.size());
                     //ImGui::SameLine();
                     //ImGui::SliderFloat("##Slider", &opacities[i], 0, 1);
