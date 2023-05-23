@@ -91,7 +91,7 @@ public:
 				fbo.allocate(fboSettings);
 			}
 			fbo.begin();
-			ofClear(0, 0, 0, 255);
+			ofClear(0, 0, 0, 0);
 			client.draw(0, 0);
 			fbo.end();
 
