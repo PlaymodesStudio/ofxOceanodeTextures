@@ -30,7 +30,7 @@ public:
 			directoriesStrings.push_back(server.serverName + "-" + server.appName);
 		}
 
-		auto selectorRef = addParameterDropdown(syphonSelector, "Server", 0, directoriesStrings);
+		auto selectorRef = addParameterDropdown(syphonSelector, "Server", 0, directoriesStrings, ofxOceanodeParameterFlags_DisableSavePreset);
 		addOutputParameter(output.set("Texture", nullptr));
 
 		listeners.push(dir.events.serverAnnounced.newListener([this, selectorRef](ofxSyphonServerDirectoryEventArgs &arg){
@@ -104,6 +104,24 @@ public:
 	void serverAnnounced(ofxSyphonServerDirectoryEventArgs &arg);
 	void serverUpdated(ofxSyphonServerDirectoryEventArgs &args);
 	void serverRetired(ofxSyphonServerDirectoryEventArgs &arg);
+    
+    void presetSave(ofJson &json){
+        json["ServerName"] = directoriesStrings[syphonSelector];
+    }
+        
+    void presetRecallAfterSettingParameters(ofJson &json){
+        string name = "None";
+        if(json.count("ServerName") == 1){
+            name = json["ServerName"];
+        }
+        auto it = std::find(directoriesStrings.begin(), directoriesStrings.end(), name);
+        
+        if(it != directoriesStrings.end()){
+            syphonSelector = it - directoriesStrings.begin();
+        }else{
+            syphonSelector = 0;
+        }
+    }
 	
 private:
 	vector<string> directoriesStrings;
