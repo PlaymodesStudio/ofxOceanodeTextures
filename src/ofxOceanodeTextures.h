@@ -76,10 +76,29 @@ static void registerScope(ofxOceanode &o){
     o.registerScope<ofTexture*>([](ofxOceanodeAbstractParameter *p, ImVec2 size){
         auto tex = p->cast<ofTexture*>().getParameter().get();
         auto size2 = ImGui::GetContentRegionAvail();
-
+        bool keepAspectRatio = (p->getFlags() & ofxOceanodeParameterFlags_ScopeKeepAspectRatio);
+        float sizeAspectRatio=size.x/size.y;
+        float texAspectRatio;
+        if(tex != nullptr){
+            texAspectRatio = tex->getWidth() / tex->getHeight();
+        }
+        if(keepAspectRatio)
+        {
+            if(sizeAspectRatio<texAspectRatio)
+            {
+                size2.y = size2.x / texAspectRatio;
+                size2.x = size.x;
+            }
+            else
+            {
+                size2.x = size2.y * texAspectRatio;
+                size2.y = size.y;
+            }
+        }
+        
         if(tex != nullptr){
             ImTextureID textureID = (ImTextureID)(uintptr_t)tex->texData.textureID;
-            ImGui::Image(textureID, size);
+            ImGui::Image(textureID, size2);
         }
     });
 }
