@@ -442,7 +442,7 @@ ofTexture& indexerTexture::computeBank(){
 }
 
 vector<float> indexerTexture::newRandomValuesVector(bool x, bool y){
-    mt19937 g(static_cast<uint32_t>(time(0)));
+    std::mt19937 g(static_cast<uint32_t>(time(0)));
     if(x){
         vector<float> randomValuesVecX(width, 0);
         iota(randomValuesVecX.begin(), randomValuesVecX.end(), 0);
@@ -936,7 +936,7 @@ ofTexture& indexerTexture2::computeBank(){
 }
 
 vector<float> indexerTexture2::newRandomValuesVector(bool x, bool y){
-    mt19937 g(static_cast<uint32_t>(time(0)));
+    std::mt19937 g(static_cast<uint32_t>(time(0)));
     if(x){
         vector<float> randomValuesVecR(radiusResolution, 0);
         iota(randomValuesVecR.begin(), randomValuesVecR.end(), 0);
