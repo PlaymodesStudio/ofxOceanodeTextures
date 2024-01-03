@@ -22,9 +22,17 @@ public:
         addEffectParameters();
         addOutputParameter(output.set("Output", nullptr));
         
+        addInspectorParameter(drawOnEvent.set("Draw On Event", false));
+        
         string defaultVertSource =
         #include "defaultVertexShader.h"
         ;
+        
+        listener = input.newListener([this](ofTexture* &tex){
+            if(drawOnEvent){
+                compute();
+            }
+        });
                                     
         shader.setupShaderFromSource(GL_VERTEX_SHADER, defaultVertSource);
         shader.setupShaderFromFile(GL_FRAGMENT_SHADER, "Effects/" + effectName + ".glsl");
@@ -33,6 +41,12 @@ public:
     }
     
     void draw(ofEventArgs &a){
+        if(!drawOnEvent){
+            compute();
+        }
+    }
+    
+    void compute(){
         if(input.get() != nullptr){
             if(!fbo.isAllocated() || fbo.getWidth() != input.get()->getWidth() || fbo.getHeight() != input.get()->getHeight()){
                 ofFbo::Settings settings;
@@ -106,10 +120,15 @@ public:
     }
     
 private:
+    
+    ofEventListener listener;
+    
     vector<ofParameter<float>> floatParams;
     vector<ofTexture*> textures;
     ofParameter<ofTexture*> input;
     ofParameter<ofTexture*> output;
+    
+    ofParameter<bool> drawOnEvent;
     
     ofFbo fbo;
     
