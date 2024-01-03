@@ -30,6 +30,8 @@
 //#include "textureResize.h"
 #include "displayOutput.h"
 #include "simpleEffect.h"
+#include "textureComposer.h"
+#include "textureBlender.h"
 
 #include "ofxOceanode.h"
 
@@ -55,6 +57,8 @@ static void registerModels(ofxOceanode &o){
     o.registerModel<oscillatorTexture2>("Textures");
     o.registerModel<indexerTexture2>("Textures");
     o.registerModel<displayOutput>("Textures");
+    o.registerModel<textureComposer>("Textures");
+    o.registerModel<textureBlender>("Textures");
     
     ofDirectory dir("Effects");
     for(auto f : dir.getFiles()){
@@ -90,6 +94,7 @@ static void registerType(ofxOceanode &o){
     o.registerTypeWithBufferAndHeader<ofTexture*, ofFbo>("Texture", nullptr, textureBufferAssignFunction,
                                                             textureBufferReturnFunction,
                                                             textureBufferCheckFunction);
+    o.registerType<std::vector<glm::mat4>>("mat4", {glm::identity<glm::mat4>()});
 }
 static void registerScope(ofxOceanode &o){
     o.registerScope<ofTexture*>([](ofxOceanodeAbstractParameter *p, ImVec2 size){
