@@ -22,12 +22,12 @@ void textureBlender::setup(){
     
     std::vector<string> blendEquations =  {"GL_FUNC_ADD", "GL_FUNC_SUBTRACT", "GL_FUNC_REVERSE_SUBTRACT", "GL_MIN", "GL_MAX"};
     
-    addParameterDropdown(blendSrcColorFunction, "Src Color", 0, blendFunctions);
-    addParameterDropdown(blendSrcAlphaFunction, "Src Alpha", 0, blendFunctions);
-    addParameterDropdown(blendDstColorFunction, "Dst Color", 0, blendFunctions);
-    addParameterDropdown(blendDstAlphaFunction, "Dst Alpha", 0, blendFunctions);
-    addParameterDropdown(blendColorEquation, "Color Eq", 0, blendEquations);
-    addParameterDropdown(blendAlphaEquation, "Alpha Eq", 0, blendEquations);
+    addParameterDropdown(blendSrcColorFunction, "Src Color", 1, blendFunctions);
+    addParameterDropdown(blendSrcAlphaFunction, "Src Alpha", 1, blendFunctions);
+    addParameterDropdown(blendDstColorFunction, "Dst Color", 1, blendFunctions);
+    addParameterDropdown(blendDstAlphaFunction, "Dst Alpha", 1, blendFunctions);
+    addParameterDropdown(blendColorEquation, "Color Eq", 4, blendEquations);
+    addParameterDropdown(blendAlphaEquation, "Alpha Eq", 4, blendEquations);
     
     addParameter(opacity.set("Opacity", {1}, {0}, {1}));
     addParameter(alpha.set("Alpha", {1}, {0}, {1}));
