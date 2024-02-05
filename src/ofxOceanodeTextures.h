@@ -60,7 +60,6 @@ static void registerModels(ofxOceanode &o){
     o.registerModel<displayOutput>("Textures");
     o.registerModel<textureComposer>("Textures");
     o.registerModel<textureBlender>("Textures");
-    o.registerModel<LineMarks>("Textures");
     o.registerModel<AverageBrightness>("Textures");
     
     ofDirectory dir("Effects");
