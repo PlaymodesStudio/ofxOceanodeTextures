@@ -38,5 +38,7 @@ private:
     ofParameter<ofTexture*> output;
     
     ofFbo fbo;
+    
+    ofParameter<bool> active;
 };
 #endif /* textureBlender_h */

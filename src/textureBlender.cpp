@@ -11,7 +11,21 @@ textureBlender::textureBlender() : ofxOceanodeNodeModel("Texture Blender"){
     
 }
 
-void textureBlender::setup(){
+void textureBlender::setup()
+{
+    addParameter(active.set("Active", true));
+/*    activeListener = active.newListener([this](bool &b){
+        if(lastActiveState != b){
+            if(b){
+                container->activate();
+                if(resetPhaseOnActive) container->resetPhase();
+            }else{
+                container->deactivate();
+            }
+        }
+        lastActiveState = b;
+    });
+*/
     addParameter(width.set("Width", 100, 1, INT_MAX));
     addParameter(height.set("Height", 100, 1, INT_MAX));
     
@@ -35,71 +49,75 @@ void textureBlender::setup(){
     addParameter(output.set("Ouput", nullptr));
     
     listener = input.newListener([this](std::vector<ofTexture*> &vec){
-        if(vec.size() > 0 && vec[0] != nullptr){
-            if(!fbo.isAllocated() || fbo.getWidth() != width || fbo.getHeight() != height){
-                fbo.allocate(width, height);
-            }
-            
-            fbo.begin();
-            ofClear(0, 0, 0, 255);
-            glEnable(GL_BLEND);
-           
-            auto getGLenumFromFunctionInt = [](int val)->GLenum{
-                switch(val){
-                    case 0: return GL_ZERO;
-                    case 1: return GL_ONE;
-                    case 2: return GL_SRC_COLOR;
-                    case 3: return GL_ONE_MINUS_SRC_COLOR;
-                    case 4: return GL_DST_COLOR;
-                    case 5: return GL_ONE_MINUS_DST_COLOR;
-                    case 6: return GL_SRC_ALPHA;
-                    case 7: return GL_ONE_MINUS_SRC_ALPHA;
-                    case 8: return GL_DST_ALPHA;
-                    case 9: return GL_ONE_MINUS_DST_ALPHA;
-                    case 10: return GL_CONSTANT_COLOR;
-                    case 11: return GL_ONE_MINUS_CONSTANT_COLOR;
-                    case 12: return GL_CONSTANT_ALPHA;
-                    case 13: return GL_ONE_MINUS_CONSTANT_ALPHA;
-                    case 14: return GL_SRC_ALPHA_SATURATE;
-                    case 15: return GL_SRC1_COLOR;
-                    case 16: return GL_ONE_MINUS_SRC1_COLOR;
-                    case 17: return GL_SRC1_ALPHA;
-                    case 18: return GL_ONE_MINUS_SRC1_ALPHA;
-                    default: return GL_INVALID_ENUM;
+        if(active)
+        {
+            if(vec.size() > 0 && vec[0] != nullptr){
+                if(!fbo.isAllocated() || fbo.getWidth() != width || fbo.getHeight() != height){
+                    fbo.allocate(width, height);
                 }
-            };
-            
-            auto getGLenumFromEquationInt = [](int val)->GLenum{
-                switch(val){
-                    case 0: return GL_FUNC_ADD;
-                    case 1: return GL_FUNC_SUBTRACT;
-                    case 2: return GL_FUNC_REVERSE_SUBTRACT;
-                    case 3: return GL_MIN;
-                    case 4: return GL_MAX;
-                    default: return GL_INVALID_ENUM;
+                
+                fbo.begin();
+                ofClear(0, 0, 0, 255);
+                glEnable(GL_BLEND);
+               
+                auto getGLenumFromFunctionInt = [](int val)->GLenum{
+                    switch(val){
+                        case 0: return GL_ZERO;
+                        case 1: return GL_ONE;
+                        case 2: return GL_SRC_COLOR;
+                        case 3: return GL_ONE_MINUS_SRC_COLOR;
+                        case 4: return GL_DST_COLOR;
+                        case 5: return GL_ONE_MINUS_DST_COLOR;
+                        case 6: return GL_SRC_ALPHA;
+                        case 7: return GL_ONE_MINUS_SRC_ALPHA;
+                        case 8: return GL_DST_ALPHA;
+                        case 9: return GL_ONE_MINUS_DST_ALPHA;
+                        case 10: return GL_CONSTANT_COLOR;
+                        case 11: return GL_ONE_MINUS_CONSTANT_COLOR;
+                        case 12: return GL_CONSTANT_ALPHA;
+                        case 13: return GL_ONE_MINUS_CONSTANT_ALPHA;
+                        case 14: return GL_SRC_ALPHA_SATURATE;
+                        case 15: return GL_SRC1_COLOR;
+                        case 16: return GL_ONE_MINUS_SRC1_COLOR;
+                        case 17: return GL_SRC1_ALPHA;
+                        case 18: return GL_ONE_MINUS_SRC1_ALPHA;
+                        default: return GL_INVALID_ENUM;
+                    }
+                };
+                
+                auto getGLenumFromEquationInt = [](int val)->GLenum{
+                    switch(val){
+                        case 0: return GL_FUNC_ADD;
+                        case 1: return GL_FUNC_SUBTRACT;
+                        case 2: return GL_FUNC_REVERSE_SUBTRACT;
+                        case 3: return GL_MIN;
+                        case 4: return GL_MAX;
+                        default: return GL_INVALID_ENUM;
+                    }
+                };
+                
+                for(int i = 0; i < vec.size(); i++){
+                    glBlendFuncSeparate(getGLenumFromFunctionInt(blendSrcColorFunction), getGLenumFromFunctionInt(blendDstColorFunction),  getGLenumFromFunctionInt(blendSrcAlphaFunction), getGLenumFromFunctionInt(blendDstAlphaFunction));
+                    glBlendEquationSeparate(getGLenumFromEquationInt(blendColorEquation), getGLenumFromEquationInt(blendAlphaEquation));
+                    float _opacity = opacity->at(0);
+                    if(opacity->size() == vec.size()) _opacity = opacity->at(i);
+                    float _alpha = alpha->at(0);
+                    if(alpha->size() == vec.size()) _alpha = alpha->at(i);
+                    ofSetColor(_opacity * 255.0, _opacity * 255.0, _opacity * 255.0, _alpha * 255.0);
+                    
+                    ofPushMatrix();
+                    if(transformInput->size() == vec.size())
+                        ofMultMatrix(transformInput->at(i));
+                    
+                    vec[i]->draw(0, 0);
+                    ofPopMatrix();
                 }
-            };
-            
-            for(int i = 0; i < vec.size(); i++){
-                glBlendFuncSeparate(getGLenumFromFunctionInt(blendSrcColorFunction), getGLenumFromFunctionInt(blendDstColorFunction),  getGLenumFromFunctionInt(blendSrcAlphaFunction), getGLenumFromFunctionInt(blendDstAlphaFunction));
-                glBlendEquationSeparate(getGLenumFromEquationInt(blendColorEquation), getGLenumFromEquationInt(blendAlphaEquation));
-                float _opacity = opacity->at(0);
-                if(opacity->size() == vec.size()) _opacity = opacity->at(i);
-                float _alpha = alpha->at(0);
-                if(alpha->size() == vec.size()) _alpha = alpha->at(i);
-                ofSetColor(_opacity * 255.0, _opacity * 255.0, _opacity * 255.0, _alpha * 255.0);
+                glDisable(GL_BLEND);
+                fbo.end();
                 
-                ofPushMatrix();
-                if(transformInput->size() == vec.size())
-                    ofMultMatrix(transformInput->at(i));
-                
-                vec[i]->draw(0, 0);
-                ofPopMatrix();
+                output = &fbo.getTexture();
             }
-            glDisable(GL_BLEND);
-            fbo.end();
-            
-            output = &fbo.getTexture();
+
         }
     });
 }
