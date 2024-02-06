@@ -19,6 +19,7 @@ public:
         blackTexture.allocate(1, 1, GL_RGBA32F);
         
         addParameter(input.set("Input", nullptr));
+        addParameter(bypass.set("Bypass",false));
         addEffectParameters();
         addOutputParameter(output.set("Output", nullptr));
         
@@ -63,19 +64,26 @@ public:
                 fbo.allocate(settings);
             }
             
-            fbo.begin();
-            shader.begin();
-            ofClear(0, 0, 0, 255);
-            ofPushStyle();
-            ofSetColor(255, 255, 255, 255);
-            shader.setUniformTexture("tSource", *input.get(), 1);
-            bindUniforms();
-            ofDrawRectangle(0, 0, fbo.getWidth(), fbo.getHeight());
-            ofPopStyle();
-            shader.end();
-            fbo.end();
-            
-            output = &fbo.getTexture();
+            if(!bypass)
+            {
+                fbo.begin();
+                shader.begin();
+                ofClear(0, 0, 0, 255);
+                ofPushStyle();
+                ofSetColor(255, 255, 255, 255);
+                shader.setUniformTexture("tSource", *input.get(), 1);
+                bindUniforms();
+                ofDrawRectangle(0, 0, fbo.getWidth(), fbo.getHeight());
+                ofPopStyle();
+                shader.end();
+                fbo.end();
+                
+                output = &fbo.getTexture();
+            }
+            else
+            {
+                output = input;
+            }
         }
     }
     
@@ -129,6 +137,7 @@ private:
     ofParameter<ofTexture*> output;
     
     ofParameter<bool> drawOnEvent;
+    ofParameter<bool> bypass;
     
     ofFbo fbo;
     
