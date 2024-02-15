@@ -15,6 +15,8 @@ public:
     videoPlayer() : ofxOceanodeNodeModel("Video Player"){}
     
     void setup(){
+        blackTexture.allocate(1, 1, GL_RGBA32F);
+        
         ofDirectory dir;
         dir.open("Movies");
         dir.sort();
@@ -65,16 +67,20 @@ public:
     }
     
     void update(ofEventArgs &a){
-        if(requestedPosition != -1){
-            vPlayer.setPosition(requestedPosition);
-            requestedPosition = -1;
+        if(vPlayer.isPlaying())
+        {
+            if(requestedPosition != -1){
+                vPlayer.setPosition(requestedPosition);
+                requestedPosition = -1;
+            }
+            vPlayer.update();
+            if(vPlayer.isFrameNew()){
+                texture = &vPlayer.getTexture();
+            }
+            positionSetByItself = true;
+            position = vPlayer.getPosition();// / vPlayer.getDuration();
         }
-        vPlayer.update();
-        if(vPlayer.isFrameNew()){
-            texture = &vPlayer.getTexture();
-        }
-        positionSetByItself = true;
-        position = vPlayer.getPosition();// / vPlayer.getDuration();
+        else texture=&blackTexture;
     }
     
     void draw(ofEventArgs &a){
@@ -96,6 +102,7 @@ private:
     ofEventListeners listeners;
     
     ofVideoPlayer vPlayer;
+    ofTexture blackTexture;
 };
 
 
