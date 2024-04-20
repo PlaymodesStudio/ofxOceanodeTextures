@@ -550,13 +550,13 @@ void indexerTexture2::setup(){
     addParameter(indexOffset[0].set("Offs.R", vector<float>(1, 0), vector<float>(1, -width/2), vector<float>(1, width/2)));
     addParameter(indexOffset[1].set("Offs.A", vector<float>(1, 0), vector<float>(1, -height/2), vector<float>(1, height/2)));
     
-    addParameter(indexQuantization[0].set("Quant.R", vector<int>(1, width), vector<int>(1, 1), vector<int>(1, width)));
-    addParameter(indexQuantization[1].set("Quant.A", vector<int>(1, height), vector<int>(1, 1), vector<int>(1, height)));
+    addParameter(indexQuantization[0].set("Quant.R", vector<int>(1, radiusResolution), vector<int>(1, 1), vector<int>(1, width)));
+    addParameter(indexQuantization[1].set("Quant.A", vector<int>(1, angleResolution), vector<int>(1, 1), vector<int>(1, height)));
     
     setAndBindXYParamsVecFloat(indexCombination, "Comb", 0, 0, 1);
     
-    addParameter(indexModulo[0].set("Mod.R", vector<int>(1, width), vector<int>(1, 1), vector<int>(1, width)));
-    addParameter(indexModulo[1].set("Mod.A", vector<int>(1, height), vector<int>(1, 1), vector<int>(1, height)));
+    addParameter(indexModulo[0].set("Mod.R", vector<int>(1, radiusResolution), vector<int>(1, 1), vector<int>(1, width)));
+    addParameter(indexModulo[1].set("Mod.A", vector<int>(1, angleResolution), vector<int>(1, 1), vector<int>(1, height)));
     
     setParametersInfoMaps();
     

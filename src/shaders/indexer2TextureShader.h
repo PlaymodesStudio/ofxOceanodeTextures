@@ -38,11 +38,11 @@ void main(){
     //Compute Index
     float x = xVal-(float(width)/2);
     float y = yVal-(float(height)/2);
-    xVal = int((sqrt((x * x) + (y * y)) / sqrt((width*width)+(height*height))) * resolution.x * 2);
+    xVal = int((sqrt((x * x) + (y * y)) / sqrt((width*width)+(height*height))) * (resolution.x - 1) * 2);
     float ang;
     if(x > 0 && y >= 0){
         ang = atan(y/x);
-    }else if(x == 0 && y > 0){
+    }else if(x == 0 && y >= 0){
         ang = M_PI / 2;
     }else if(x < 0){
         ang = atan(y/x) + M_PI;
