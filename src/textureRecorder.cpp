@@ -57,7 +57,7 @@ void textureRecorder::inputListener(ofTexture* &texture){
                 fbo.begin();
                 input.get()->draw(0,0);
                 fbo.end();
-                ofFloatPixels pixels;
+                ofPixels pixels;
                 fbo.getTexture().readToPixels(pixels);
                 ofSaveImage(pixels, "recordings/" + filename.get() +  "_" + initRecordingTimestamp + "/" + filename.get() + "_" + ofToString(frameCounter, 9, '0') + ".png");
             }
