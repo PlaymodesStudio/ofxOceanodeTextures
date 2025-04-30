@@ -13,7 +13,10 @@ public:
     void setup(){
         //addInspectorParameter(numColors.set("Num Colors", 5, 2, 10));
         addParameter(input.set("Input", nullptr));
+        addParameter(threshold.set("Thrs.",1.0,0.0,1.0));
         addParameter(avgBright.set("Avg.Bright",0,0,1));
+        addParameter(maxBright.set("Max.Bright",0,0,1));
+
     }
     
     void draw(ofEventArgs &a)
@@ -50,14 +53,26 @@ public:
             ofPixels pixels;
             fbo.readToPixels(pixels); // Read the data back to CPU
             float totalBrightness = 0.0f;
+            float maxBrightness = 0.0f;
+            float auxMaxBright = 0.0f;
+            int numPixelsAveraged=1;
             int numChannels = pixels.getNumChannels();
             for (int i = 0; i < pixels.size(); i += numChannels)
             {
                 // Assuming an RGB format
                 float brightness = (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3.0f;
-                totalBrightness += brightness;
+                if((brightness/255.0)>threshold)
+                {
+                    if((brightness/255.0)>(auxMaxBright))
+                    {
+                        auxMaxBright=brightness/255.0;
+                    }
+                    numPixelsAveraged++;
+                    totalBrightness += brightness;
+                }
             }
-            avgBright = ((totalBrightness / (pixels.getWidth() * pixels.getHeight()))/255.0)*1;
+            maxBright = auxMaxBright;
+            avgBright = ((totalBrightness / (numPixelsAveraged))/255.0)*1;
         }
     }
 	
@@ -75,7 +90,9 @@ private:
     ofParameter<ofTexture*> input;
     ofParameter<int> resX;
     ofParameter<int> resY;
+    ofParameter<float> threshold;
     ofParameter<float> avgBright;
+    ofParameter<float> maxBright;
 
     ofFbo fbo;
     
