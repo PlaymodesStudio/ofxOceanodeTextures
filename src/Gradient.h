@@ -17,7 +17,7 @@ public:
     Gradient() : ofxOceanodeNodeModel("Gradient"){};
     
     void setup(){
-        addInspectorParameter(numColors.set("Num Colors", 5, 2, 10));
+        addInspectorParameter(numColors.set("Num Colors", 2, 2, 10));
         addParameter(input.set("Input", nullptr));
         addOutputParameter(output.set("Output", nullptr));
         
