@@ -75,7 +75,7 @@ public:
     
     void draw(ofEventArgs &a) override{
         ofTexture* tex = input;
-        if(tex != nullptr){
+        if((tex != nullptr)&&(tex->isAllocated())){
             if(tex->getWidth() == 0 || tex->getHeight() == 0) return;
             if(tempOutput.size() != (tex->getWidth()+separator) * tex->getHeight()){
                 tempOutput.resize((tex->getWidth()+separator) * tex->getHeight(), 0);
