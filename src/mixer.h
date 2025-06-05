@@ -45,7 +45,7 @@ public:
                     ImGui::Text("%s", ("Layer " + ofToString(i+1, 2, '0')).c_str());
                     ImGui::SameLine(90);
                     vector<string> options = {"Normal",
-                        "Multiply",
+						"Multiply",
                         "Average",
                         "Add",
                         "Substract",
@@ -69,6 +69,8 @@ public:
                         "Saturation",
                         "Color",
                         "Luminosity",
+						"Max",
+						"Min",
                         "Alpha"
                     };
                     ImGui::Combo("##Dropdown", &blendmodes[i], vector_getter, static_cast<void*>(&options), options.size());

@@ -44,6 +44,9 @@ R"(
 #define BlendGlow(base, blend) BlendReflect(blend, base)
 #define BlendPhoenix(base, blend) (min(base, blend) - max(base, blend) + vec3(1.0))
 #define BlendOpacity(base, blend, F, O) (F(base, blend) * O + blend * (1.0 - O))
+#define BlendMaximum(base, blend) max(base, blend)
+#define BlendMinimum(base, blend) min(base, blend)
+
 #define GammaCorrection(color, gamma)pow(color, 1.0 / gamma)
 #define LevelsControlInputRange(color, minInput, maxInput)min(max(color - vec3(minInput), vec3(0.0)) / (vec3(maxInput) - vec3(minInput)), vec3(1.0))
 #define LevelsControlInput(color, minInput, gamma, maxInput)GammaCorrection(LevelsControlInputRange(color, minInput, maxInput), gamma)
@@ -180,119 +183,130 @@ void main()
     vec4 blendCol = texture(blendTgt, vec2(gl_FragCoord.xy / textureSize(base, 0).xy), 0);
 	//blendCol = blendCol*vec4(opacity, opacity, opacity, 1.0f);
     
-    if (mode < 25){
-    vec3 result;
-    if (mode == 0)
-    {
-        result = BlendNormal(baseCol.rgb, blendCol.rgb);
-    }
-    else if (mode == 1)
-    {
-        result = BlendMultiply(baseCol.rgb, blendCol.rgb);
-    }
-    else if (mode == 2)
-    {
-        result = BlendAverage(baseCol.rgb, blendCol.rgb);
-    }
-    else if (mode == 3)
-    {
-        result = BlendAdd(baseCol.rgb, blendCol.rgb);
-    }
-    else if (mode == 4)
-    {
-        result = BlendSubstract(baseCol.rgb, blendCol.rgb);
-    }
-    else if (mode == 5)
-    {
-        result = BlendDifference(baseCol.rgb, blendCol.rgb);
-    }
-    else if (mode == 6)
-    {
-        result = BlendNegation(baseCol.rgb, blendCol.rgb);
-    }
-    else if (mode == 7)
-    {
-        result = BlendExclusion(baseCol.rgb, blendCol.rgb);
-    }
-    else if (mode == 8)
-    {
-        result = BlendScreen(baseCol.rgb, blendCol.rgb);
-    }
-    else if (mode == 9)
-    {
-        result = BlendOverlay(baseCol.rgb, blendCol.rgb);
-    }
-    else if (mode == 10)
-    {
-        result = BlendSoftLight(baseCol.rgb, blendCol.rgb);
-    }
-    else if (mode == 11)
-    {
-        result = BlendHardLight(baseCol.rgb, blendCol.rgb);
-    }
-    else if (mode == 12)
-    {
-        result = BlendColorDodge(baseCol.rgb, blendCol.rgb);
-    }
-    else if (mode == 13)
-    {
-        result = BlendColorBurn(baseCol.rgb, blendCol.rgb);
-    }
-    else if (mode == 14)
-    {
-        result = BlendLinearLight(baseCol.rgb, blendCol.rgb);
-    }
-    else if (mode == 15)
-    {
-        result = BlendVividLight(baseCol.rgb, blendCol.rgb);
-    }
-    else if (mode == 16)
-    {
-        result = BlendPinLight(baseCol.rgb, blendCol.rgb);
-    }
-    else if (mode == 17)
-    {
-        result = BlendHardMix(baseCol.rgb, blendCol.rgb);
-    }
-    else if (mode == 18)
-    {
-        result = BlendReflect(baseCol.rgb, blendCol.rgb);
-    }
-    else if (mode == 19)
-    {
-        result = BlendGlow(baseCol.rgb, blendCol.rgb);
-    }
-    else if (mode == 20)
-    {
-        result = BlendPhoenix(baseCol.rgb, blendCol.rgb);
-    }
-    else if (mode == 21)
-    {
-        result = BlendHue(baseCol.rgb, blendCol.rgb);
-    }
-    else if (mode == 22)
-    {
-        result = BlendSaturation(baseCol.rgb, blendCol.rgb);
-    }
-    else if (mode == 23)
-    {
-        result = BlendColor(baseCol.rgb, blendCol.rgb);
-    }
-    else if (mode == 24)
-    {
-        result = BlendLuminosity(baseCol.rgb, blendCol.rgb);
+    if (mode < 27)
+	{
+		vec3 result;
+		if (mode == 0)
+		{
+			result = BlendNormal(baseCol.rgb, blendCol.rgb);
+		}
+		else if (mode == 1)
+		{
+			result = BlendMultiply(baseCol.rgb, blendCol.rgb);
+		}
+		else if (mode == 2)
+		{
+			result = BlendAverage(baseCol.rgb, blendCol.rgb);
+		}
+		else if (mode == 3)
+		{
+			result = BlendAdd(baseCol.rgb, blendCol.rgb);
+		}
+		else if (mode == 4)
+		{
+			result = BlendSubstract(baseCol.rgb, blendCol.rgb);
+		}
+		else if (mode == 5)
+		{
+			result = BlendDifference(baseCol.rgb, blendCol.rgb);
+		}
+		else if (mode == 6)
+		{
+			result = BlendNegation(baseCol.rgb, blendCol.rgb);
+		}
+		else if (mode == 7)
+		{
+			result = BlendExclusion(baseCol.rgb, blendCol.rgb);
+		}
+		else if (mode == 8)
+		{
+			result = BlendScreen(baseCol.rgb, blendCol.rgb);
+		}
+		else if (mode == 9)
+		{
+			result = BlendOverlay(baseCol.rgb, blendCol.rgb);
+		}
+		else if (mode == 10)
+		{
+			result = BlendSoftLight(baseCol.rgb, blendCol.rgb);
+		}
+		else if (mode == 11)
+		{
+			result = BlendHardLight(baseCol.rgb, blendCol.rgb);
+		}
+		else if (mode == 12)
+		{
+			result = BlendColorDodge(baseCol.rgb, blendCol.rgb);
+		}
+		else if (mode == 13)
+		{
+			result = BlendColorBurn(baseCol.rgb, blendCol.rgb);
+		}
+		else if (mode == 14)
+		{
+			result = BlendLinearLight(baseCol.rgb, blendCol.rgb);
+		}
+		else if (mode == 15)
+		{
+			result = BlendVividLight(baseCol.rgb, blendCol.rgb);
+		}
+		else if (mode == 16)
+		{
+			result = BlendPinLight(baseCol.rgb, blendCol.rgb);
+		}
+		else if (mode == 17)
+		{
+			result = BlendHardMix(baseCol.rgb, blendCol.rgb);
+		}
+		else if (mode == 18)
+		{
+			result = BlendReflect(baseCol.rgb, blendCol.rgb);
+		}
+		else if (mode == 19)
+		{
+			result = BlendGlow(baseCol.rgb, blendCol.rgb);
+		}
+		else if (mode == 20)
+		{
+			result = BlendPhoenix(baseCol.rgb, blendCol.rgb);
+		}
+		else if (mode == 21)
+		{
+			result = BlendHue(baseCol.rgb, blendCol.rgb);
+		}
+		else if (mode == 22)
+		{
+			result = BlendSaturation(baseCol.rgb, blendCol.rgb);
+		}
+		else if (mode == 23)
+		{
+			result = BlendColor(baseCol.rgb, blendCol.rgb);
+		}
+		else if (mode == 24)
+		{
+			result = BlendLuminosity(baseCol.rgb, blendCol.rgb);
+		}
+		else if (mode == 25)
+		{
+		  result = BlendMaximum(baseCol.rgb, blendCol.rgb);
+		  // proba treient directament el resultat de max sense aplicar opacitat
+		  fragColor = vec4(result, 1.0);
+		  return;	
+		}
+		else if (mode == 26)
+		{
+			result = BlendMinimum(baseCol.rgb, blendCol.rgb);
+			// proba treient directament el resultat de max sense aplicar opacitat
+			fragColor = vec4(result, 1.0);
+			return;	
+		}
+		   
+		result = mix(baseCol.rgb, result, opacity);
+		fragColor = vec4(result, 1.0);
     }
     else
-    {
-        result = BlendNormal(baseCol.rgb, blendCol.rgb);
-    }
-    
-	result = mix(baseCol.rgb, result, opacity);
-    
-    fragColor = vec4(result, 1.0);
-    }
-    else{
+	{
         fragColor = vec4(mix(baseCol.rgb, blendCol.rgb, blendCol.a * opacity), baseCol.a + (blendCol.a * opacity));
     }
-    }
+}
 )"
