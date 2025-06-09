@@ -8,6 +8,9 @@
 #ifndef simpleEffect_h
 #define simpleEffect_h
 
+#include "ofMain.h"
+#include "ofxOceanodeNodeModel.h"
+
 class simpleEffect : public ofxOceanodeNodeModel {
 public:
     simpleEffect(std::string name, std::string config) : effectName(name), conf(config), ofxOceanodeNodeModel(name){};
@@ -94,36 +97,55 @@ public:
     
     void addEffectParameters(){
         vector<std::string> splittedConfig = ofSplitString(conf, ", ");
+        if(conf.empty()){
+            splittedConfig.clear();
+        }
         int numParams = splittedConfig.size();
+        paramTypes.resize(numParams);
         floatParams.resize(numParams);
+        colorParams.resize(numParams);
         textures.resize(numParams, nullptr);
         
         for(int i = 0; i < numParams; i++){
             vector<std::string> paramInfo = ofSplitString(splittedConfig[i], ":");
-            auto pRef = addParameter(
+            
+            if(paramInfo.size() == 2 && paramInfo[1] == "color"){
+                paramTypes[i] = "color";
+                addParameter(colorParams[i].set(paramInfo[0], ofFloatColor(1.0, 1.0, 1.0, 1.0), ofFloatColor(0.0, 0.0, 0.0, 0.0), ofFloatColor(1.0, 1.0, 1.0, 1.0)));
+            }else{
+                paramTypes[i] = "float";
+                auto pRef = addParameter(
                                      floatParams[i].set(
                                                         paramInfo[0],
-                                                        ofToFloat(paramInfo[1]),
-                                                        paramInfo[2] == "min" ? -FLT_MAX : ofToFloat(paramInfo[2]),
-                                                        paramInfo[3] == "max" ? FLT_MAX : ofToFloat(paramInfo[3])));
+                                                        paramInfo.size() > 1 ? ofToFloat(paramInfo[1]) : 0.0f,
+                                                        paramInfo.size() > 2 ? (paramInfo[2] == "min" ? -FLT_MAX : ofToFloat(paramInfo[2])) : -FLT_MAX,
+                                                        paramInfo.size() > 3 ? (paramInfo[3] == "max" ? FLT_MAX : ofToFloat(paramInfo[3])) : FLT_MAX));
 
-            pRef->addReceiveFunc<ofTexture*>([this, i](ofTexture *const &tex){
-                textures[i] = (ofTexture*)tex;
-            });
-            pRef->addDisconnectFunc([this, i](){
-                textures[i] = nullptr;
-            });
+                pRef->addReceiveFunc<ofTexture*>([this, i](ofTexture *const &tex){
+                    textures[i] = (ofTexture*)tex;
+                });
+                pRef->addDisconnectFunc([this, i](){
+                    textures[i] = nullptr;
+                });
+            }
         }
     }
     
     void bindUniforms(){
         vector<std::string> splittedConfig = ofSplitString(conf, ", ");
+        if(conf.empty()){
+            splittedConfig.clear();
+        }
         int numParams = splittedConfig.size();
         for(int i = 0; i < numParams; i++){
             vector<std::string> paramInfo = ofSplitString(splittedConfig[i], ":");
 
-            shader.setUniformTexture(paramInfo[0] + "Tex", textures[i] != nullptr ? *textures[i] : blackTexture, i+2);
-            shader.setUniform1f(paramInfo[0], floatParams[i]);
+            if(paramTypes[i] == "color"){
+                shader.setUniform4f(paramInfo[0], colorParams[i]);
+            }else{ // It's a float
+                shader.setUniformTexture(paramInfo[0] + "Tex", textures[i] != nullptr ? *textures[i] : blackTexture, i+2);
+                shader.setUniform1f(paramInfo[0], floatParams[i]);
+            }
         }
     }
     
@@ -131,8 +153,11 @@ private:
     
     ofEventListener listener;
     
-    vector<ofParameter<float>> floatParams;
-    vector<ofTexture*> textures;
+    std::vector<std::string> paramTypes;
+    std::vector<ofParameter<float>> floatParams;
+    std::vector<ofParameter<ofFloatColor>> colorParams;
+    std::vector<ofTexture*> textures;
+
     ofParameter<ofTexture*> input;
     ofParameter<ofTexture*> output;
     
