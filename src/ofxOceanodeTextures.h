@@ -131,16 +131,19 @@ static void registerScope(ofxOceanode &o){
             ImGui::Image(textureID, size2);
             
             // Restore cursor position to overlay button
-            ImGui::SetCursorPos(ImVec2(imagePos.x + size2.x - 40, imagePos.y + 5));
+            ImGui::SetCursorPos(ImVec2(imagePos.x + size2.x - 20, imagePos.y + 5));
             
             // Draw the [AR] toggle button
             if(keepAspectRatio) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0,0.5,0.0,0.5));
             else ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.55,0.55,0.55,0.5));
             
-            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1, 0.1, 0.1, 0.5));
-            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0, 0.0, 0.0, 0.0));
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered,ImVec4(0.0, 0.0, 0.0, 0.0));
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive,ImVec4(0.0, 0.0, 0.0, 0.0));
+			
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
             
-            if(ImGui::Button("[AR]##KeepAspectRatio"))
+            if(ImGui::Button("[]##KeepAspectRatioNode"))
             {
                 if(keepAspectRatio){
                     absParam.setFlags(absParam.getFlags()&~ofxOceanodeParameterFlags_ScopeKeepAspectRatio);
@@ -149,7 +152,7 @@ static void registerScope(ofxOceanode &o){
             }
             
             ImGui::PopStyleVar();
-            ImGui::PopStyleColor(2);
+            ImGui::PopStyleColor(4);
         }
     });
     o.registerScope<vector<ofTexture*>>([](ofxOceanodeAbstractParameter *p, ImVec2 size){
