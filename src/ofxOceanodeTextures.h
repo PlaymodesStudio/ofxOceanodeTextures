@@ -102,24 +102,25 @@ static void registerScope(ofxOceanode &o){
     o.registerScope<ofTexture*>([](ofxOceanodeAbstractParameter *p, ImVec2 size){
         auto tex = p->cast<ofTexture*>().getParameter().get();
         auto &absParam = *p;
-        auto size2 = ImGui::GetContentRegionAvail();
         bool keepAspectRatio = (p->getFlags() & ofxOceanodeParameterFlags_ScopeKeepAspectRatio);
         float sizeAspectRatio=size.x/size.y;
         float texAspectRatio;
         if(tex != nullptr){
             texAspectRatio = tex->getWidth() / tex->getHeight();
         }
-        if(keepAspectRatio)
+        if(keepAspectRatio && tex != nullptr)
         {
             if(sizeAspectRatio<texAspectRatio)
             {
-                size2.y = size2.x / texAspectRatio;
-                size2.x = size.x;
+                // Width is limiting factor
+                size.x = size.x;
+                size.y = size.x / texAspectRatio;
             }
             else
             {
-                size2.x = size2.y * texAspectRatio;
-                size2.y = size.y;
+                // Height is limiting factor
+                size.y = size.y;
+                size.x = size.y * texAspectRatio;
             }
         }
         
@@ -128,10 +129,10 @@ static void registerScope(ofxOceanode &o){
             ImVec2 imagePos = ImGui::GetCursorPos();
             
             ImTextureID textureID = (ImTextureID)(uintptr_t)tex->texData.textureID;
-            ImGui::Image(textureID, size2);
+            ImGui::Image(textureID, size);
             
             // Restore cursor position to overlay button
-            ImGui::SetCursorPos(ImVec2(imagePos.x + size2.x - 20, imagePos.y + 5));
+            ImGui::SetCursorPos(ImVec2(imagePos.x + size.x - 20, imagePos.y + 5));
             
             // Draw the [AR] toggle button
             if(keepAspectRatio) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0,0.5,0.0,0.5));
@@ -155,9 +156,11 @@ static void registerScope(ofxOceanode &o){
             ImGui::PopStyleColor(4);
         }
     });
+	
     o.registerScope<vector<ofTexture*>>([](ofxOceanodeAbstractParameter *p, ImVec2 size){
         auto vtex = p->cast<vector<ofTexture*>>().getParameter().get();
-        auto size2 = ImGui::GetContentRegionAvail();
+        // FIXED: Use the provided size parameter instead of GetContentRegionAvail()
+        auto size2 = size;
         bool keepAspectRatio = (p->getFlags() & ofxOceanodeParameterFlags_ScopeKeepAspectRatio);
         float sizeAspectRatio=size.x/size.y;
         
