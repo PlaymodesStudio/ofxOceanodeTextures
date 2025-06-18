@@ -159,8 +159,6 @@ static void registerScope(ofxOceanode &o){
 	
     o.registerScope<vector<ofTexture*>>([](ofxOceanodeAbstractParameter *p, ImVec2 size){
         auto vtex = p->cast<vector<ofTexture*>>().getParameter().get();
-        // FIXED: Use the provided size parameter instead of GetContentRegionAvail()
-        auto size2 = size;
         bool keepAspectRatio = (p->getFlags() & ofxOceanodeParameterFlags_ScopeKeepAspectRatio);
         float sizeAspectRatio=size.x/size.y;
         
@@ -174,19 +172,19 @@ static void registerScope(ofxOceanode &o){
                 {
                     if(sizeAspectRatio<texAspectRatio)
                     {
-                        size2.y = size2.x / texAspectRatio;
-                        size2.x = size.x;
+                        size.y = size.x / texAspectRatio;
+                        size.x = size.x;
                     }
                     else
                     {
-                        size2.x = size2.y * texAspectRatio;
-                        size2.y = size.y;
+                        size.x = size.y * texAspectRatio;
+                        size.y = size.y;
                     }
                 }
                 
                 ImGui::SetCursorPos(cursorpos);
                 ImTextureID textureID = (ImTextureID)(uintptr_t)tex->texData.textureID;
-                ImGui::Image(textureID, size2, ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, sqrt(1.0/vtex.size())));
+                ImGui::Image(textureID, size, ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, sqrt(1.0/vtex.size())));
             }
         }
     });
