@@ -6,6 +6,7 @@ uniform ivec2 size;
 uniform ivec2 resolution;
 uniform float time;
 uniform float createRandoms;
+uniform vec2 center;
 
 uniform samplerBuffer parameters;
 
@@ -36,9 +37,21 @@ void main(){
     int dimensionsSum = resolution.x+resolution.y;
     
     //Compute Index
-    float x = xVal-(float(width)/2);
-    float y = yVal-(float(height)/2);
-    xVal = int((sqrt((x * x) + (y * y)) / sqrt((width*width)+(height*height))) * (resolution.x - 1) * 2);
+    // Convert normalized center (0-1) to pixel coordinates
+    float centerX = center.x * float(width);
+    float centerY = center.y * float(height);
+    float x = float(xVal) - centerX;
+    float y = float(yVal) - centerY;
+
+    // Calculate maximum possible distance from center to any corner
+    float maxDistX = max(centerX, float(width) - centerX);
+    float maxDistY = max(centerY, float(height) - centerY);
+    float maxDistance = sqrt((maxDistX * maxDistX) + (maxDistY * maxDistY));
+
+    // Normalize distance using the maximum possible distance from this center
+    float distance = sqrt((x * x) + (y * y));
+    xVal = int((distance / maxDistance) * float(resolution.x - 1));
+    xVal = min(xVal, resolution.x - 1); // Boundary protection
     float ang;
     if(x > 0 && y >= 0){
         ang = atan(y/x);
