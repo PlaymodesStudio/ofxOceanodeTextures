@@ -59,7 +59,7 @@ public:
     
     void deactivate(){
         fbo.clear();
-        output = nullptr;
+//        output = nullptr;
     }
     
 private:

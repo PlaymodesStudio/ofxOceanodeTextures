@@ -43,6 +43,7 @@ public:
             }
             
             fbo.begin();
+            ofClear(0, 0, 0, 255); //make black background
             ofPushStyle();
             ofSetColor(255, 255, 255, 255);
             input.get()->draw(0,0, input.get()->getWidth(), input.get()->getHeight());

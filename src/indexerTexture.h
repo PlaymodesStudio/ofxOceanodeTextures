@@ -24,7 +24,7 @@ public:
     void deactivate(){
         fbo.clear();
         fboBuffer.clear();
-        indexsOut = nullptr;
+//        indexsOut = nullptr;
         
         isSetup = false;
     }
@@ -131,7 +131,7 @@ public:
     void deactivate(){
         fbo.clear();
         fboBuffer.clear();
-        indexsOut = nullptr;
+//        indexsOut = nullptr;
         
         isSetup = false;
     }

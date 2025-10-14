@@ -60,6 +60,7 @@ void textureRecorder::inputListener(ofTexture* &texture){
                 ofPixels pixels;
                 fbo.getTexture().readToPixels(pixels);
                 ofSaveImage(pixels, "recordings/" + filename.get() +  "_" + initRecordingTimestamp + "/" + filename.get() + "_" + ofToString(frameCounter, 9, '0') + ".png");
+//                image.clear();
             }
             frameCounter++;
             if(lastFrame){
@@ -81,7 +82,7 @@ void textureRecorder::recordListener(bool &b){
         setFlags(ofxOceanodeNodeModelFlags_None);
         if(createVideo){
             string command = "cd " + ofToDataPath("recordings/" + filename.get() +  "_" + initRecordingTimestamp, true);
-            command += " && /usr/local/Cellar/ffmpeg/4.4_2/bin/ffmpeg -f image2 -framerate " + ofToString(ofGetTargetFrameRate()) + " -pattern_type glob -i '*.png' -c:v prores_ks -profile:v 4 " + filename.get() + ".mov";
+            command += " && /opt/homebrew/bin/ffmpeg -f image2 -framerate " + ofToString(ofGetTargetFrameRate()) + " -pattern_type glob -i '*.png' -c:v prores_ks -profile:v 4 " + filename.get() + ".mov";
             system(command.c_str());
         }
     }
