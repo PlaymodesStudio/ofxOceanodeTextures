@@ -90,12 +90,15 @@ public:
                 fboSettings.minFilter = GL_NEAREST;
 				fbo.allocate(fboSettings);
 			}
-			fbo.begin();
-			ofClear(0, 0, 0, 0);
-			client.draw(0, 0);
-			fbo.end();
+			if((width!=0)&&(height!=0))
+			{
+				fbo.begin();
+				ofClear(0, 0, 0, 0);
+				client.draw(0, 0);
+				fbo.end();
 
-			output = &fbo.getTexture();
+				output = &fbo.getTexture();
+			}
 		}else{
 			output = nullptr;
 		}
