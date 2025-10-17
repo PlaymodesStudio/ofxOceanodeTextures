@@ -157,8 +157,7 @@ public:
         
         listeners.push(textureIn.newListener(this, &textureSender::sendTexture));
         
-        bool tempEnable = true;
-        enableSyphonListener(tempEnable);
+        listeners.push(enable.newListener(this, &textureSender::enableSyphonListener));
         color = ofColor::lightGray;
     }
     
@@ -171,9 +170,9 @@ public:
             
             syphonServer->setName(syphonName);
             
-            listeners.push(syphonName.newListener(this, &textureSender::syphonNameListener));
+            syphonNameEventListener = syphonName.newListener(this, &textureSender::syphonNameListener);
         }else{
-            listeners.unsubscribe(1);
+            syphonNameEventListener.unsubscribe();
             delete syphonServer;
         }
     #endif
@@ -224,6 +223,7 @@ private:
     bool invert;
     
     ofEventListeners listeners;
+    ofEventListener syphonNameEventListener;
 };
 
 #endif /* senderManager_h */

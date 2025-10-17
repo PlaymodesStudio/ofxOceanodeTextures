@@ -50,8 +50,8 @@ static void registerModels(ofxOceanode &o){
 	o.registerModel<vectorToTexture>("Textures");
 	o.registerModel<textureReader>("Textures");
 	o.registerModel<Gradient>("Textures");
-	o.registerModel<textureResize>("Texture");
-	o.registerModel<textureUnifier>("Texture");
+	o.registerModel<textureResize>("Textures");
+	o.registerModel<textureUnifier>("Textures");
 	o.registerModel<textureReceiver>("Textures");
 	o.registerModel<subTexture>("Textures");
 	o.registerModel<textureRecorder>("Textures");
@@ -74,6 +74,7 @@ static void registerModels(ofxOceanode &o){
         
         o.registerModel<simpleEffect>("Effects", fileName, config);
     }
+    dir.close();
 }
 static void registerType(ofxOceanode &o){
     auto textureBufferAssignFunction = [](ofTexture* &tex, ofFbo &fbo){
@@ -83,6 +84,7 @@ static void registerType(ofxOceanode &o){
             fbo.allocate(tex->getWidth(), tex->getHeight(), tex->texData.glInternalFormat);
         }
         fbo.begin();
+        ofClear(0,0,0,255);
         tex->draw(0, 0);
         fbo.end();
     };

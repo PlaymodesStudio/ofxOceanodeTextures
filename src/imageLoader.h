@@ -18,11 +18,11 @@ public:
         loaded = false;
         
         ofDirectory dir;
-        dir.open("Images");        
+        dir.open("Images");
+        int size = dir.listDir();
+        dir.sort();
         vector<string> files = {"None"};
-		int dirsize = dir.listDir();
-		dir.sort();
-        for(int i = 0; i < dirsize; i++){
+        for(int i = 0; i < size; i++){
             files.push_back(dir.getName(i));
         }
         

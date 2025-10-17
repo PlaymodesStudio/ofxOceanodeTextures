@@ -769,7 +769,7 @@ void oscillatorTexture2::update(ofEventArgs &a){
         blackIndexs.end();
     }
 
-    if(sizeChanged){
+    if(sizeChanged && width > 0 && height > 0){
         ofFbo::Settings settings;
         settings.height = height;
         settings.width = width;

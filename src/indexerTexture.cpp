@@ -820,6 +820,11 @@ void indexerTexture2::setParametersInfoMaps(){
     shaderParameterNameTBOPositionMap[heightVec.getName()] = (resolutionsSum * 8) + height;
     shaderParameterNameTBOSizeMap[widthVec.getName()] = height;
     shaderParameterNameTBOSizeMap[heightVec.getName()] = width;
+    
+//    shaderParameterNameTBOPositionMap[radiusResolution.getName()] = resolutionsSum * 8;
+//    shaderParameterNameTBOPositionMap[angleResolution.getName()] = (resolutionsSum * 8) + height;
+//    shaderParameterNameTBOSizeMap[radiusResolution.getName()] = height;
+//    shaderParameterNameTBOSizeMap[angleResolution.getName()] = width;
 }
 
 void indexerTexture2::setShaderParameterDataToTBO(){

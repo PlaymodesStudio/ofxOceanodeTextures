@@ -24,6 +24,7 @@ public:
         for(int i = 0; i < dir.listDir(); i++){
             files.push_back(dir.getName(i));
         }
+        dir.close();
         
         addParameterDropdown(fileIndex, "File s", 0, files);
         addParameter(loop.set("Loop", true));
