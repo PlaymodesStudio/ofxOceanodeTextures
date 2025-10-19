@@ -78,7 +78,7 @@ private:
         
         fbo.allocate(settings);
         fbo.begin();
-        ofClear(0, 0, 0, 255);
+        ofClear(0, 0, 0, 0);
         fbo.end();
         resizeMesh();
     }
