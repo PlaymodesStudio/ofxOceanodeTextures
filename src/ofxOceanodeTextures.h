@@ -37,6 +37,7 @@
 #include "averageBrightness.h"
 #include "textureInfo.h"
 #include "injectAlpha.h"
+#include "AlphaTrails.h"
 #include "TextureChannels.h"
 
 #include "ofxOceanode.h"
@@ -72,6 +73,7 @@ static void registerModels(ofxOceanode &o){
 	
     
     o.registerModel<injectAlpha>("Textures");
+    o.registerModel<AlphaTrails>("Textures");
     o.registerModel<TextureChannels>("Textures");
     ofDirectory dir("Effects");
     for(auto f : dir.getFiles()){
