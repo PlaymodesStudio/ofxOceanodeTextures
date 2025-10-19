@@ -39,6 +39,7 @@
 #include "injectAlpha.h"
 #include "AlphaTrails.h"
 #include "TextureChannels.h"
+#include "textureUnitMonitor.h"
 
 #include "ofxOceanode.h"
 
@@ -75,6 +76,7 @@ static void registerModels(ofxOceanode &o){
     o.registerModel<injectAlpha>("Textures");
     o.registerModel<AlphaTrails>("Textures");
     o.registerModel<TextureChannels>("Textures");
+    o.registerModel<textureUnitMonitor>("Debug");
     ofDirectory dir("Effects");
     for(auto f : dir.getFiles()){
         ofFile file(f.getAbsolutePath());
