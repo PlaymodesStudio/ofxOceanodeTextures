@@ -74,12 +74,24 @@ public:
                 ofClear(0, 0, 0, 0);
                 ofPushStyle();
                 ofSetColor(255, 255, 255, 255);
-                shader.setUniformTexture("tSource", *input.get(), 1);
+                shader.setUniformTexture("tSource", *input.get(), 0);
                 bindUniforms();
                 ofDrawRectangle(0, 0, fbo.getWidth(), fbo.getHeight());
                 ofPopStyle();
                 shader.end();
                 fbo.end();
+                
+                // Cleanup: unbind all texture units used AFTER fbo.end()
+                // DEBUG: Log what we're cleaning up
+                //ofLogNotice("simpleEffect") << "Cleaning up: unit 0 + " << textures.size() << " texture units (1-" << textures.size() << ")";
+                
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, 0);
+                for(int i = 0; i < textures.size(); i++){
+                    glActiveTexture(GL_TEXTURE0 + i + 1);
+                    glBindTexture(GL_TEXTURE_2D, 0);
+                }
+                glActiveTexture(GL_TEXTURE0);
                 
                 output = &fbo.getTexture();
             }
@@ -143,7 +155,7 @@ public:
             if(paramTypes[i] == "color"){
                 shader.setUniform4f(paramInfo[0], colorParams[i]);
             }else{ // It's a float
-                shader.setUniformTexture(paramInfo[0] + "Tex", textures[i] != nullptr ? *textures[i] : blackTexture, i+2);
+                shader.setUniformTexture(paramInfo[0] + "Tex", textures[i] != nullptr ? *textures[i] : blackTexture, i+1);
                 shader.setUniform1f(paramInfo[0], floatParams[i]);
             }
         }

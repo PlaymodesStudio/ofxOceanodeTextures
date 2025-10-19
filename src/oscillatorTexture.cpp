@@ -931,6 +931,13 @@ ofTexture& oscillatorTexture2::computeBank(float phasor){
     ofDrawRectangle(0, 0, width, height);
     shaderOscillator.end();
     fboBuffer.end();
+    
+    // Cleanup: unbind texture units 0-12
+    for(int i = 0; i <= 12; i++){
+        glActiveTexture(GL_TEXTURE0 + i);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+    glActiveTexture(GL_TEXTURE0);
 
     ofPopStyle();
 

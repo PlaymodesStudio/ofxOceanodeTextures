@@ -74,14 +74,14 @@ public:
             ofSetColor(255, 255, 255, 255);
             
             // Set texture uniforms
-            shader.setUniformTexture("textureIn", *textureIn.get(), 1);
+            shader.setUniformTexture("textureIn", *textureIn.get(), 0);
             
             // Use alpha texture if connected, otherwise shader will use luminance
             if(alphaTexture.get() != nullptr && alphaTexture.get()->isAllocated()){
-                shader.setUniformTexture("alphaTexture", *alphaTexture.get(), 2);
+                shader.setUniformTexture("alphaTexture", *alphaTexture.get(), 1);
                 shader.setUniform1i("hasAlphaTexture", 1);
             } else {
-                shader.setUniformTexture("alphaTexture", blackTexture, 2);
+                shader.setUniformTexture("alphaTexture", blackTexture, 1);
                 shader.setUniform1i("hasAlphaTexture", 0);
             }
             
@@ -91,6 +91,12 @@ public:
             ofPopStyle();
             fbo.end();
             shader.end();
+            
+            // Cleanup: unbind textures
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, 0);
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, 0);
             
             output = &fbo.getTexture();
         }
