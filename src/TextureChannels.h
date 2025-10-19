@@ -65,25 +65,27 @@ public:
             // Single shader pass renders to all 4 color attachments
             fbo.begin();
             
+            ofClear(0, 0, 0, 0);
+            
             // Enable writing to all 4 color attachments
             GLenum targetBuffers[] = {
-                GL_COLOR_ATTACHMENT0_EXT,
-                GL_COLOR_ATTACHMENT1_EXT,
-                GL_COLOR_ATTACHMENT2_EXT,
-                GL_COLOR_ATTACHMENT3_EXT
+                GL_COLOR_ATTACHMENT0,
+                GL_COLOR_ATTACHMENT1,
+                GL_COLOR_ATTACHMENT2,
+                GL_COLOR_ATTACHMENT3
             };
             glDrawBuffers(4, targetBuffers);
             
-            ofClear(0, 0, 0, 0);
             shader.begin();
             shader.setUniformTexture("tSource", *input.get(), 0);
             ofDrawRectangle(0, 0, width, height);
             shader.end();
             
-            fbo.end();
+            // Cleanup: unbind texture
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, 0);
             
-            // Reset to default draw buffer
-            glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+            fbo.end();
             
             ofPopStyle();
             
