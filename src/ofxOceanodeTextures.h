@@ -34,6 +34,7 @@
 #include "textureBlender.h"
 #include "averageBrightness.h"
 #include "textureInfo.h"
+#include "TextureChannels.h"
 
 #include "ofxOceanode.h"
 
@@ -65,6 +66,7 @@ static void registerModels(ofxOceanode &o){
     o.registerModel<textureInfo>("Textures");
 	
     
+    o.registerModel<TextureChannels>("Textures");
     ofDirectory dir("Effects");
     for(auto f : dir.getFiles()){
         ofFile file(f.getAbsolutePath());
