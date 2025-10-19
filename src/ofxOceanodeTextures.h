@@ -13,6 +13,7 @@
 #include "chaoticOscillatorTexture.h"
 #include "imageLoader.h"
 #include "mixer.h"
+#include "mixerAlpha.h"
 #include "textureHelpers.h"
 #include "videoPlayer.h"
 #include "noiseTexture.h"
@@ -47,6 +48,7 @@ static void registerModels(ofxOceanode &o){
     o.registerModel<chaoticOscillatorTexture>("Textures");
     o.registerModel<imageLoader>("Textures");
     o.registerModel<mixer>("Textures");
+    o.registerModel<mixerAlpha>("Textures");
     o.registerModel<interactiveCanvas>("Textures");
     o.registerModel<videoPlayer>("Textures");
     o.registerModel<noiseTexture>("Textures");
