@@ -18,6 +18,7 @@
 #include "noiseTexture.h"
 #include "textureSender.h"
 #include "Gradient.h"
+#include "Gradient2.h"
 #include "textureResize.h"
 //#include "senderManager.h"
 //#include "colorApplier.h"
@@ -52,6 +53,7 @@ static void registerModels(ofxOceanode &o){
 	o.registerModel<vectorToTexture>("Textures");
 	o.registerModel<textureReader>("Textures");
 	o.registerModel<Gradient>("Textures");
+	o.registerModel<Gradient2>("Textures");
 	o.registerModel<textureResize>("Textures");
 	o.registerModel<textureUnifier>("Textures");
 	o.registerModel<textureReceiver>("Textures");
