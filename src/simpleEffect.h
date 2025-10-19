@@ -71,7 +71,7 @@ public:
             {
                 fbo.begin();
                 shader.begin();
-                ofClear(0, 0, 0, 255);
+                ofClear(0, 0, 0, 0);
                 ofPushStyle();
                 ofSetColor(255, 255, 255, 255);
                 shader.setUniformTexture("tSource", *input.get(), 0);
