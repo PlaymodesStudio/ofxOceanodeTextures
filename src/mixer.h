@@ -208,13 +208,19 @@ public:
 					ofClear(0, 0, 0,  255);
                     shader.begin();
                     ofSetColor(255, 255, 255, 255);
-                    shader.setUniformTexture("base", pingPongFbo[pingPongIndex].getTexture(), 1);
-                    shader.setUniformTexture("blendTgt", *up, 2);
+                    shader.setUniformTexture("base", pingPongFbo[pingPongIndex].getTexture(), 0);
+                    shader.setUniformTexture("blendTgt", *up, 1);
                     shader.setUniform1i("mode", blendmodes[i]);
                     shader.setUniform1f("opacity", opacities[i]);
                     ofDrawRectangle(0, 0, width, height);
                     shader.end();
                     pingPongFbo[!pingPongIndex].end();
+                    
+                    // Cleanup: unbind textures
+                    glActiveTexture(GL_TEXTURE0);
+                    glBindTexture(GL_TEXTURE_2D, 0);
+                    glActiveTexture(GL_TEXTURE1);
+                    glBindTexture(GL_TEXTURE_2D, 0);
 					
 					pingPongIndex = !pingPongIndex;
                 }

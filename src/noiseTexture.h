@@ -128,12 +128,12 @@ public:
 		ofClear(0, 0, 0, 255);
         shader.begin();
 		
-		shader.setUniformTexture("scaleXTex", scaleXTex != nullptr ? *scaleXTex : blackTexture, 1);
-		shader.setUniformTexture("scaleYTex", scaleYTex != nullptr ? *scaleYTex : blackTexture, 2);
-		shader.setUniformTexture("offsetXTex", offsetXTex != nullptr ? *offsetXTex : blackTexture, 3);
-		shader.setUniformTexture("offsetYTex", offsetYTex != nullptr ? *offsetYTex : blackTexture, 4);
-		shader.setUniformTexture("fTex", fTex != nullptr ? *fTex.get() : blackTexture, 5);
-        shader.setUniform1i("type", noiseType);
+		shader.setUniformTexture("scaleXTex", scaleXTex != nullptr ? *scaleXTex : blackTexture, 0);
+		shader.setUniformTexture("scaleYTex", scaleYTex != nullptr ? *scaleYTex : blackTexture, 1);
+		shader.setUniformTexture("offsetXTex", offsetXTex != nullptr ? *offsetXTex : blackTexture, 2);
+		shader.setUniformTexture("offsetYTex", offsetYTex != nullptr ? *offsetYTex : blackTexture, 3);
+		shader.setUniformTexture("fTex", fTex != nullptr ? *fTex.get() : blackTexture, 4);
+		      shader.setUniform1i("type", noiseType);
         shader.setUniform2f("size", width, height);
         shader.setUniform1f("f", value);
         shader.setUniform2f("pos", posX, posY);
@@ -143,6 +143,14 @@ public:
         shader.setUniform1f("modulator", modulator);
         ofDrawRectangle(0, 0, width, height);
         shader.end();
+        
+        // Cleanup: unbind texture units 0-4
+        for(int i = 0; i < 5; i++){
+        	glActiveTexture(GL_TEXTURE0 + i);
+        	glBindTexture(GL_TEXTURE_2D, 0);
+        }
+        glActiveTexture(GL_TEXTURE0);
+        
         fbo.end();
 
 

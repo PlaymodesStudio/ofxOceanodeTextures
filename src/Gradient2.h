@@ -117,6 +117,10 @@ public:
             fbo.end();
             shader.end();
             
+            // Cleanup: unbind texture
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, 0);
+            
             ofDisableAlphaBlending();
             
             output = &fbo.getTexture();
