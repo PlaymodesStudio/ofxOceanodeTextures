@@ -86,7 +86,7 @@ public:
 
 		// 2) Draw the new input over it with normal alpha blending
 		{
-			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+			glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA,
 								GL_ONE,       GL_ONE_MINUS_SRC_ALPHA);
 			// or: ofEnableBlendMode(OF_BLENDMODE_ALPHA);
 
