@@ -106,7 +106,7 @@ void textureRecorder::recordListener(bool &b){
         recorderIsSetup = false;
         setFlags(ofxOceanodeNodeModelFlags_None);
         if(createVideo){
-            string command = "cd " + ofToDataPath("recordings/" + filename.get() +  "_" + initRecordingTimestamp, true);
+			string command = "cd " +ofToString("\"") + ofToDataPath("recordings/" + filename.get() +  "_" + initRecordingTimestamp, true) +ofToString("\"");
             if(recordAlpha){
                 command += " && /opt/homebrew/bin/ffmpeg -f image2 -framerate " + ofToString(ofGetTargetFrameRate()) + " -pattern_type glob -i '*.png' -c:v prores_ks -profile:v 4444 -pix_fmt yuva444p10le " + filename.get() + ".mov";
             }else{
