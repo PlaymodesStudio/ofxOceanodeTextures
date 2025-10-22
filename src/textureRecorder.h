@@ -26,6 +26,7 @@ private:
     ofEventListeners listeners;
     
     ofParameter<bool> createVideo;
+    ofParameter<bool> recordAlpha;
 
     ofParameter<float>  phasorIn;
     ofParameter<bool>   record;
