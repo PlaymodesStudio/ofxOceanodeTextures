@@ -144,12 +144,12 @@ public:
         ofDrawRectangle(0, 0, width, height);
         shader.end();
         
-        // Cleanup: unbind texture units 0-4
-        for(int i = 0; i < 5; i++){
-        	glActiveTexture(GL_TEXTURE0 + i);
-        	glBindTexture(GL_TEXTURE_2D, 0);
-        }
-        glActiveTexture(GL_TEXTURE0);
+//        // Cleanup: unbind texture units 0-4
+//        for(int i = 0; i < 5; i++){
+//        	glActiveTexture(GL_TEXTURE0 + i);
+//        	glBindTexture(GL_TEXTURE_2D, 0);
+//        }
+//        glActiveTexture(GL_TEXTURE0);
         
         fbo.end();
 

@@ -92,11 +92,11 @@ public:
             fbo.end();
             shader.end();
             
-            // Cleanup: unbind textures
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, 0);
-            glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_2D, 0);
+//            // Cleanup: unbind textures
+//            glActiveTexture(GL_TEXTURE0);
+//            glBindTexture(GL_TEXTURE_2D, 0);
+//            glActiveTexture(GL_TEXTURE1);
+//            glBindTexture(GL_TEXTURE_2D, 0);
             
             output = &fbo.getTexture();
         }

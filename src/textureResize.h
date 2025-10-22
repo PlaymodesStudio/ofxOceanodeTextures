@@ -46,9 +46,9 @@ public:
                 mesh.draw();
                 shader.end();
                 
-                // Cleanup: unbind texture
-                glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, 0);
+//                // Cleanup: unbind texture
+//                glActiveTexture(GL_TEXTURE0);
+//                glBindTexture(GL_TEXTURE_2D, 0);
             }else{
                 input.get()->draw(0,0, width, height);
             }
