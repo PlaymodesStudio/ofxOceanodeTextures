@@ -74,7 +74,7 @@ public:
                 ofClear(0, 0, 0, 255);
                 ofPushStyle();
                 ofSetColor(255, 255, 255, 255);
-                shader.setUniformTexture("tSource", *input.get(), 1);
+                shader.setUniformTexture("tSource", *input.get(), 0);
                 bindUniforms();
                 ofDrawRectangle(0, 0, fbo.getWidth(), fbo.getHeight());
                 ofPopStyle();
@@ -104,6 +104,7 @@ public:
         paramTypes.resize(numParams);
         floatParams.resize(numParams);
         colorParams.resize(numParams);
+        textureParams.resize(numParams);
         textures.resize(numParams, nullptr);
         
         for(int i = 0; i < numParams; i++){
@@ -112,6 +113,24 @@ public:
             if(paramInfo.size() == 2 && paramInfo[1] == "color"){
                 paramTypes[i] = "color";
                 addParameter(colorParams[i].set(paramInfo[0], ofFloatColor(1.0, 1.0, 1.0, 1.0), ofFloatColor(0.0, 0.0, 0.0, 0.0), ofFloatColor(1.0, 1.0, 1.0, 1.0)));
+            }else if(paramInfo.size() == 2 && paramInfo[1] == "texture"){
+                paramTypes[i] = "texture";
+                auto pRef = addParameter(textureParams[i].set(paramInfo[0], nullptr));
+
+                // Store the listener in a shared_ptr so it doesn't get destroyed
+                auto listenerPtr = std::make_shared<ofEventListener>(
+                    textureParams[i].newListener([this, i](ofTexture* &tex){
+                        textures[i] = tex;
+                    })
+                );
+                textureListeners.push_back(listenerPtr);
+
+                pRef->addReceiveFunc<ofTexture*>([this, i](ofTexture *const &tex){
+                    textures[i] = (ofTexture*)tex;
+                });
+                pRef->addDisconnectFunc([this, i](){
+                    textures[i] = nullptr;
+                });
             }else{
                 paramTypes[i] = "float";
                 auto pRef = addParameter(
@@ -137,14 +156,23 @@ public:
             splittedConfig.clear();
         }
         int numParams = splittedConfig.size();
+        int textureUnit = 1; // Start at 1 because tSource is at unit 0
         for(int i = 0; i < numParams; i++){
             vector<std::string> paramInfo = ofSplitString(splittedConfig[i], ":");
 
             if(paramTypes[i] == "color"){
                 shader.setUniform4f(paramInfo[0], colorParams[i]);
+            }else if(paramTypes[i] == "texture"){
+                // Bind texture parameter directly as texture uniform (no float value)
+                ofTexture* texToUse = (textures[i] != nullptr && textures[i]->isAllocated()) ? textures[i] : &blackTexture;
+                shader.setUniformTexture(paramInfo[0], *texToUse, textureUnit);
+                textureUnit++;
             }else{ // It's a float
-                shader.setUniformTexture(paramInfo[0] + "Tex", textures[i] != nullptr ? *textures[i] : blackTexture, i+2);
+                // Keep original behavior: bind both texture (as {paramName}Tex) and float value
+                ofTexture* texToUse = (textures[i] != nullptr && textures[i]->isAllocated()) ? textures[i] : &blackTexture;
+                shader.setUniformTexture(paramInfo[0] + "Tex", *texToUse, textureUnit);
                 shader.setUniform1f(paramInfo[0], floatParams[i]);
+                textureUnit++;
             }
         }
     }
@@ -153,9 +181,11 @@ private:
     
     ofEventListener listener;
     
+    std::vector<std::shared_ptr<ofEventListener>> textureListeners;
     std::vector<std::string> paramTypes;
     std::vector<ofParameter<float>> floatParams;
     std::vector<ofParameter<ofFloatColor>> colorParams;
+    std::vector<ofParameter<ofTexture*>> textureParams;
     std::vector<ofTexture*> textures;
 
     ofParameter<ofTexture*> input;
