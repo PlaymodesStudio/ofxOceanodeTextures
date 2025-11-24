@@ -15,10 +15,12 @@
 #include "mixer.h"
 #include "textureHelpers.h"
 #include "videoPlayer.h"
+#include "videoPlayer2.h"
 #include "noiseTexture.h"
 #include "textureSender.h"
 #include "Gradient.h"
 #include "textureResize.h"
+#include "textureResizeFast.h"
 //#include "senderManager.h"
 //#include "colorApplier.h"
 #include "textureRecorder.h"
@@ -27,7 +29,6 @@
 //#include "textureMixer.h"
 //#include "oscTextureSender.h"
 //#include "vectorToTexture.h"
-//#include "textureResize.h"
 #include "displayOutput.h"
 #include "simpleEffect.h"
 #include "textureComposer.h"
@@ -46,12 +47,14 @@ static void registerModels(ofxOceanode &o){
     o.registerModel<mixer>("Textures");
     o.registerModel<interactiveCanvas>("Textures");
     o.registerModel<videoPlayer>("Textures");
+	o.registerModel<videoPlayer2>("Textures");
     o.registerModel<noiseTexture>("Textures");
     o.registerModel<textureSender>("Textures");
 	o.registerModel<vectorToTexture>("Textures");
 	o.registerModel<textureReader>("Textures");
 	o.registerModel<Gradient>("Textures");
 	o.registerModel<textureResize>("Textures");
+	o.registerModel<textureResizeFast>("Textures");
 	o.registerModel<textureUnifier>("Textures");
 	o.registerModel<textureReceiver>("Textures");
 	o.registerModel<subTexture>("Textures");
