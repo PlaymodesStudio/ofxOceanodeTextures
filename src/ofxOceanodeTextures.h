@@ -24,6 +24,7 @@
 //#include "senderManager.h"
 //#include "colorApplier.h"
 #include "textureRecorder.h"
+#include "textureRecorder2.h"
 #include "textureUnifier.h"
 //#include "textureReader.h"
 //#include "textureMixer.h"
@@ -64,7 +65,8 @@ static void registerModels(ofxOceanode &o){
 	o.registerModel<textureReceiver>("Textures");
 	o.registerModel<subTexture>("Textures");
 	o.registerModel<textureRecorder>("Textures");
-    o.registerModel<oscillatorTexture2>("Textures");
+	o.registerModel<textureRecorder2>("Textures");
+	   o.registerModel<oscillatorTexture2>("Textures");
     o.registerModel<indexerTexture2>("Textures");
     o.registerModel<displayOutput>("Textures");
     o.registerModel<textureComposer>("Textures");
