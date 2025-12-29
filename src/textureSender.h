@@ -166,6 +166,8 @@ public:
     void enableSyphonListener(bool &b){
     #ifdef TARGET_OSX
         if(b){
+			if(syphonServer!=nullptr) return;
+			
             syphonServer = new ofxSyphonServer;
             
             syphonServer->setName(syphonName);
@@ -174,6 +176,7 @@ public:
         }else{
             syphonNameEventListener.unsubscribe();
             delete syphonServer;
+			syphonServer=nullptr;
         }
     #endif
     }
