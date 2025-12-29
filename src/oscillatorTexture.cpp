@@ -284,7 +284,8 @@ void oscillatorTexture::update(ofEventArgs &a){
         
         if(vf.size() == size){
             oscillatorShaderBuffer.updateData(position*4, vf);
-        }else{
+        }else if (size!=0)
+		{
             oscillatorShaderBuffer.updateData(position*4, vector<float>(size, vf[0]));
         }
     }
