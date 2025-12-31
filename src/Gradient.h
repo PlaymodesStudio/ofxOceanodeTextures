@@ -93,7 +93,7 @@ public:
             fbo.begin();
             ofPushStyle();
             ofSetColor(255, 255, 255, 255);
-            shader.setUniformTexture("tSource", *input.get(), 15);
+            shader.setUniformTexture("tSource", *input.get(), 0);
             shader.setUniform1i("numCols", numColors);
             for(int i = 0; i < numColors; i++){
                 shader.setUniform4f("color" + ofToString(i+1), colors[i].get());
@@ -102,6 +102,10 @@ public:
             ofPopStyle();
             fbo.end();
             shader.end();
+            
+//            // Cleanup: unbind texture
+//            glActiveTexture(GL_TEXTURE0);
+//            glBindTexture(GL_TEXTURE_2D, 0);
             
             output = &fbo.getTexture();
         }

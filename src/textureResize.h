@@ -45,6 +45,10 @@ public:
                 shader.setUniformTexture("textureIn", *input.get(), 0);
                 mesh.draw();
                 shader.end();
+                
+//                // Cleanup: unbind texture
+//                glActiveTexture(GL_TEXTURE0);
+//                glBindTexture(GL_TEXTURE_2D, 0);
             }else{
                 input.get()->draw(0,0, width, height);
             }
@@ -78,7 +82,7 @@ private:
         
         fbo.allocate(settings);
         fbo.begin();
-        ofClear(0, 0, 0, 255);
+        ofClear(0, 0, 0, 0);
         fbo.end();
         resizeMesh();
     }
