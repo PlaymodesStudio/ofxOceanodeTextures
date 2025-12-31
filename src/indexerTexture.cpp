@@ -263,7 +263,7 @@ void indexerTexture::update(ofEventArgs &a){
         
         if(vf.size() == size){
             shaderParametersBuffer.updateData(position*4, vf);
-        }else{
+        }else if(size!=0){
             shaderParametersBuffer.updateData(position*4, vector<float>(size, vf[0]));
         }
     }
