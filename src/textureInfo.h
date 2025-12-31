@@ -8,7 +8,7 @@
 class textureInfo : public ofxOceanodeNodeModel
 {
 public:
-    textureInfo() : ofxOceanodeNodeModel("textureInfo"){
+    textureInfo() : ofxOceanodeNodeModel("Texture Info"){
     }
     
     void setup()override
