@@ -17,7 +17,8 @@ public:
     Gradient2() : ofxOceanodeNodeModel("Gradient2"){};
     
     void setup(){
-        addInspectorParameter(numColors.set("Num Colors", 2, 2, 10));
+        addParameter(numColors.set("Num Colors", 2, 2, 10));
+        addParameterDropdown(mode, "Mode", 0, {"RGB", "HSV Short", "HSV Long", "Oklab", "Oklch Short", "Oklch Long"});
         addParameter(input.set("Input", nullptr));
         addOutputParameter(output.set("Output", nullptr));
         
@@ -108,6 +109,7 @@ public:
             ofSetColor(255, 255, 255, 255);
             shader.setUniformTexture("tSource", *input.get(), 0);
             shader.setUniform1i("numCols", numColors);
+            shader.setUniform1i("interpMode", mode);
             for(int i = 0; i < numColors; i++){
                 shader.setUniform4f("color" + ofToString(i+1), colors[i].get());
                 shader.setUniform1f("pos" + ofToString(i+1), positions[i].get());
@@ -128,10 +130,11 @@ public:
     }
 	
 	void loadBeforeConnections(ofJson &json){
-		deserializeParameter(json, numColors);
-	}
-    
-    void deactivate(){
+	       deserializeParameter(json, numColors);
+	    deserializeParameter(json, mode);
+	   }
+	
+	void deactivate(){
         fbo.clear();
 //        output = nullptr;
     }
@@ -143,6 +146,7 @@ private:
     ofParameter<ofTexture*> output;
     
     ofParameter<int> numColors;
+    ofParameter<int> mode;
     vector<ofParameter<ofFloatColor>> colors;
     vector<ofParameter<float>> positions;
     
