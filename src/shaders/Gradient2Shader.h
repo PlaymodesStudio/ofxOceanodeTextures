@@ -177,7 +177,8 @@ void main()
 {
     ivec2 uv = ivec2(gl_FragCoord.st);
     
-    float value = texelFetch(tSource, uv, 0).g;
+    vec3 src = texelFetch(tSource, uv, 0).rgb;
+    float value = dot(src, vec3(0.299, 0.587, 0.114));
 
     vec4 col = getColor(numCols);
 
@@ -195,7 +196,9 @@ void main()
                 vec4 col1 = getColor(i);
                 vec4 col2 = getColor(i+1);
                 
-                float a = (value - pos1Val)/(pos2Val - pos1Val);
+                float denom = pos2Val - pos1Val;
+                if (denom == 0.0) denom = 0.000001;
+                float a = clamp((value - pos1Val) / denom, 0.0, 1.0);
                 
                 if (interpMode == 0) { // RGB
                     col = mix(col1, col2, a);
