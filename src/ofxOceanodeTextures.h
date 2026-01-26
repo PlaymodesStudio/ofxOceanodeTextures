@@ -21,8 +21,8 @@
 #include "Gradient.h"
 #include "Gradient2.h"
 #include "ColorByValue.h"
-#include "ColorCycler.h"
-#include "ReColorCycle.h"
+//#include "ColorCycler.h"
+//#include "ReColorCycle.h"
 #include "textureResize.h"
 //#include "senderManager.h"
 //#include "colorApplier.h"
@@ -63,6 +63,8 @@ static void registerModels(ofxOceanode &o){
 	o.registerModel<Gradient>("Textures");
 	o.registerModel<Gradient2>("Textures");
 	o.registerModel<ColorByValue>("Textures");
+	//o.registerModel<ColorCycler>("Textures");
+	//o.registerModel<ReColorCycle>("Textures");
 	o.registerModel<textureResize>("Textures");
 	o.registerModel<textureUnifier>("Textures");
 	o.registerModel<textureReceiver>("Textures");
