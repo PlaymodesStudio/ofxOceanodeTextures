@@ -29,12 +29,25 @@ public:
             addParameter(colors[i].set("Col " + ofToString(i), ofFloatColor(float(i)/(numColors-1.0f), float(i)/(numColors-1.0f), float(i)/(numColors-1.0f), 1.0f)));
             addParameter(positions[i].set("Pos " + ofToString(i), float(i)/(numColors-1.0f), 0.0f, 1.0f));
         }
+
+        for(int i = 0; i < numColors; i++){
+            auto listenerPtr = std::make_shared<ofEventListener>(positions[i].newListener([this, i](float &val){
+                if(i > 0 && val < positions[i-1].get()){
+                     positions[i].set(positions[i-1].get());
+                }
+                if(i < positions.size()-1 && val > positions[i+1].get()){
+                     positions[i].set(positions[i+1].get());
+                }
+            }));
+            posListeners.push_back(listenerPtr);
+        }
         
         listener = numColors.newListener([this](int &i){
             if(colors.size() != i){
                 int oldSize = colors.size();
                 bool remove = oldSize > i;
                 
+                posListeners.clear();
                 colors.resize(i);
                 positions.resize(i);
                 
@@ -44,20 +57,32 @@ public:
                         removeParameter("Pos " + ofToString(j));
                     }
                     for(int j = 0; j < i; j++){
-                        getParameter<ofFloatColor>("Col " + ofToString(j)) = ofFloatColor(float(j)/(numColors-1.0f), float(j)/(numColors-1.0f), float(j)/(numColors-1.0f), 1.0f);
-                        getParameter<float>("Pos " + ofToString(j)) = float(j)/(numColors-1.0f);
+                        getParameter<ofFloatColor>("Col " + ofToString(j)) = ofFloatColor(float(j)/(i-1.0f), float(j)/(i-1.0f), float(j)/(i-1.0f), 1.0f);
+                        getParameter<float>("Pos " + ofToString(j)) = float(j)/(i-1.0f);
                     }
                 }else{
-                    for(int j = 0; j < numColors; j++){
+                    for(int j = 0; j < i; j++){
                         if(j < oldSize){
-                            getParameter<ofFloatColor>("Col " + ofToString(j)) = ofFloatColor(float(j)/(numColors-1.0f), float(j)/(numColors-1.0f), float(j)/(numColors-1.0f), 1.0f);
-                            getParameter<float>("Pos " + ofToString(j)) = float(j)/(numColors-1.0f);
+                            getParameter<ofFloatColor>("Col " + ofToString(j)) = ofFloatColor(float(j)/(i-1.0f), float(j)/(i-1.0f), float(j)/(i-1.0f), 1.0f);
+                            getParameter<float>("Pos " + ofToString(j)) = float(j)/(i-1.0f);
                         }
                         else{
-                            addParameter(colors[j].set("Col " + ofToString(j), ofFloatColor(float(j)/(numColors-1.0f), float(j)/(numColors-1.0f), float(j)/(numColors-1.0f), 1.0f)));
-                            addParameter(positions[j].set("Pos " + ofToString(j), float(j)/(numColors-1.0f), 0.0f, 1.0f));
+                            addParameter(colors[j].set("Col " + ofToString(j), ofFloatColor(float(j)/(i-1.0f), float(j)/(i-1.0f), float(j)/(i-1.0f), 1.0f)));
+                            addParameter(positions[j].set("Pos " + ofToString(j), float(j)/(i-1.0f), 0.0f, 1.0f));
                         }
                     }
+                }
+
+                for(int j = 0; j < i; j++){
+                    auto listenerPtr = std::make_shared<ofEventListener>(positions[j].newListener([this, j](float &val){
+                        if(j > 0 && val < positions[j-1].get()){
+                             positions[j].set(positions[j-1].get());
+                        }
+                        if(j < positions.size()-1 && val > positions[j+1].get()){
+                             positions[j].set(positions[j+1].get());
+                        }
+                    }));
+                    posListeners.push_back(listenerPtr);
                 }
             }
         });
@@ -153,6 +178,7 @@ private:
     ofFbo fbo;
     
     ofEventListener listener;
+    vector<std::shared_ptr<ofEventListener>> posListeners;
 };
     
 
