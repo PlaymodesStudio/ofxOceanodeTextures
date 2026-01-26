@@ -43,48 +43,7 @@ public:
         }
         
         listener = numColors.newListener([this](int &i){
-            if(colors.size() != i){
-                int oldSize = colors.size();
-                bool remove = oldSize > i;
-                
-                posListeners.clear();
-                colors.resize(i);
-                positions.resize(i);
-                
-                if(remove){
-                    for(int j = oldSize-1; j >= i; j--){
-                        removeParameter("Col " + ofToString(j));
-                        removeParameter("Pos " + ofToString(j));
-                    }
-                    for(int j = 0; j < i; j++){
-                        getParameter<ofFloatColor>("Col " + ofToString(j)) = ofFloatColor(float(j)/(i-1.0f), float(j)/(i-1.0f), float(j)/(i-1.0f), 1.0f);
-                        getParameter<float>("Pos " + ofToString(j)) = float(j)/(i-1.0f);
-                    }
-                }else{
-                    for(int j = 0; j < i; j++){
-                        if(j < oldSize){
-                            getParameter<ofFloatColor>("Col " + ofToString(j)) = ofFloatColor(float(j)/(i-1.0f), float(j)/(i-1.0f), float(j)/(i-1.0f), 1.0f);
-                            getParameter<float>("Pos " + ofToString(j)) = float(j)/(i-1.0f);
-                        }
-                        else{
-                            addParameter(colors[j].set("Col " + ofToString(j), ofFloatColor(float(j)/(i-1.0f), float(j)/(i-1.0f), float(j)/(i-1.0f), 1.0f)));
-                            addParameter(positions[j].set("Pos " + ofToString(j), float(j)/(i-1.0f), 0.0f, 1.0f));
-                        }
-                    }
-                }
-
-                for(int j = 0; j < i; j++){
-                    auto listenerPtr = std::make_shared<ofEventListener>(positions[j].newListener([this, j](float &val){
-                        if(j > 0 && val < positions[j-1].get()){
-                             positions[j].set(positions[j-1].get());
-                        }
-                        if(j < positions.size()-1 && val > positions[j+1].get()){
-                             positions[j].set(positions[j+1].get());
-                        }
-                    }));
-                    posListeners.push_back(listenerPtr);
-                }
-            }
+            parametersChanged = true;
         });
         
         string defaultVertSource =
@@ -101,6 +60,13 @@ public:
         shader.linkProgram();
     }
     
+    void update(ofEventArgs &e){
+        if(parametersChanged){
+            updateParameters();
+            parametersChanged = false;
+        }
+    }
+
     void draw(ofEventArgs &a){
         if((input.get() != nullptr) && (input.get()->getWidth()>0 && input.get()->getHeight()>0) )
 		{
@@ -157,6 +123,7 @@ public:
 	void loadBeforeConnections(ofJson &json){
 	       deserializeParameter(json, numColors);
 	    deserializeParameter(json, mode);
+	       updateParameters();
 	   }
 	
 	void deactivate(){
@@ -179,6 +146,54 @@ private:
     
     ofEventListener listener;
     vector<std::shared_ptr<ofEventListener>> posListeners;
+
+    bool parametersChanged = false;
+
+    void updateParameters(){
+        int i = numColors;
+        if(colors.size() != i){
+            int oldSize = colors.size();
+            bool remove = oldSize > i;
+            
+            posListeners.clear();
+            colors.resize(i);
+            positions.resize(i);
+            
+            if(remove){
+                for(int j = oldSize-1; j >= i; j--){
+                    removeParameter("Col " + ofToString(j));
+                    removeParameter("Pos " + ofToString(j));
+                }
+                for(int j = 0; j < i; j++){
+                    getParameter<ofFloatColor>("Col " + ofToString(j)) = ofFloatColor(float(j)/(i-1.0f), float(j)/(i-1.0f), float(j)/(i-1.0f), 1.0f);
+                    getParameter<float>("Pos " + ofToString(j)) = float(j)/(i-1.0f);
+                }
+            }else{
+                for(int j = 0; j < i; j++){
+                    if(j < oldSize){
+                        getParameter<ofFloatColor>("Col " + ofToString(j)) = ofFloatColor(float(j)/(i-1.0f), float(j)/(i-1.0f), float(j)/(i-1.0f), 1.0f);
+                        getParameter<float>("Pos " + ofToString(j)) = float(j)/(i-1.0f);
+                    }
+                    else{
+                        addParameter(colors[j].set("Col " + ofToString(j), ofFloatColor(float(j)/(i-1.0f), float(j)/(i-1.0f), float(j)/(i-1.0f), 1.0f)));
+                        addParameter(positions[j].set("Pos " + ofToString(j), float(j)/(i-1.0f), 0.0f, 1.0f));
+                    }
+                }
+            }
+
+            for(int j = 0; j < i; j++){
+                auto listenerPtr = std::make_shared<ofEventListener>(positions[j].newListener([this, j](float &val){
+                    if(j > 0 && val < positions[j-1].get()){
+                         positions[j].set(positions[j-1].get());
+                    }
+                    if(j < positions.size()-1 && val > positions[j+1].get()){
+                         positions[j].set(positions[j+1].get());
+                    }
+                }));
+                posListeners.push_back(listenerPtr);
+            }
+        }
+    }
 };
     
 
