@@ -24,6 +24,9 @@ public:
         addParameter(height.set("Height", 100, 1, 50000));
         addParameter(posX.set("PosX", 0, -FLT_MAX, FLT_MAX));
         addParameter(posY.set("PosY", 0, -FLT_MAX, FLT_MAX));
+        addParameter(rotation.set("Rotation", 0, -FLT_MAX, FLT_MAX));
+        addParameter(rotationCenterX.set("Rot.CenterX", 0.5, 0, 1));
+        addParameter(rotationCenterY.set("Rot.CenterY", 0.5, 0, 1));
         auto scaleXRef = addParameter(scaleX.set("ScaleX", 0.1, 0, 1));
 		scaleXRef->addReceiveFunc<ofTexture*>([this](ofTexture *const &tex){
             scaleXTex = (ofTexture*)tex;
@@ -137,6 +140,8 @@ public:
         shader.setUniform2f("size", width, height);
         shader.setUniform1f("f", value);
         shader.setUniform2f("pos", posX, posY);
+        shader.setUniform1f("rotation", rotation);
+        shader.setUniform2f("rotationCenter", rotationCenterX, rotationCenterY);
         shader.setUniform2f("scale", scaleX, scaleY);
 		shader.setUniform2f("offset", offsetX, offsetY);
         shader.setUniform1f("warping", warping);
@@ -174,7 +179,7 @@ private:
     ofParameter<int> width, height;
     ofParameter<int> noiseType;
     ofParameter<void> reload;
-    ofParameter<float> value, scaleX, scaleY, offsetX, offsetY, modulator, warping, posX, posY;
+    ofParameter<float> value, scaleX, scaleY, offsetX, offsetY, modulator, warping, posX, posY, rotation, rotationCenterX, rotationCenterY;
 	ofParameter<ofTexture*> fTex;
 	ofTexture* scaleXTex;
 	ofTexture* scaleYTex;
