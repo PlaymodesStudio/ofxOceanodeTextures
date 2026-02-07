@@ -9,6 +9,8 @@ uniform vec2 scale;
 uniform vec2 offset;
 uniform float warping;
 uniform float modulator;
+uniform float rotation;
+uniform vec2 rotationCenter;
 
 uniform sampler2D scaleXTex;
 uniform sampler2D scaleYTex;
@@ -466,7 +468,14 @@ void main()
 		_f = f * texture(fTex, gl_FragCoord.xy/size, 0).r;
 	}
 
-    vec2 _pos = gl_FragCoord.xy - pos;
+    float angle = rotation * 360.0 * 0.01745329251; // Convert degrees to radians
+    float s = sin(angle);
+    float c = cos(angle);
+    mat2 rot = mat2(c, -s, s, c);
+    vec2 center = rotationCenter * size;
+    vec2 rotatedCoord = rot * (gl_FragCoord.xy - center) + center;
+
+    vec2 _pos = rotatedCoord - pos;
 
     switch (type) {
         case 0://Perlin
