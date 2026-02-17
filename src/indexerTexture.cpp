@@ -152,6 +152,8 @@ void indexerTexture::setup(){
 }
 
 void indexerTexture::update(ofEventArgs &a){
+	if(width!=0 && height!=0)
+	{
     if(!isSetup){
         //Texture Allocation
         ofFbo::Settings settings;

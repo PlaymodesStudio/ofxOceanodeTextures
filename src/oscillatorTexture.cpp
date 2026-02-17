@@ -284,7 +284,7 @@ void oscillatorTexture::update(ofEventArgs &a){
         
         if(vf.size() == size){
             oscillatorShaderBuffer.updateData(position*4, vf);
-        }else if (size!=0)
+		}else if (size!=0 && vf.size()!=0)
 		{
             oscillatorShaderBuffer.updateData(position*4, vector<float>(size, vf[0]));
         }
@@ -422,10 +422,15 @@ void oscillatorTexture::setOscillatorShaderParameterDataToTBO(){
     accumulateParametersOscillatorShaderParameters.insert(accumulateParametersOscillatorShaderParameters.end(), quantizationX_tempVec.begin(), quantizationX_tempVec.end());
     vector<float> quantizationY_tempVec(height, quantization[1].get()[0]);
     accumulateParametersOscillatorShaderParameters.insert(accumulateParametersOscillatorShaderParameters.end(), quantizationY_tempVec.begin(), quantizationY_tempVec.end());
-    
+
+	if(fader[0].get().size() == 0) return;
+
     vector<float> faderX_tempVec(width, fader[0].get()[0]);
     accumulateParametersOscillatorShaderParameters.insert(accumulateParametersOscillatorShaderParameters.end(), faderX_tempVec.begin(), faderX_tempVec.end());
-    vector<float> faderY_tempVec(height, fader[1].get()[0]);
+	
+	if(fader[1].get().size() == 0) return;
+    
+	vector<float> faderY_tempVec(height, fader[1].get()[0]);
     accumulateParametersOscillatorShaderParameters.insert(accumulateParametersOscillatorShaderParameters.end(), faderY_tempVec.begin(), faderY_tempVec.end());
     
     vector<float> invertX_tempVec(width, invert[0].get()[0]);
