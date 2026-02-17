@@ -30,7 +30,7 @@ public:
     }
 private:
     bool isSetup;
-    ofTexture&  computeBank();
+    ofTexture*  computeBank();
     
     template<typename T>
     void changeMinMaxOfVecParameter(ofParameter<vector<T>> &param, T min = -1, T max = -1, bool scaleValue = false){
@@ -137,7 +137,7 @@ public:
     }
 private:
     bool isSetup;
-    ofTexture&  computeBank();
+    ofTexture*  computeBank();
     
     template<typename T>
     void changeMinMaxOfVecParameter(ofParameter<vector<T>> &param, T min = -1, T max = -1, bool scaleValue = false){

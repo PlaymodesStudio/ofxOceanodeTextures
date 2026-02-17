@@ -293,7 +293,7 @@ void oscillatorTexture::update(ofEventArgs &a){
 }
 
 void oscillatorTexture::draw(ofEventArgs &a){
-    oscillatorOut = &computeBank(phasorIn);
+    oscillatorOut = computeBank(phasorIn);
 }
 
 void oscillatorTexture::setParametersInfoMaps(){
@@ -470,7 +470,7 @@ void oscillatorTexture::presetRecallBeforeSettingParameters(ofJson &json){
     isFirstPassAfterSetup = true;
 }
 
-ofTexture& oscillatorTexture::computeBank(float phasor){
+ofTexture* oscillatorTexture::computeBank(float phasor){
 //    swap(fbo, fboBuffer);
     
     ofPushStyle();
@@ -504,7 +504,12 @@ ofTexture& oscillatorTexture::computeBank(float phasor){
     
     isFirstPassAfterSetup = false;
     
-    return fboBuffer.getTexture();
+	if(fboBuffer.isAllocated())
+		return &fboBuffer.getTexture();
+	else
+		return nullptr;
+
+    //return fboBuffer.getTexture();
 }
 
 void oscillatorTexture::newPhasorIn(float &f){
@@ -803,7 +808,7 @@ void oscillatorTexture2::update(ofEventArgs &a){
 }
 
 void oscillatorTexture2::draw(ofEventArgs &a){
-    oscillatorOut = &computeBank(phasorIn);
+    oscillatorOut = computeBank(phasorIn);
 }
 
 
@@ -828,7 +833,7 @@ void oscillatorTexture2::presetRecallBeforeSettingParameters(ofJson &json){
     isFirstPassAfterSetup = true;
 }
 
-ofTexture& oscillatorTexture2::computeBank(float phasor){
+ofTexture* oscillatorTexture2::computeBank(float phasor){
     ofPushStyle();
     ofDisableAlphaBlending();
     ofSetColor(255, 255);
@@ -944,7 +949,12 @@ ofTexture& oscillatorTexture2::computeBank(float phasor){
 
     isFirstPassAfterSetup = false;
 
-    return fboBuffer.getTexture();
+	if(fboBuffer.isAllocated())
+		return &fboBuffer.getTexture();
+	else
+		return nullptr;
+
+//    return fboBuffer.getTexture();
 }
 
 vector<float> oscillatorTexture2::newRandomValuesVector(){
