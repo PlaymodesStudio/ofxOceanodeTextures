@@ -268,10 +268,11 @@ void indexerTexture::update(ofEventArgs &a){
         }
     }
     changedParameters.clear();
+	}
 }
 
 void indexerTexture::draw(ofEventArgs &a){
-    indexsOut = &computeBank();
+    indexsOut = computeBank();
 }
 
 void indexerTexture::setParametersInfoMaps(){
@@ -408,7 +409,7 @@ void indexerTexture::presetRecallBeforeSettingParameters(ofJson &json){
     isFirstPassAfterSetup = true;
 }
 
-ofTexture& indexerTexture::computeBank(){
+ofTexture* indexerTexture::computeBank(){
 //    swap(fbo, fboBuffer);
     
     ofPushStyle();
@@ -438,7 +439,13 @@ ofTexture& indexerTexture::computeBank(){
     
     isFirstPassAfterSetup = false;
     
-    return fbo.getTexture();
+//    return &fbo.getTexture();
+	
+	if(fbo.isAllocated())
+		return &fbo.getTexture();
+	else
+		return nullptr;
+
 }
 
 vector<float> indexerTexture::newRandomValuesVector(bool x, bool y){
@@ -771,7 +778,7 @@ void indexerTexture2::update(ofEventArgs &a){
 }
 
 void indexerTexture2::draw(ofEventArgs &a){
-    indexsOut = &computeBank();
+    indexsOut = computeBank();
 }
 
 void indexerTexture2::setParametersInfoMaps(){
@@ -915,7 +922,7 @@ void indexerTexture2::presetRecallBeforeSettingParameters(ofJson &json){
     isFirstPassAfterSetup = true;
 }
 
-ofTexture& indexerTexture2::computeBank(){
+ofTexture* indexerTexture2::computeBank(){
     
     ofPushStyle();
     ofDisableAlphaBlending();
@@ -937,7 +944,10 @@ ofTexture& indexerTexture2::computeBank(){
     
     isFirstPassAfterSetup = false;
     
-    return fbo.getTexture();
+	if(fbo.isAllocated())
+		return &fbo.getTexture();
+	else
+		return nullptr;
 }
 
 vector<float> indexerTexture2::newRandomValuesVector(bool x, bool y){
