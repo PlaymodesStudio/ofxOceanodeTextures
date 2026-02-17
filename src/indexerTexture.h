@@ -21,7 +21,7 @@ public:
     
     void presetRecallBeforeSettingParameters(ofJson &json) override;
     
-    void deactivate(){
+    void deactivate() override {
         fbo.clear();
         fboBuffer.clear();
 //        indexsOut = nullptr;
