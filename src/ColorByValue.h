@@ -39,7 +39,7 @@ public:
         
         int numValues = valuesIn.get().size();
         // Check if buffer needs reallocation (size changed)
-        if(valuesBuffer.size() != numValues * sizeof(float)){
+        if(!valuesTexture.isAllocated() || valuesBuffer.size() != numValues * sizeof(float)){
             valuesBuffer.allocate();
             valuesBuffer.bind(GL_TEXTURE_BUFFER);
             valuesBuffer.setData(valuesIn.get(), GL_STREAM_DRAW);
@@ -51,6 +51,7 @@ public:
 
     void draw(ofEventArgs &a) override {
         if (texIn.get() == nullptr || valuesIn.get().empty()) return;
+        if (!valuesTexture.isAllocated()) return;
 
         int outW = width;
         int outH = valuesIn.get().size();
