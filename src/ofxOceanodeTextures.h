@@ -13,16 +13,11 @@
 #include "chaoticOscillatorTexture.h"
 #include "imageLoader.h"
 #include "mixer.h"
-#include "mixerAlpha.h"
 #include "textureHelpers.h"
 #include "videoPlayer.h"
 #include "noiseTexture.h"
 #include "textureSender.h"
 #include "Gradient.h"
-#include "Gradient2.h"
-#include "ColorByValue.h"
-#include "ColorCycler.h"
-#include "ReColorCycle.h"
 #include "textureResize.h"
 //#include "senderManager.h"
 //#include "colorApplier.h"
@@ -39,10 +34,6 @@
 #include "textureBlender.h"
 #include "averageBrightness.h"
 #include "textureInfo.h"
-#include "injectAlpha.h"
-#include "AlphaTrails.h"
-#include "TextureChannels.h"
-#include "textureUnitMonitor.h"
 
 #include "ofxOceanode.h"
 
@@ -53,7 +44,6 @@ static void registerModels(ofxOceanode &o){
     o.registerModel<chaoticOscillatorTexture>("Textures");
     o.registerModel<imageLoader>("Textures");
     o.registerModel<mixer>("Textures");
-    o.registerModel<mixerAlpha>("Textures");
     o.registerModel<interactiveCanvas>("Textures");
     o.registerModel<videoPlayer>("Textures");
     o.registerModel<noiseTexture>("Textures");
@@ -61,10 +51,6 @@ static void registerModels(ofxOceanode &o){
 	o.registerModel<vectorToTexture>("Textures");
 	o.registerModel<textureReader>("Textures");
 	o.registerModel<Gradient>("Textures");
-	o.registerModel<Gradient2>("Textures");
-	o.registerModel<ColorByValue>("Textures");
-	o.registerModel<ColorCycler>("Textures");
-	o.registerModel<ReColorCycle>("Textures");
 	o.registerModel<textureResize>("Textures");
 	o.registerModel<textureUnifier>("Textures");
 	o.registerModel<textureReceiver>("Textures");
@@ -77,11 +63,8 @@ static void registerModels(ofxOceanode &o){
     o.registerModel<textureBlender>("Textures");
     o.registerModel<AverageBrightness>("Textures");
     o.registerModel<textureInfo>("Textures");
+	
     
-    o.registerModel<injectAlpha>("Textures");
-    o.registerModel<AlphaTrails>("Textures");
-    o.registerModel<TextureChannels>("Textures");
-    o.registerModel<textureUnitMonitor>("Debug");
     ofDirectory dir("Effects");
     for(auto f : dir.getFiles()){
         ofFile file(f.getAbsolutePath());
