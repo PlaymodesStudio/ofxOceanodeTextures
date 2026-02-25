@@ -26,6 +26,10 @@ public:
         inputSize = glm::vec2(0,0);
         resizeFbo();
         setupShader();
+        
+        listener = interpolate.newListener([this](bool &b){
+            resizeMesh();
+        });
     }
     
     void draw(ofEventArgs &a){
@@ -88,6 +92,7 @@ private:
     }
     
     void resizeMesh(){
+        if(!interpolate) return;
         mesh.clear();
         float itemW = width / (inputSize.x);
         float itemH = height / inputSize.y;
@@ -170,6 +175,8 @@ private:
     ofParameter<int> width;
     ofParameter<int> height;
     ofParameter<ofTexture*> output;
+    
+    ofEventListener listener;
     
     ofFbo fbo;
     
