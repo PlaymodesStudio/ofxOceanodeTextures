@@ -286,7 +286,7 @@ void main()
         }
     }
 
-    out_color = col;
+	out_color = vec4(clamp(col.rgb, 0.0, 1.0), col.a);
 }
 
 
