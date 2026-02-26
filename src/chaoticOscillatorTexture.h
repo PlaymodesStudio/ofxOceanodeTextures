@@ -30,7 +30,7 @@ public:
         blackIndexs.clear();
         randomInfoFbo.clear();
         oldPhaseFbo.clear();
-//        oscillatorOut = nullptr;
+        oscillatorOut = nullptr;
         
         isSetup = false;
     }

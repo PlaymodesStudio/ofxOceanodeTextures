@@ -254,6 +254,7 @@ public:
 		canvasFbo.clear();
 		pingPongFbo[0].clear();
 		pingPongFbo[1].clear();
+        output = nullptr;
 	}
 	
 private:

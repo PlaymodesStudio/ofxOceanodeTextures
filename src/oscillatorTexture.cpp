@@ -181,6 +181,10 @@ void oscillatorTexture::setup(){
 }
 
 void oscillatorTexture::update(ofEventArgs &a){
+    
+}
+
+void oscillatorTexture::draw(ofEventArgs &a){
     if(!isSetup){
         //Texture Allocation
         ofFbo::Settings settings;
@@ -290,9 +294,6 @@ void oscillatorTexture::update(ofEventArgs &a){
         }
     }
     changedOscillatorParameters.clear();
-}
-
-void oscillatorTexture::draw(ofEventArgs &a){
     oscillatorOut = computeBank(phasorIn);
 }
 
@@ -733,6 +734,10 @@ void oscillatorTexture2::setup(){
 }
 
 void oscillatorTexture2::update(ofEventArgs &a){
+    
+}
+
+void oscillatorTexture2::draw(ofEventArgs &a){
     if(!isSetup){
         //Texture Allocation
         ofFbo::Settings settings;
@@ -810,9 +815,6 @@ void oscillatorTexture2::update(ofEventArgs &a){
         isFirstPassAfterSetup = true;
         sizeChanged = false;
     }
-}
-
-void oscillatorTexture2::draw(ofEventArgs &a){
     oscillatorOut = computeBank(phasorIn);
 }
 

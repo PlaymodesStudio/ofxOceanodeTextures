@@ -18,6 +18,11 @@ public:
     
     void setup() override;
     
+    void deactivate(){
+        outputFbo.clear();
+        output = nullptr;
+    }
+    
 private:
     void computeOutput(ofTexture* &in);
     

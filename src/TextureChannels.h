@@ -99,6 +99,10 @@ public:
     
     void deactivate(){
         fbo.clear();
+        redOutput = nullptr;
+        greenOutput = nullptr;
+        blueOutput = nullptr;
+        alphaOutput = nullptr;
     }
     
 private:

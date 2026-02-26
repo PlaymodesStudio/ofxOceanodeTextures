@@ -125,6 +125,11 @@ public:
             syphonSelector = 0;
         }
     }
+    
+    void deactivate(){
+        fbo.clear();
+        output = nullptr;
+    }
 	
 private:
 	vector<string> directoriesStrings;
