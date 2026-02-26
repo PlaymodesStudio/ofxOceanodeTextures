@@ -19,6 +19,10 @@ public:
     void setup() override;
     
     void calculate();
+    
+    void deactivate(){
+        output = {nullptr};
+    }
 
 private:
     ofParameter<int> width;

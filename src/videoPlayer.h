@@ -88,6 +88,10 @@ public:
         //texture = &image.getTexture();
     }
     
+    void deactivate(){
+        texture = nullptr;
+    }
+    
 private:
     //ofParameter<string> filename;
     ofParameter<int> fileIndex;

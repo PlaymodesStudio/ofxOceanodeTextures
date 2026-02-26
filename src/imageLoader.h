@@ -47,6 +47,10 @@ public:
         }
     }
     
+    void deactivate(){
+        texture = nullptr;
+    }
+    
 private:
     ofParameter<int> fileIndex;
     ofParameter<ofTexture*> texture;

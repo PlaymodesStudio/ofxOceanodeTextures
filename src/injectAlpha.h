@@ -104,7 +104,7 @@ public:
     
     void deactivate(){
         fbo.clear();
-        blackTexture.clear();
+        output = nullptr;
     }
     
 private:

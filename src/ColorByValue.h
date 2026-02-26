@@ -90,7 +90,8 @@ public:
     
     void deactivate() override {
         fbo.clear();
-        valuesTexture.clear();
+//        valuesTexture.clear();
+        output = nullptr;
     }
 
 private:

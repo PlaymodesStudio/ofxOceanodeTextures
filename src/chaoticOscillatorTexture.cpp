@@ -199,6 +199,10 @@ void chaoticOscillatorTexture::setup(){
 }
 
 void chaoticOscillatorTexture::update(ofEventArgs &a){
+    
+}
+
+void chaoticOscillatorTexture::draw(ofEventArgs &a){
     if(!isSetup){
         //Texture Allocation
         ofFbo::Settings settings;
@@ -305,9 +309,6 @@ void chaoticOscillatorTexture::update(ofEventArgs &a){
         }
     }
     changedOscillatorParameters.clear();
-}
-
-void chaoticOscillatorTexture::draw(ofEventArgs &a){
     if(isSetup) oscillatorOut = &computeBank(phasorIn);
 }
 

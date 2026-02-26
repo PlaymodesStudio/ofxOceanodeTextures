@@ -16,6 +16,11 @@ public:
     
     void setup() override;
     
+    void deactivate(){
+        fbo.clear();
+        output = nullptr;
+    }
+    
 private:
     ofEventListener listener;
     

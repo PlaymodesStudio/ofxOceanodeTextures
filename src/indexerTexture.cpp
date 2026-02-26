@@ -152,8 +152,12 @@ void indexerTexture::setup(){
 }
 
 void indexerTexture::update(ofEventArgs &a){
-	if(width!=0 && height!=0)
-	{
+	
+}
+
+void indexerTexture::draw(ofEventArgs &a){
+    if(width!=0 && height!=0)
+    {
     if(!isSetup){
         //Texture Allocation
         ofFbo::Settings settings;
@@ -270,10 +274,7 @@ void indexerTexture::update(ofEventArgs &a){
         }
     }
     changedParameters.clear();
-	}
-}
-
-void indexerTexture::draw(ofEventArgs &a){
+    }
     indexsOut = computeBank();
 }
 
@@ -658,6 +659,10 @@ void indexerTexture2::setup(){
 }
 
 void indexerTexture2::update(ofEventArgs &a){
+    
+}
+
+void indexerTexture2::draw(ofEventArgs &a){
     if(!isSetup){
         //Texture Allocation
         ofFbo::Settings settings;
@@ -777,9 +782,6 @@ void indexerTexture2::update(ofEventArgs &a){
         }
     }
     changedParameters.clear();
-}
-
-void indexerTexture2::draw(ofEventArgs &a){
     indexsOut = computeBank();
 }
 
