@@ -81,6 +81,18 @@ public:
                 shader.end();
                 fbo.end();
                 
+                // Cleanup: unbind all texture units used AFTER fbo.end()
+                // DEBUG: Log what we're cleaning up
+                //ofLogNotice("simpleEffect") << "Cleaning up: unit 0 + " << textures.size() << " texture units (1-" << textures.size() << ")";
+                
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, 0);
+                for(int i = 0; i < textures.size(); i++){
+                    glActiveTexture(GL_TEXTURE0 + i + 1);
+                    glBindTexture(GL_TEXTURE_2D, 0);
+                }
+                glActiveTexture(GL_TEXTURE0);
+                
                 output = &fbo.getTexture();
             }
             else
