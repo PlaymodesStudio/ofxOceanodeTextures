@@ -147,13 +147,18 @@ public:
             rgbInput[(i*3)+1] = input->at(i);
             rgbInput[(i*3)+2] = input->at(i);
         }
-        tex.loadData(rgbInput.data(), width, height, GL_RGB);
-        tex.setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
-        fbo.begin();
-		ofClear(0, 0, 0, 255);
-        tex.draw(0, 0, width, height);
-        fbo.end();
-        output = &fbo.getTexture();
+		if(rgbInput.size()>0)
+		{
+			tex.loadData(rgbInput.data(), width, height, GL_RGB);
+			tex.setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
+			fbo.begin();
+			ofClear(0, 0, 0, 255);
+			tex.draw(0, 0, width, height);
+			fbo.end();
+			output = &fbo.getTexture();
+		}
+		
+
     }
     
     void loadBeforeConnections(ofJson &json){
