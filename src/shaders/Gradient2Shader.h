@@ -198,7 +198,7 @@ void main()
                 
                 float denom = pos2Val - pos1Val;
                 if (denom == 0.0) denom = 0.000001;
-                float a = clamp((value - pos1Val) / denom, 0.0, 1.0);
+                float a = smoothstep(0.0, 1.0, clamp((value - pos1Val) / denom, 0.0, 1.0));
                 
                 if (interpMode == 0) { // RGB
                     col = mix(col1, col2, a);
