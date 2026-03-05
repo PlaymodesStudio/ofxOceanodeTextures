@@ -547,7 +547,8 @@ vector<float> oscillatorTexture::newRandomValuesVector(){
 #pragma mark Parameter Listeners
 
 void oscillatorTexture::onOscillatorShaderParameterChanged(ofAbstractParameter &p, vector<float> &vf){
-    changedOscillatorParameters.emplace_back(p.getName(), vf);
+    // Create a copy of the vector to avoid dangling references
+    changedOscillatorParameters.emplace_back(p.getName(), vector<float>(vf));
 }
 
 void oscillatorTexture::sizeChangedListener(int &i){
