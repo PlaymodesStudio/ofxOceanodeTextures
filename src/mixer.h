@@ -9,6 +9,7 @@
 #define mixer_h
 
 #include "ofxOceanodeNodeModel.h"
+#include "ofxOceanodeShared.h"
 #include "imgui.h"
 
 #define STRINGIFY(A) #A
@@ -18,7 +19,7 @@ public:
     mixer() : ofxOceanodeNodeModel("Mixer"){};
     
     void setup(){
-        addInspectorParameter(numTextures.set("Num Textures", 5, 2, 20));
+        addInspectorParameter(numTextures.set("Num Textures", 2, 2, 16));
         addParameter(width.set("Width", 100, 1, 50000));
         addParameter(height.set("Height", 100, 1, 50000));
         addOutputParameter(output.set("Output", nullptr));
@@ -40,10 +41,22 @@ public:
             
             for(int i = start; i < (size+start); i++){
                 auto parameterRef = addParameter(inputs[i].set("In " + ofToString(i), [i, vector_getter, this](){
-                    ImGui::SetNextItemWidth(250);
-					ImGui::Dummy(ImVec2(10, 1));
+                    const float zoomLevel = ofxOceanodeShared::getZoomLevel();
+                    const float ww = ofxOceanodeShared::getNodeWidthWidget() * zoomLevel;
+                    const float wt = ofxOceanodeShared::getNodeWidthText() * zoomLevel;
+                    const bool renderWidgets = (zoomLevel > 0.5f);
+                    if (!renderWidgets) {
+                        const float rowH = ofxOceanodeShared::getBaseFrameHeight() * zoomLevel;
+                        // Row 1: matches the 1px spacer Dummy emitted at normal zoom
+                        ImGui::Dummy(ImVec2(wt + ww, 1.0f));
+                        // Row 2: matches the Text + Combo layer row
+                        ImGui::Dummy(ImVec2(wt + ww, rowH));
+                        return;
+                    }
+                    ImGui::Dummy(ImVec2(10 * zoomLevel, 1));
                     ImGui::Text("%s", ("Layer " + ofToString(i+1, 2, '0')).c_str());
-                    ImGui::SameLine(90);
+                    ImGui::SameLine(wt, 0.0f);
+                    ImGui::SetNextItemWidth(ww);
                     vector<string> options = {"Normal",
 						"Multiply",
                         "Average",
