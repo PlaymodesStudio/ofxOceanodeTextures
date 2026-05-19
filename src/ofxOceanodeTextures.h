@@ -209,7 +209,7 @@ static void registerScope(ofxOceanode &o){
                 
                 ImGui::SetCursorPos(cursorpos);
                 ImTextureID textureID = (ImTextureID)(uintptr_t)tex->texData.textureID;
-                ImGui::Image(textureID, size, ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, sqrt(1.0/vtex.size())));
+                ImGui::ImageWithBg(textureID, size, ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, sqrt(1.0/vtex.size())));
             }
         }
     });
