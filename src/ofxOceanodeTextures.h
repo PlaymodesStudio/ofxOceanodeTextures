@@ -45,6 +45,8 @@
 #include "TextureChannels.h"
 #include "textureUnitMonitor.h"
 #include "ColorTexture.h"
+#include "textureDisplay.h"
+#include "videoPlayerScrub.h"
 
 #include "ofxOceanode.h"
 
@@ -85,7 +87,12 @@ static void registerModels(ofxOceanode &o){
     o.registerModel<AlphaTrails>("Textures");
     o.registerModel<TextureChannels>("Textures");
     o.registerModel<ColorTexture>("Textures");
+	o.registerModel<textureDisplay>("Textures");
+	o.registerModel<videoPlayerScrub>("Textures");
+	
     o.registerModel<textureUnitMonitor>("Debug");
+	
+	
     ofDirectory dir("Effects");
     for(auto f : dir.getFiles()){
         ofFile file(f.getAbsolutePath());
