@@ -63,7 +63,7 @@ void textureUnifier::computeOutput(ofTexture* &in){
                     ofFbo::Settings settings;
                     settings.height = fboRect.getHeight();
                     settings.width = fboRect.getWidth();
-                    settings.internalformat = GL_RGB32F;
+                    settings.internalformat = GL_RGBA32F;
                     settings.maxFilter = GL_NEAREST;
                     settings.minFilter = GL_NEAREST;
                     settings.numColorbuffers = 1;

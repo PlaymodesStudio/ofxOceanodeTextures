@@ -47,7 +47,7 @@ void textureRecorder::inputListener(ofTexture* &texture){
         if(!recorderIsSetup || input.get()->getWidth() != width || input.get()->getHeight() != height){
             width = input.get()->getWidth();
             height = input.get()->getHeight();
-            fbo.allocate(width, height, recordAlpha ? GL_RGBA : GL_RGB);
+            fbo.allocate(width, height, recordAlpha ? GL_RGBA32F : GL_RGB32F);
             fbo.begin();
             if(recordAlpha){
                 ofClear(0, 0, 0, 0);  // Clear with full transparency for alpha

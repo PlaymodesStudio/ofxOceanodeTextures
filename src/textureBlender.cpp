@@ -53,7 +53,7 @@ void textureBlender::setup()
         {
             if(vec.size() > 0 && vec[0] != nullptr){
                 if(!fbo.isAllocated() || fbo.getWidth() != width || fbo.getHeight() != height){
-                    fbo.allocate(width, height);
+                    fbo.allocate(width, height, GL_RGBA32F);
                 }
                 
                 fbo.begin();
