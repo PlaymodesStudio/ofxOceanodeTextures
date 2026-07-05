@@ -33,7 +33,7 @@
 #include "textureUnifier.h"
 //#include "textureMixer.h"
 //#include "oscTextureSender.h"
-//#include "textureResize.h"
+#include "textureResizeFast.h"
 #include "displayOutput.h"
 #include "simpleEffect.h"
 #include "textureComposer.h"
@@ -81,6 +81,7 @@ static void registerModels(ofxOceanode &o){
     o.registerModel<textureBlender>("Textures");
     o.registerModel<AverageBrightness>("Textures");
     o.registerModel<textureInfo>("Textures");
+	o.registerModel<textureResizeFast>("Textures");
 	
     
     o.registerModel<injectAlpha>("Textures");
