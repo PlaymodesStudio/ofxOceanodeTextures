@@ -9,6 +9,7 @@
 #define displayOutput_h
 
 #include "ofxOceanodeNodeModelExternalWindow.h"
+#include <algorithm>
 
 class displayOutput : public ofxOceanodeNodeModelExternalWindow{
 public:
@@ -19,6 +20,7 @@ public:
         addParameter(texture.set("Texture", nullptr));
 		addParameter(masterFader.set("Master Fader", 1, 0, 1), ofxOceanodeParameterFlags_DisableSavePreset);
         addParameter(topLeftCorner.set("TopLeft", false));
+        addParameter(fit.set("Fit", false));
         addParameter(backgroundTint.set("Bg Tint", false));
     };
     
@@ -41,7 +43,25 @@ private:
             ofSetRectMode(OF_RECTMODE_CENTER);
             ofSetColor(masterFader*255);
             texture.get()->setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
-            if(topLeftCorner){
+            if(fit){
+                float drawWidth = texture.get()->getWidth();
+                float drawHeight = texture.get()->getHeight();
+
+                if(drawWidth > 0 && drawHeight > 0){
+                    const float scale = std::min((float)ofGetWidth() / drawWidth,
+                                                 (float)ofGetHeight() / drawHeight);
+                    drawWidth *= scale;
+                    drawHeight *= scale;
+                }
+
+                if(topLeftCorner){
+                    ofSetRectMode(OF_RECTMODE_CORNER);
+                    texture.get()->draw(0, 0, drawWidth, drawHeight);
+                }else{
+                    ofSetRectMode(OF_RECTMODE_CENTER);
+                    texture.get()->draw(ofGetWidth()/2, ofGetHeight()/2, drawWidth, drawHeight);
+                }
+            }else if(topLeftCorner){
                 ofSetRectMode(OF_RECTMODE_CORNER);
                 texture.get()->draw(0, 0);
             }else{
@@ -61,6 +81,7 @@ private:
     ofParameter<ofTexture*> texture;
     ofParameter<float> masterFader;
     ofParameter<bool> topLeftCorner;
+    ofParameter<bool> fit;
     ofParameter<bool> backgroundTint;
 };
 
