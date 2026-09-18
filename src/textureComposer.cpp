@@ -27,25 +27,30 @@ void textureComposer::setup()
     addParameter(input.set("Input", {nullptr}));
     addParameter(transformInput.set("T. In", {glm::identity<glm::mat4>()}));
     anchor.resize(3);
+	addSeparator("Anchor",ofColor(255,255,0));
     addParameter(anchor[0].set("Anch.X", {0}, {-FLT_MAX}, {FLT_MAX}));
     addParameter(anchor[1].set("Anch.Y", {0}, {-FLT_MAX}, {FLT_MAX}));
     addParameter(anchor[2].set("Anch.Z", {0}, {-FLT_MAX}, {FLT_MAX}));
     
     position.resize(3);
+	addSeparator("Position",ofColor(0,128,255));
     addParameter(position[0].set("Pos.X", {0}, {-FLT_MAX}, {FLT_MAX}));
     addParameter(position[1].set("Pos.Y", {0}, {-FLT_MAX}, {FLT_MAX}));
     addParameter(position[2].set("Pos.Z", {0}, {-FLT_MAX}, {FLT_MAX}));
     
     rotation.resize(3);
+	addSeparator("Rotation",ofColor(255,64,0));
     addParameter(rotation[0].set("Rot.X", {0}, {-1}, {1}));
     addParameter(rotation[1].set("Rot.Y", {0}, {-1}, {1}));
     addParameter(rotation[2].set("Rot.Z", {0}, {-1}, {1}));
     
     scale.resize(3);
+	addSeparator("Scale",ofColor(255,0,255));
     addParameter(scale[0].set("Sca.X", {1}, {0}, {FLT_MAX}));
     addParameter(scale[1].set("Sca.Y", {1}, {0}, {FLT_MAX}));
     addParameter(scale[2].set("Sca.Z", {1}, {0}, {FLT_MAX}));
 
+	addSeparator("Output",ofColor(128,128,128));
     addParameter(output.set("Output", {nullptr}));
     addParameter(transformOutput.set("T. Out", {glm::identity<glm::mat4>()}));
     

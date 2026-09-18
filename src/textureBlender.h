@@ -15,6 +15,15 @@ public:
     textureBlender();
     
     void setup() override;
+
+    void presetRecallBeforeSettingParameters(ofJson &) override{
+        loadingPreset = true;
+    }
+
+    void presetRecallAfterSettingParameters(ofJson &) override{
+        loadingPreset = false;
+        updateBlendModeFromParameters();
+    }
     
     void deactivate(){
         fbo.clear();
@@ -22,7 +31,14 @@ public:
     }
     
 private:
+    void applyBlendMode(int mode);
+    void updateBlendModeFromParameters();
+
     ofEventListener listener;
+    ofEventListeners blendModeListeners;
+
+    ofParameter<int> blendMode;
+    ofParameter<int> layerOrder;
     
     ofParameter<int> width;
     ofParameter<int> height;
@@ -36,6 +52,7 @@ private:
     ofParameter<int> blendDstAlphaFunction;
     ofParameter<int> blendColorEquation;
     ofParameter<int> blendAlphaEquation;
+    ofParameter<ofFloatColor> blendColor;
     
     ofParameter<std::vector<float>> opacity;
     ofParameter<std::vector<float>> alpha;
@@ -45,5 +62,8 @@ private:
     ofFbo fbo;
     
     ofParameter<bool> active;
+
+    bool updatingBlendMode = false;
+    bool loadingPreset = false;
 };
 #endif /* textureBlender_h */

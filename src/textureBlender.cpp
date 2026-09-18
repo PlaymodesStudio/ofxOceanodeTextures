@@ -7,6 +7,69 @@
 
 #include "textureBlender.h"
 
+#include <array>
+
+namespace{
+enum BlendFunctionIndex{
+    BlendZero = 0,
+    BlendOne,
+    BlendSrcColor,
+    BlendOneMinusSrcColor,
+    BlendDstColor,
+    BlendOneMinusDstColor,
+    BlendSrcAlpha,
+    BlendOneMinusSrcAlpha
+};
+
+enum BlendEquationIndex{
+    BlendAdd = 0,
+    BlendSubtract,
+    BlendReverseSubtract,
+    BlendMin,
+    BlendMax
+};
+
+struct BlendModePreset{
+    int srcColor;
+    int dstColor;
+    int srcAlpha;
+    int dstAlpha;
+    int colorEquation;
+    int alphaEquation;
+};
+
+const std::array<BlendModePreset, 11> blendModePresets = {{
+    {BlendOne, BlendOne, BlendOne, BlendOne, BlendMax, BlendMax},
+    {BlendSrcAlpha, BlendOneMinusSrcAlpha, BlendOne, BlendOneMinusSrcAlpha, BlendAdd, BlendAdd},
+    {BlendOne, BlendOneMinusSrcAlpha, BlendOne, BlendOneMinusSrcAlpha, BlendAdd, BlendAdd},
+    {BlendOne, BlendZero, BlendOne, BlendZero, BlendAdd, BlendAdd},
+    {BlendOne, BlendOne, BlendOne, BlendOne, BlendAdd, BlendAdd},
+    {BlendSrcAlpha, BlendOne, BlendOne, BlendOneMinusSrcAlpha, BlendAdd, BlendAdd},
+    {BlendOneMinusDstColor, BlendOne, BlendOne, BlendOneMinusSrcAlpha, BlendAdd, BlendAdd},
+    {BlendDstColor, BlendZero, BlendOne, BlendOneMinusSrcAlpha, BlendAdd, BlendAdd},
+    {BlendOne, BlendOne, BlendOne, BlendOne, BlendMin, BlendMax},
+    {BlendOne, BlendOne, BlendOne, BlendOne, BlendSubtract, BlendMax},
+    {BlendOne, BlendOne, BlendOne, BlendOne, BlendReverseSubtract, BlendMax}
+}};
+
+const std::vector<std::string> blendModeNames = {
+    "Lighten / Max",
+    "Normal / Alpha Over",
+    "Normal / Premultiplied",
+    "Replace",
+    "Add",
+    "Additive / Alpha",
+    "Screen",
+    "Multiply",
+    "Darken / Min",
+    "Subtract: Source - Result",
+    "Subtract: Result - Source",
+    "Custom"
+};
+
+constexpr int customBlendMode = 11;
+}
+
 textureBlender::textureBlender() : ofxOceanodeNodeModel("Texture Blender"){
     
 }
@@ -14,51 +77,68 @@ textureBlender::textureBlender() : ofxOceanodeNodeModel("Texture Blender"){
 void textureBlender::setup()
 {
     addParameter(active.set("Active", true));
-/*    activeListener = active.newListener([this](bool &b){
-        if(lastActiveState != b){
-            if(b){
-                container->activate();
-                if(resetPhaseOnActive) container->resetPhase();
-            }else{
-                container->deactivate();
-            }
-        }
-        lastActiveState = b;
-    });
-*/
     addParameter(width.set("Width", 100, 1, INT_MAX));
     addParameter(height.set("Height", 100, 1, INT_MAX));
-    
     addParameter(input.set("Input", {nullptr}));
     addParameter(transformInput.set("T. In", {glm::identity<glm::mat4>()}));
-    
-    std::vector<string> blendFunctions = {"GL_ZERO", "GL_ONE", "GL_SRC_COLOR", "GL_ONE_MINUS_SRC_COLOR", "GL_DST_COLOR", "GL_ONE_MINUS_DST_COLOR", "GL_SRC_ALPHA", "GL_ONE_MINUS_SRC_ALPHA", "GL_DST_ALPHA", "GL_ONE_MINUS_DST_ALPHA", "GL_CONSTANT_COLOR", "GL_ONE_MINUS_CONSTANT_COLOR", "GL_CONSTANT_ALPHA", "GL_ONE_MINUS_CONSTANT_ALPHA", "GL_SRC_ALPHA_SATURATE", "GL_SRC1_COLOR", "GL_ONE_MINUS_SRC1_COLOR", "GL_SRC1_ALPHA", "GL_ONE_MINUS_SRC1_ALPHA"};
+	addParameterDropdown(blendMode, "Blend Mode", 0, blendModeNames);
+	addParameterDropdown(layerOrder, "Layer Order", 0, {"Ascending", "Descending"});
+
+    std::vector<string> blendSourceFunctions = {"GL_ZERO", "GL_ONE", "GL_SRC_COLOR", "GL_ONE_MINUS_SRC_COLOR", "GL_DST_COLOR", "GL_ONE_MINUS_DST_COLOR", "GL_SRC_ALPHA", "GL_ONE_MINUS_SRC_ALPHA", "GL_DST_ALPHA", "GL_ONE_MINUS_DST_ALPHA", "GL_CONSTANT_COLOR", "GL_ONE_MINUS_CONSTANT_COLOR", "GL_CONSTANT_ALPHA", "GL_ONE_MINUS_CONSTANT_ALPHA", "GL_SRC_ALPHA_SATURATE"};
+    std::vector<string> blendDestinationFunctions = {"GL_ZERO", "GL_ONE", "GL_SRC_COLOR", "GL_ONE_MINUS_SRC_COLOR", "GL_DST_COLOR", "GL_ONE_MINUS_DST_COLOR", "GL_SRC_ALPHA", "GL_ONE_MINUS_SRC_ALPHA", "GL_DST_ALPHA", "GL_ONE_MINUS_DST_ALPHA", "GL_CONSTANT_COLOR", "GL_ONE_MINUS_CONSTANT_COLOR", "GL_CONSTANT_ALPHA", "GL_ONE_MINUS_CONSTANT_ALPHA"};
     
     std::vector<string> blendEquations =  {"GL_FUNC_ADD", "GL_FUNC_SUBTRACT", "GL_FUNC_REVERSE_SUBTRACT", "GL_MIN", "GL_MAX"};
     
-    addParameterDropdown(blendSrcColorFunction, "Src Color", 1, blendFunctions);
-    addParameterDropdown(blendSrcAlphaFunction, "Src Alpha", 1, blendFunctions);
-    addParameterDropdown(blendDstColorFunction, "Dst Color", 1, blendFunctions);
-    addParameterDropdown(blendDstAlphaFunction, "Dst Alpha", 1, blendFunctions);
+	addSeparator("Colors/Alpha",ofColor(0,255,255));
+    addParameterDropdown(blendSrcColorFunction, "Src Color", 1, blendSourceFunctions);
+    addParameterDropdown(blendSrcAlphaFunction, "Src Alpha", 1, blendSourceFunctions);
+    addParameterDropdown(blendDstColorFunction, "Dst Color", 1, blendDestinationFunctions);
+    addParameterDropdown(blendDstAlphaFunction, "Dst Alpha", 1, blendDestinationFunctions);
+	addSeparator("Equations",ofColor(255,128,0));
     addParameterDropdown(blendColorEquation, "Color Eq", 4, blendEquations);
     addParameterDropdown(blendAlphaEquation, "Alpha Eq", 4, blendEquations);
-    
+    addParameter(blendColor.set("Blend Color", ofFloatColor(0.0f, 0.0f, 0.0f, 0.0f)));
+	addSeparator("Opacity/Alpha",ofColor(255,255,0));
     addParameter(opacity.set("Opacity", {1}, {0}, {1}));
     addParameter(alpha.set("Alpha", {1}, {0}, {1}));
-    
-    addParameter(output.set("Ouput", nullptr));
+	addSeparator("Output",ofColor(128,128,128));
+    addOutputParameter(output.set("Ouput", nullptr));
+
+    blendModeListeners.push(blendMode.newListener([this](int &mode){
+        if(!updatingBlendMode && !loadingPreset){
+            applyBlendMode(mode);
+        }
+    }));
+
+    auto blendParameterChanged = [this](int &){
+        updateBlendModeFromParameters();
+    };
+    blendModeListeners.push(blendSrcColorFunction.newListener(blendParameterChanged));
+    blendModeListeners.push(blendSrcAlphaFunction.newListener(blendParameterChanged));
+    blendModeListeners.push(blendDstColorFunction.newListener(blendParameterChanged));
+    blendModeListeners.push(blendDstAlphaFunction.newListener(blendParameterChanged));
+    blendModeListeners.push(blendColorEquation.newListener(blendParameterChanged));
+    blendModeListeners.push(blendAlphaEquation.newListener(blendParameterChanged));
     
     listener = input.newListener([this](std::vector<ofTexture*> &vec){
         if(active)
         {
-            if(vec.size() > 0 && vec[0] != nullptr){
+            bool hasValidTexture = false;
+            for(auto *texture : vec){
+                if(texture != nullptr && texture->isAllocated()){
+                    hasValidTexture = true;
+                    break;
+                }
+            }
+
+            if(hasValidTexture){
                 if(!fbo.isAllocated() || fbo.getWidth() != width || fbo.getHeight() != height){
                     fbo.allocate(width, height, GL_RGBA32F);
                 }
                 
                 fbo.begin();
                 ofClear(0, 0, 0, 255);
-                glEnable(GL_BLEND);
+                glBlendColor(blendColor->r, blendColor->g, blendColor->b, blendColor->a);
                
                 auto getGLenumFromFunctionInt = [](int val)->GLenum{
                     switch(val){
@@ -77,10 +157,6 @@ void textureBlender::setup()
                         case 12: return GL_CONSTANT_ALPHA;
                         case 13: return GL_ONE_MINUS_CONSTANT_ALPHA;
                         case 14: return GL_SRC_ALPHA_SATURATE;
-                        case 15: return GL_SRC1_COLOR;
-                        case 16: return GL_ONE_MINUS_SRC1_COLOR;
-                        case 17: return GL_SRC1_ALPHA;
-                        case 18: return GL_ONE_MINUS_SRC1_ALPHA;
                         default: return GL_INVALID_ENUM;
                     }
                 };
@@ -96,9 +172,20 @@ void textureBlender::setup()
                     }
                 };
                 
-                for(int i = 0; i < vec.size(); i++){
-                    glBlendFuncSeparate(getGLenumFromFunctionInt(blendSrcColorFunction), getGLenumFromFunctionInt(blendDstColorFunction),  getGLenumFromFunctionInt(blendSrcAlphaFunction), getGLenumFromFunctionInt(blendDstAlphaFunction));
-                    glBlendEquationSeparate(getGLenumFromEquationInt(blendColorEquation), getGLenumFromEquationInt(blendAlphaEquation));
+                glBlendFuncSeparate(getGLenumFromFunctionInt(blendSrcColorFunction), getGLenumFromFunctionInt(blendDstColorFunction),  getGLenumFromFunctionInt(blendSrcAlphaFunction), getGLenumFromFunctionInt(blendDstAlphaFunction));
+                glBlendEquationSeparate(getGLenumFromEquationInt(blendColorEquation), getGLenumFromEquationInt(blendAlphaEquation));
+
+                bool hasBaseLayer = false;
+                for(std::size_t offset = 0; offset < vec.size(); offset++){
+                    std::size_t i = layerOrder == 0 ? offset : vec.size() - 1 - offset;
+                    if(vec[i] == nullptr || !vec[i]->isAllocated()) continue;
+
+                    if(hasBaseLayer){
+                        glEnable(GL_BLEND);
+                    }else{
+                        glDisable(GL_BLEND);
+                    }
+
                     float _opacity = opacity->at(0);
                     if(opacity->size() == vec.size()) _opacity = opacity->at(i);
                     float _alpha = alpha->at(0);
@@ -111,6 +198,8 @@ void textureBlender::setup()
                     
                     vec[i]->draw(0, 0);
                     ofPopMatrix();
+
+                    hasBaseLayer = true;
                 }
                 glDisable(GL_BLEND);
                 fbo.end();
@@ -120,4 +209,42 @@ void textureBlender::setup()
 
         }
     });
+}
+
+void textureBlender::applyBlendMode(int mode)
+{
+    if(mode < 0 || mode >= customBlendMode) return;
+
+    const auto &preset = blendModePresets[mode];
+    updatingBlendMode = true;
+    blendSrcColorFunction = preset.srcColor;
+    blendDstColorFunction = preset.dstColor;
+    blendSrcAlphaFunction = preset.srcAlpha;
+    blendDstAlphaFunction = preset.dstAlpha;
+    blendColorEquation = preset.colorEquation;
+    blendAlphaEquation = preset.alphaEquation;
+    updatingBlendMode = false;
+}
+
+void textureBlender::updateBlendModeFromParameters()
+{
+    if(updatingBlendMode || loadingPreset) return;
+
+    int matchingMode = customBlendMode;
+    for(std::size_t i = 0; i < blendModePresets.size(); i++){
+        const auto &preset = blendModePresets[i];
+        if(blendSrcColorFunction == preset.srcColor &&
+           blendDstColorFunction == preset.dstColor &&
+           blendSrcAlphaFunction == preset.srcAlpha &&
+           blendDstAlphaFunction == preset.dstAlpha &&
+           blendColorEquation == preset.colorEquation &&
+           blendAlphaEquation == preset.alphaEquation){
+            matchingMode = static_cast<int>(i);
+            break;
+        }
+    }
+
+    updatingBlendMode = true;
+    blendMode = matchingMode;
+    updatingBlendMode = false;
 }
