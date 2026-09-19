@@ -50,6 +50,8 @@
 
 #include "ofxOceanode.h"
 
+#include <functional>
+
 namespace ofxOceanodeTextures{
 static void registerModels(ofxOceanode &o){
     o.registerModel<indexerTexture>("Textures");
@@ -94,19 +96,59 @@ static void registerModels(ofxOceanode &o){
     o.registerModel<textureUnitMonitor>("Debug");
 	
 	
-    ofDirectory dir("Effects");
-    for(auto f : dir.getFiles()){
-        ofFile file(f.getAbsolutePath());
-        ofBuffer buffer(file);
-        std::string config = buffer.getFirstLine();
-        config.erase(0,2); //Removes First Character
-        
-        std::string fileName = file.getFileName();
-        fileName.erase(fileName.size()-5, 5); //Removes .glsl
-        
-        o.registerModel<simpleEffect>("Effects", fileName, config);
-    }
-    dir.close();
+    std::function<void(const std::string &, const std::string &)> registerEffectsDirectory;
+    registerEffectsDirectory = [&o, &registerEffectsDirectory](const std::string &directoryPath,
+                                                               const std::string &relativeDirectory){
+        ofDirectory directory(directoryPath);
+        directory.listDir();
+        directory.sort();
+
+        for(size_t i = 0; i < directory.size(); i++){
+            const ofFile file = directory.getFile(i);
+            const std::string relativePath = relativeDirectory.empty()
+                                           ? file.getFileName()
+                                           : relativeDirectory + "/" + file.getFileName();
+
+            if(file.isDirectory()){
+                registerEffectsDirectory(file.getAbsolutePath(), relativePath);
+                continue;
+            }
+
+            if(ofToLower(file.getExtension()) != "glsl"){
+                continue;
+            }
+
+            ofBuffer buffer = ofBufferFromFile(file.getAbsolutePath());
+            std::string config;
+
+            if(buffer.size() > 0){
+                const std::string firstLine = ofTrim(buffer.getFirstLine());
+                if(firstLine.rfind("//", 0) == 0){
+                    config = ofTrim(firstLine.substr(2));
+                }else{
+                    ofLogWarning("ofxOceanodeTextures")
+                        << relativePath
+                        << " has no first-line parameter metadata; registering it without custom parameters";
+                }
+            }else{
+                ofLogWarning("ofxOceanodeTextures")
+                    << relativePath
+                    << " is empty; registering it so simpleEffect can expose the shader error";
+            }
+
+            const std::string category = relativeDirectory.empty()
+                                       ? "Effects"
+                                       : "Effects/" + relativeDirectory;
+            o.registerModel<simpleEffect>(category,
+                                          file.getBaseName(),
+                                          config,
+                                          "Effects/" + relativePath);
+        }
+
+        directory.close();
+    };
+
+    registerEffectsDirectory(ofToDataPath("Effects", true), "");
 }
 static void registerType(ofxOceanode &o){
     auto textureBufferAssignFunction = [](ofTexture* &tex, ofFbo &fbo){
