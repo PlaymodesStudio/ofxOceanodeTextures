@@ -47,6 +47,7 @@
 #include "ColorTexture.h"
 #include "textureDisplay.h"
 #include "videoPlayerScrub.h"
+#include "svg2Texture.h"
 
 #include "ofxOceanode.h"
 
@@ -92,6 +93,7 @@ static void registerModels(ofxOceanode &o){
     o.registerModel<ColorTexture>("Textures");
 	o.registerModel<textureDisplay>("Textures");
 	o.registerModel<videoPlayerScrub>("Textures");
+	o.registerModel<svg2Texture>("Textures");
 	
     o.registerModel<textureUnitMonitor>("Debug");
 	
