@@ -1,4 +1,0 @@
-ofxImGuiSimple
-ofxOceanode
-ofxSyphon
-ofxOceanodeTextures

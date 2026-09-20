@@ -115,15 +115,31 @@ public:
             needsDelayedRestore = false;
         }
 
-        // Consume auto-fit request once a valid texture is available.
+        // Keep the canvas synchronized with the active texture's dimensions.
+        // This is checked every frame because an ofTexture/ofFbo can be
+        // reallocated at a different resolution without changing its pointer.
         // The input pin has priority over the portal selection.
-        if (needsAutoFit) {
-            ofTexture *tex = resolveActiveTexture();
-            if (tex && tex->isAllocated()
-                && tex->getWidth() > 0 && tex->getHeight() > 0) {
+        ofTexture *tex = resolveActiveTexture();
+        if (tex && tex->isAllocated()
+            && tex->getWidth() > 0 && tex->getHeight() > 0) {
+            const float texWidth  = tex->getWidth();
+            const float texHeight = tex->getHeight();
+            const bool dimensionsChanged = hasObservedTextureDimensions
+                && (texWidth != lastObservedTextureWidth
+                    || texHeight != lastObservedTextureHeight);
+
+            if (needsAutoFit) {
                 applyAutoFit(tex->getWidth() / tex->getHeight());
                 needsAutoFit = false;
+            } else if (dimensionsChanged) {
+                // Preserve the user's current canvas width while deriving the
+                // height from the new texture aspect ratio.
+                applyAspectToCurrentWidth(texWidth / texHeight);
             }
+
+            lastObservedTextureWidth  = texWidth;
+            lastObservedTextureHeight = texHeight;
+            hasObservedTextureDimensions = true;
         }
     }
 
@@ -170,6 +186,13 @@ private:
     // consumed once a valid texture is observed. NEVER set from preset-recall.
     bool                     needsAutoFit = false;
 
+    // Last valid dimensions seen on the active texture. Texture producers
+    // commonly resize an existing ofTexture/ofFbo in place, so pointer-change
+    // detection alone cannot keep the canvas aspect ratio synchronized.
+    float                    lastObservedTextureWidth = 0.f;
+    float                    lastObservedTextureHeight = 0.f;
+    bool                     hasObservedTextureDimensions = false;
+
     // Default width used by auto-fit (matches displayWidth default).
     static constexpr float   kDefaultWidth = 320.f;
 
@@ -205,6 +228,14 @@ private:
     void applyAutoFit(float aspect) {
         if (aspect <= 0.f || !std::isfinite(aspect)) return;
         auto [nw, nh] = applyAspectClamp(kDefaultWidth, kDefaultWidth / aspect, aspect);
+        displayWidth.set(nw);
+        displayHeight.set(nh);
+    }
+
+    void applyAspectToCurrentWidth(float aspect) {
+        if (aspect <= 0.f || !std::isfinite(aspect)) return;
+        const float currentWidth = displayWidth.get();
+        auto [nw, nh] = applyAspectClamp(currentWidth, currentWidth / aspect, aspect);
         displayWidth.set(nw);
         displayHeight.set(nh);
     }
@@ -563,13 +594,20 @@ private:
                          ImVec2(pos.x + screenW, pos.y + screenH),
                          ImVec2(0, 0), ImVec2(1, 1));
         } else {
-            // Dark placeholder with a label (no border outline).
+            // Dark placeholder with a centered label.
             dl->AddRectFilled(pos, ImVec2(pos.x + screenW, pos.y + screenH), IM_COL32(30, 30, 30, 255));
             const char *label = "No texture";
             ImVec2 ts = ImGui::CalcTextSize(label);
             dl->AddText(ImVec2(pos.x + (screenW - ts.x) * 0.5f, pos.y + (screenH - ts.y) * 0.5f),
                         IM_COL32(120, 120, 120, 255), label);
         }
+
+        // Fixed one-screen-pixel frame. Keep it independent of canvas zoom so
+        // transparent textures always retain a clear, unobtrusive boundary.
+        const float borderInset = 0.5f;
+        dl->AddRect(ImVec2(pos.x + borderInset, pos.y + borderInset),
+                    ImVec2(posEnd.x - borderInset, posEnd.y - borderInset),
+                    IM_COL32(0, 0, 0, 255), 0.f, 0, 1.f);
 
         // ── Resize grip (simple mid-gray filled circle) ───────────────────
         // Mirrors the postItNote.h style: a single AddCircleFilled, darker
