@@ -24,7 +24,12 @@ textureRecorderFFmpeg::textureRecorderFFmpeg() : ofxOceanodeNodeModel("Texture R
     addParameter(record.set("Record", false));
     addParameter(autoRecLoop.set("Auto.Rec", false));
     addParameter(filename.set("File", "recTest"));
-    addParameter(input.set("Input", nullptr));
+    addInspectorParameter(numInputs.set("Num Inputs", 1, 1, maxInputs));
+
+    inputs.reserve(maxInputs);
+    streams.reserve(maxInputs);
+    resizeInputs(numInputs.get());
+
     addParameter(recordAlpha.set("Alpha?", false));
 
     addParameterDropdown(codec, "Codec", 0,
@@ -35,11 +40,62 @@ textureRecorderFFmpeg::textureRecorderFFmpeg() : ofxOceanodeNodeModel("Texture R
 
     listeners.push(phasorIn.newListener(this, &textureRecorderFFmpeg::phasorInListener));
     listeners.push(record.newListener(this, &textureRecorderFFmpeg::recordListener));
-    listeners.push(input.newListener(this, &textureRecorderFFmpeg::inputListener));
+    listeners.push(numInputs.newListener([this](int &newSize){
+        if(record.get()) record = false;
+        resizeInputs(newSize);
+    }));
+    listeners.push(recordAlpha.newListener([this](bool &){
+        // The pipe and FBO channel count must agree for the entire file.
+        if(record.get()) record = false;
+        resetStreamSetups();
+    }));
 }
 
 textureRecorderFFmpeg::~textureRecorderFFmpeg(){
-    stopPipe();
+    stopAllPipes();
+}
+
+void textureRecorderFFmpeg::loadBeforeConnections(ofJson &json){
+    // Dynamic inputs must exist before Oceanode restores their connections.
+    deserializeParameter(json, numInputs);
+}
+
+std::string textureRecorderFFmpeg::inputName(std::size_t index) const{
+    // Keep the original port name for existing presets and patches.
+    if(index == 0) return "Input";
+    return "Input " + ofToString(index + 1, 2, '0');
+}
+
+void textureRecorderFFmpeg::resizeInputs(int newSize){
+    newSize = ofClamp(newSize, 1, maxInputs);
+    const std::size_t targetSize = static_cast<std::size_t>(newSize);
+
+    while(inputs.size() > targetSize){
+        const std::size_t index = inputs.size() - 1;
+        stopPipe(*streams[index], index);
+        inputListeners.pop_back();
+        removeParameter(inputName(index));
+        inputs.pop_back();
+        streams.pop_back();
+    }
+
+    while(inputs.size() < targetSize){
+        const std::size_t index = inputs.size();
+        inputs.emplace_back();
+        streams.emplace_back(std::make_unique<StreamState>());
+        addParameter(inputs.back().set(inputName(index), nullptr));
+        inputListeners.emplace_back(inputs.back().newListener(
+            [this, index](ofTexture* &texture){ inputListener(index, texture); }));
+    }
+}
+
+void textureRecorderFFmpeg::resetStreamSetups(){
+    for(auto &stream : streams){
+        stream->recorderIsSetup = false;
+        stream->width = 0;
+        stream->height = 0;
+        stream->fbo.clear();
+    }
 }
 
 void textureRecorderFFmpeg::phasorInListener(float &f){
@@ -58,6 +114,10 @@ std::string textureRecorderFFmpeg::resolveFfmpeg() const {
         if(ofFile::doesFileExist(candidate)) return candidate;
     }
     return "ffmpeg"; // fall back to PATH
+}
+
+std::string textureRecorderFFmpeg::outputExtension() const{
+    return (codec.get() == 3 || codec.get() == 4) ? ".mp4" : ".mov";
 }
 
 std::string textureRecorderFFmpeg::buildCommand(const std::string &outPath, int w, int h) const {
@@ -82,167 +142,220 @@ std::string textureRecorderFFmpeg::buildCommand(const std::string &outPath, int 
     return cmd;
 }
 
-bool textureRecorderFFmpeg::startPipe(int w, int h){
-    if(pipe != nullptr) return true;
+bool textureRecorderFFmpeg::startPipe(StreamState &stream, std::size_t index, int w, int h){
+    if(stream.pipe != nullptr) return true;
 
     const std::string folder = ofToDataPath("recordings", true);
     ofDirectory::createDirectory(folder, true, true);
-    const std::string ext = (codec.get() == 3) ? ".mp4" : ((codec.get() == 4) ? ".mp4" : ".mov");
-    outputPath = folder + "/" + filename.get() + "_" + ofGetTimestampString() + ext;
+    if(recordingTimestamp.empty()) recordingTimestamp = ofGetTimestampString();
 
-    const std::string command = buildCommand(outputPath, w, h);
-    ofLogNotice("textureRecorderFFmpeg") << "Launching: " << command;
+    const std::string suffix = streams.size() == 1
+        ? ""
+        : "_" + ofToString(index + 1, 2, '0');
+    stream.outputPath = folder + "/" + filename.get() + "_" + recordingTimestamp + suffix + outputExtension();
 
-    pipe = popen(command.c_str(), "w");
-    if(pipe == nullptr){
-        ofLogError("textureRecorderFFmpeg") << "Could not start ffmpeg. Check the path in the inspector.";
-        status = "ffmpeg failed to start";
+    const std::string command = buildCommand(stream.outputPath, w, h);
+    ofLogNotice("textureRecorderFFmpeg") << "Launching input " << (index + 1) << ": " << command;
+
+    stream.pipe = popen(command.c_str(), "w");
+    if(stream.pipe == nullptr){
+        ofLogError("textureRecorderFFmpeg") << "Could not start ffmpeg for input " << (index + 1)
+                                             << ". Check the path in the inspector.";
+        status = "ffmpeg failed for input " + ofToString(index + 1);
         return false;
     }
 
-    pipeBroken = false;
-    frameCounter = 0;
-    writerRunning = true;
-    writer = std::thread(&textureRecorderFFmpeg::writerLoop, this);
-    status = "recording -> " + ofFilePath::getFileName(outputPath);
+    stream.pipeBroken = false;
+    stream.frameCounter = 0;
+    stream.writerRunning = true;
+    stream.writer = std::thread(&textureRecorderFFmpeg::writerLoop, this, &stream);
+
+    if(streams.size() == 1){
+        status = "recording -> " + ofFilePath::getFileName(stream.outputPath);
+    }else{
+        int activeStreams = 0;
+        for(const auto &candidate : streams){
+            if(candidate->pipe != nullptr) activeStreams++;
+        }
+        status = "recording " + ofToString(activeStreams) + "/" + ofToString(streams.size()) + " streams";
+    }
     return true;
 }
 
-void textureRecorderFFmpeg::stopPipe(){
-    if(!writerRunning.load() && pipe == nullptr) return;
+int textureRecorderFFmpeg::stopPipe(StreamState &stream, std::size_t index){
+    if(!stream.writerRunning.load() && stream.pipe == nullptr) return -1;
 
     {
-        std::lock_guard<std::mutex> lock(queueMutex);
-        writerRunning = false;
+        std::lock_guard<std::mutex> lock(stream.queueMutex);
+        stream.writerRunning = false;
     }
-    workAvailable.notify_all();
-    spaceAvailable.notify_all();
-    if(writer.joinable()) writer.join();
+    stream.workAvailable.notify_all();
+    stream.spaceAvailable.notify_all();
+    if(stream.writer.joinable()) stream.writer.join();
 
-    if(pipe != nullptr){
-        // Closing stdin is how ffmpeg is told the stream ended; pclose then
-        // waits for it to finish writing the container.
-        const int result = pclose(pipe);
-        pipe = nullptr;
+    int result = -1;
+    if(stream.pipe != nullptr){
+        // Closing stdin tells ffmpeg the stream ended; pclose then waits for it
+        // to finish writing the container.
+        result = pclose(stream.pipe);
+        stream.pipe = nullptr;
         if(result != 0){
-            ofLogError("textureRecorderFFmpeg") << "ffmpeg exited with " << result;
-            status = "ffmpeg exited with " + ofToString(result);
+            ofLogError("textureRecorderFFmpeg") << "ffmpeg for input " << (index + 1)
+                                                 << " exited with " << result;
+            status = "ffmpeg input " + ofToString(index + 1) + " exited with " + ofToString(result);
         }else{
-            ofLogNotice("textureRecorderFFmpeg") << "Wrote " << frameCounter << " frames to " << outputPath;
-            status = ofToString(frameCounter) + " frames -> " + ofFilePath::getFileName(outputPath);
+            ofLogNotice("textureRecorderFFmpeg") << "Wrote " << stream.frameCounter
+                                                  << " frames to " << stream.outputPath;
+            if(streams.size() == 1){
+                status = ofToString(stream.frameCounter) + " frames -> "
+                       + ofFilePath::getFileName(stream.outputPath);
+            }
         }
     }
 
-    std::lock_guard<std::mutex> lock(queueMutex);
-    frameQueue.clear();
-    bufferPool.clear();
+    std::lock_guard<std::mutex> lock(stream.queueMutex);
+    stream.frameQueue.clear();
+    stream.bufferPool.clear();
+    return result;
 }
 
-ofPixels textureRecorderFFmpeg::acquireBuffer(){
-    std::lock_guard<std::mutex> lock(queueMutex);
-    if(bufferPool.empty()) return ofPixels();
-    ofPixels buffer = std::move(bufferPool.back());
-    bufferPool.pop_back();
+void textureRecorderFFmpeg::stopAllPipes(){
+    int filesWritten = 0;
+    int failures = 0;
+    for(std::size_t i = 0; i < streams.size(); i++){
+        const int result = stopPipe(*streams[i], i);
+        if(result == 0) filesWritten++;
+        else if(result > 0) failures++;
+    }
+
+    if(streams.size() > 1){
+        if(failures > 0){
+            status = ofToString(failures) + " ffmpeg stream(s) failed";
+        }else if(filesWritten > 0){
+            status = ofToString(filesWritten) + " files written";
+        }
+    }
+}
+
+ofPixels textureRecorderFFmpeg::acquireBuffer(StreamState &stream){
+    std::lock_guard<std::mutex> lock(stream.queueMutex);
+    if(stream.bufferPool.empty()) return ofPixels();
+    ofPixels buffer = std::move(stream.bufferPool.back());
+    stream.bufferPool.pop_back();
     return buffer;
 }
 
-void textureRecorderFFmpeg::recycleBuffer(ofPixels &&pixels){
-    std::lock_guard<std::mutex> lock(queueMutex);
-    if(bufferPool.size() < maxQueuedFrames + 2) bufferPool.push_back(std::move(pixels));
+void textureRecorderFFmpeg::recycleBuffer(StreamState &stream, ofPixels &&pixels){
+    std::lock_guard<std::mutex> lock(stream.queueMutex);
+    if(stream.bufferPool.size() < stream.maxQueuedFrames + 2){
+        stream.bufferPool.push_back(std::move(pixels));
+    }
 }
 
-void textureRecorderFFmpeg::writerLoop(){
+void textureRecorderFFmpeg::writerLoop(StreamState *stream){
     while(true){
         ofPixels frame;
         {
-            std::unique_lock<std::mutex> lock(queueMutex);
-            workAvailable.wait(lock, [this]{
-                return !frameQueue.empty() || !writerRunning.load();
+            std::unique_lock<std::mutex> lock(stream->queueMutex);
+            stream->workAvailable.wait(lock, [stream]{
+                return !stream->frameQueue.empty() || !stream->writerRunning.load();
             });
-            // Drain whatever is queued even after a stop, so the file contains
-            // every frame that was captured.
-            if(frameQueue.empty()) return;
-            frame = std::move(frameQueue.front());
-            frameQueue.pop_front();
+            // Drain queued frames after stop so every captured frame reaches
+            // its file.
+            if(stream->frameQueue.empty()) return;
+            frame = std::move(stream->frameQueue.front());
+            stream->frameQueue.pop_front();
         }
-        spaceAvailable.notify_one();
+        stream->spaceAvailable.notify_one();
 
-        if(pipe != nullptr && !pipeBroken.load()){
+        if(stream->pipe != nullptr && !stream->pipeBroken.load()){
             const std::size_t bytes = frame.size();
-            if(fwrite(frame.getData(), 1, bytes, pipe) != bytes){
-                // Almost always means ffmpeg died: a bad codec argument, or no
-                // permission to write the output.
-                pipeBroken = true;
+            if(fwrite(frame.getData(), 1, bytes, stream->pipe) != bytes){
+                stream->pipeBroken = true;
                 ofLogError("textureRecorderFFmpeg") << "ffmpeg stopped accepting frames";
             }
         }
-        recycleBuffer(std::move(frame));
+        recycleBuffer(*stream, std::move(frame));
     }
 }
 
-void textureRecorderFFmpeg::inputListener(ofTexture* &texture){
-    if(input == nullptr) return;
+void textureRecorderFFmpeg::inputListener(std::size_t index, ofTexture* &texture){
+    if(index >= inputs.size() || texture == nullptr || !texture->isAllocated()) return;
+    StreamState &stream = *streams[index];
 
-    const int inWidth = input.get()->getWidth();
-    const int inHeight = input.get()->getHeight();
-    if(!recorderIsSetup || inWidth != width || inHeight != height){
+    const int inWidth = texture->getWidth();
+    const int inHeight = texture->getHeight();
+    if(!stream.recorderIsSetup || inWidth != stream.width || inHeight != stream.height){
         // Resolution cannot change mid-file: ffmpeg was told the frame size up
-        // front, so a resize has to close the current recording.
-        if(pipe != nullptr){
-            ofLogWarning("textureRecorderFFmpeg") << "Input resolution changed; closing the current file";
-            stopPipe();
+        // front, so a resize closes every stream to keep the recordings aligned.
+        if(stream.pipe != nullptr){
+            ofLogWarning("textureRecorderFFmpeg") << "Input " << (index + 1)
+                                                   << " resolution changed; closing all current files";
             record = false;
             return;
         }
-        width = inWidth;
-        height = inHeight;
-        fbo.allocate(width, height, recordAlpha ? GL_RGBA8 : GL_RGB8);
-        fbo.begin();
-        ofClear(0, 0, 0, recordAlpha ? 0 : 255);
-        input.get()->draw(0, 0);
-        fbo.end();
-        recorderIsSetup = true;
+
+        stream.width = inWidth;
+        stream.height = inHeight;
+
+        // The convenience allocate(width, height, format) overload creates
+        // desktop depth and stencil buffers. Explicit settings avoid that
+        // substantial, unused allocation for every recording input.
+        ofFbo::Settings settings;
+        settings.width = stream.width;
+        settings.height = stream.height;
+        settings.internalformat = recordAlpha ? GL_RGBA8 : GL_RGB8;
+        settings.numColorbuffers = 1;
+        settings.useDepth = false;
+        settings.useStencil = false;
+        settings.numSamples = 0;
+        settings.minFilter = GL_NEAREST;
+        settings.maxFilter = GL_NEAREST;
+        stream.fbo.allocate(settings);
+        stream.recorderIsSetup = true;
     }
 
     if(!record) return;
-    if(pipe == nullptr && !startPipe(width, height)){
+    if(stream.pipe == nullptr && !startPipe(stream, index, stream.width, stream.height)){
         record = false;
         return;
     }
-    if(pipeBroken.load()){
+    if(stream.pipeBroken.load()){
         record = false;
         return;
     }
 
-    fbo.begin();
+    stream.fbo.begin();
     ofClear(0, 0, 0, recordAlpha ? 0 : 255);
-    input.get()->draw(0, 0);
-    fbo.end();
+    texture->draw(0, 0);
+    stream.fbo.end();
 
-    ofPixels pixels = acquireBuffer();
-    fbo.getTexture().readToPixels(pixels);
+    ofPixels pixels = acquireBuffer(stream);
+    stream.fbo.getTexture().readToPixels(pixels);
 
     {
-        std::unique_lock<std::mutex> lock(queueMutex);
-        spaceAvailable.wait(lock, [this]{
-            return frameQueue.size() < maxQueuedFrames || !writerRunning.load();
+        std::unique_lock<std::mutex> lock(stream.queueMutex);
+        stream.spaceAvailable.wait(lock, [&stream]{
+            return stream.frameQueue.size() < stream.maxQueuedFrames || !stream.writerRunning.load();
         });
-        if(!writerRunning.load()) return;
-        frameQueue.push_back(std::move(pixels));
+        if(!stream.writerRunning.load()) return;
+        stream.frameQueue.push_back(std::move(pixels));
     }
-    workAvailable.notify_one();
-    frameCounter++;
+    stream.workAvailable.notify_one();
+    stream.frameCounter++;
 }
 
 void textureRecorderFFmpeg::recordListener(bool &b){
     if(b){
+        recordingTimestamp.clear();
         setFlags(ofxOceanodeNodeModelFlags_ForceFrameMode);
-        // The pipe itself is opened on the first frame, once the input
-        // resolution is known.
+        // Each pipe opens on its input's first frame, once its resolution is
+        // known. Disconnected inputs simply do not create empty files.
     }else{
         autoRecLoop = false;
         setFlags(ofxOceanodeNodeModelFlags_None);
-        stopPipe();
-        recorderIsSetup = false;
+        stopAllPipes();
+        resetStreamSetups();
+        recordingTimestamp.clear();
     }
 }

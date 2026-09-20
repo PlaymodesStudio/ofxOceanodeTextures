@@ -2,14 +2,14 @@
 //  textureRecorderFFmpeg.h
 //  ofxOceanodeTextures
 //
-//  Records a texture straight into a video file by piping raw frames to
-//  ffmpeg, instead of writing an image sequence.
+//  Records one or more textures straight into independent video files by
+//  piping raw frames to ffmpeg, instead of writing image sequences.
 //
-//  At large resolutions the image-sequence recorder is encode-bound: openFrameworks
-//  saves PNGs through FreeImage at its default zlib level and ignores the quality
-//  flag for anything but JPEG, so a 15-megapixel frame costs seconds of CPU. Here
-//  the frame is handed to ffmpeg as raw bytes and encoded in its own process,
-//  which also removes the intermediate files entirely.
+//  At large resolutions the image-sequence recorder is encode-bound:
+//  openFrameworks saves PNGs through FreeImage at its default zlib level and
+//  ignores the quality flag for anything but JPEG. Here each frame is handed
+//  to ffmpeg as raw bytes and encoded in its own process, which also removes
+//  the intermediate files entirely.
 //
 
 #ifndef textureRecorderFFmpeg_h
@@ -21,6 +21,7 @@
 #include <condition_variable>
 #include <cstdio>
 #include <deque>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -31,56 +32,73 @@ public:
     textureRecorderFFmpeg();
     ~textureRecorderFFmpeg();
 
+    void loadBeforeConnections(ofJson &json) override;
+
 private:
+    struct StreamState{
+        ofFbo fbo;
+        int width = 0;
+        int height = 0;
+        bool recorderIsSetup = false;
+        int frameCounter = 0;
+        std::string outputPath;
+
+        // A pipe is an ordered stream, so each output has one consumer. The
+        // bounded queue keeps frame-stepped playback honest: a slow encoder
+        // makes the producer wait instead of silently dropping frames.
+        FILE* pipe = nullptr;
+        std::thread writer;
+        std::atomic<bool> writerRunning{false};
+        std::atomic<bool> pipeBroken{false};
+        std::deque<ofPixels> frameQueue;
+        std::vector<ofPixels> bufferPool;
+        std::mutex queueMutex;
+        std::condition_variable spaceAvailable;
+        std::condition_variable workAvailable;
+        std::size_t maxQueuedFrames = 4;
+    };
+
     void phasorInListener(float &f);
-    void inputListener(ofTexture* &texture);
+    void inputListener(std::size_t index, ofTexture* &texture);
     void recordListener(bool &b);
+    void resizeInputs(int newSize);
+    void resetStreamSetups();
 
-    bool startPipe(int w, int h);
-    void stopPipe();
-    void writerLoop();
+    bool startPipe(StreamState &stream, std::size_t index, int w, int h);
+    int stopPipe(StreamState &stream, std::size_t index);
+    void stopAllPipes();
+    void writerLoop(StreamState *stream);
 
-    // Frames are large, so the buffers are recycled rather than reallocated
-    // every frame.
-    ofPixels acquireBuffer();
-    void recycleBuffer(ofPixels &&pixels);
+    // Frames are large, so buffers are moved between the queue and a pool
+    // rather than allocated and copied on every frame.
+    ofPixels acquireBuffer(StreamState &stream);
+    void recycleBuffer(StreamState &stream, ofPixels &&pixels);
 
     std::string buildCommand(const std::string &outPath, int w, int h) const;
     std::string resolveFfmpeg() const;
+    std::string inputName(std::size_t index) const;
+    std::string outputExtension() const;
 
-    ofParameter<float>      phasorIn;
-    ofParameter<bool>       record;
-    ofParameter<bool>       autoRecLoop;
+    ofParameter<float>       phasorIn;
+    ofParameter<bool>        record;
+    ofParameter<bool>        autoRecLoop;
     ofParameter<std::string> filename;
-    ofParameter<ofTexture*> input;
-    ofParameter<bool>       recordAlpha;
-    ofParameter<int>        codec;
-    ofParameter<float>      frameRate;
+    ofParameter<int>         numInputs;
+    ofParameter<bool>        recordAlpha;
+    ofParameter<int>         codec;
+    ofParameter<float>       frameRate;
     ofParameter<std::string> ffmpegPath;
     ofParameter<std::string> status;
 
     ofEventListeners listeners;
-    ofFbo fbo;
+    std::deque<ofEventListener> inputListeners;
+    std::vector<ofParameter<ofTexture*>> inputs;
+    std::vector<std::unique_ptr<StreamState>> streams;
 
-    int width = 0, height = 0;
-    bool recorderIsSetup = false;
     float oldPhasor = 0;
-    int frameCounter = 0;
-    std::string outputPath;
+    std::string recordingTimestamp;
 
-    // One consumer only: a pipe is a stream, so frames must reach it in order.
-    // The queue is bounded and a full queue blocks, which is what keeps a
-    // frame-stepped transport honest -- it waits rather than dropping a frame.
-    FILE* pipe = nullptr;
-    std::thread writer;
-    std::atomic<bool> writerRunning{false};
-    std::atomic<bool> pipeBroken{false};
-    std::deque<ofPixels> frameQueue;
-    std::vector<ofPixels> bufferPool;
-    std::mutex queueMutex;
-    std::condition_variable spaceAvailable;
-    std::condition_variable workAvailable;
-    std::size_t maxQueuedFrames = 4;
+    static constexpr int maxInputs = 16;
 };
 
 #endif /* textureRecorderFFmpeg_h */
