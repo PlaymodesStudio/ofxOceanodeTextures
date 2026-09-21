@@ -212,6 +212,7 @@ public:
 						shader.setUniformTexture("blendTgt", *up, 1);
 						shader.setUniform1i("mode", blendmodes[i]);
 						shader.setUniform1f("opacity", opacities[i]);
+						shader.setUniform1i("premultipliedInput", 0);
 						ofDrawRectangle(0, 0, width, height);
 						shader.end();
 						pingPongFbo[!pingPongIndex].end();

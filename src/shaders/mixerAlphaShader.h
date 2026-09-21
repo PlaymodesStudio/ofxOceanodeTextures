@@ -117,6 +117,7 @@ uniform sampler2D base;
 uniform sampler2D blendTgt;
 uniform int mode;
 uniform float opacity;
+uniform int premultipliedInput;
 out vec4 fragColor;
 
 void main()
@@ -174,9 +175,42 @@ void main()
 		default: result = blendCol.rgb; break;
 	}
 	
-	// Alpha compositing: blend result with base using blend alpha
-	// This creates the Photoshop-like layer effect where alpha affects visibility
-	vec3 finalRGB = mix(baseCol.rgb, result, blendAlpha);
+	vec3 finalRGB;
+	if (premultipliedInput != 0)
+	{
+		// FBO-backed texture nodes generally already encode coverage in RGB.
+		// Applying blendAlpha to those channels again makes an opacity ramp
+		// increasingly nonlinear on every composition pass. Preserve that
+		// representation and use alpha only for source-over coverage.
+		if (baseCol.a <= 0.0)
+		{
+			// Blend modes only describe overlapping pixels. With no base pixel,
+			// the layer must look exactly as it did before composition.
+			finalRGB = blendCol.rgb * opacity;
+		}
+		else if (mode == 0)
+		{
+			// Normal source-over for premultiplied RGB.
+			finalRGB = blendCol.rgb * opacity + baseCol.rgb * (1.0 - blendAlpha);
+		}
+		else if (mode == 3)
+		{
+			// Add is linear in the stored RGB. This is the important distinction
+			// from mixing the additive result by alpha a second time.
+			finalRGB = min(baseCol.rgb + blendCol.rgb * opacity, vec3(1.0));
+		}
+		else
+		{
+			// RGB already contains per-pixel coverage; the layer control is the
+			// only additional interpolation needed for the other blend modes.
+			finalRGB = mix(baseCol.rgb, result, opacity);
+		}
+	}
+	else
+	{
+		// Straight-alpha behavior used by Mixer Alpha.
+		finalRGB = mix(baseCol.rgb, result, blendAlpha);
+	}
 	
 	// Output alpha is the combination of base and blend alphas
 	float finalAlpha = baseCol.a + blendAlpha * (1.0 - baseCol.a);
