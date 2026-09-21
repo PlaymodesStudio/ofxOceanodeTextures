@@ -38,6 +38,7 @@
 #include "displayOutput.h"
 #include "simpleEffect.h"
 #include "textureComposer.h"
+#include "textureComposerSimple.h"
 #include "textureBlender.h"
 #include "averageBrightness.h"
 #include "textureInfo.h"
@@ -82,6 +83,7 @@ static void registerModels(ofxOceanode &o){
     o.registerModel<indexerTexture2>("Textures");
     o.registerModel<displayOutput>("Textures");
     o.registerModel<textureComposer>("Textures");
+    o.registerModel<textureComposerSimple>("Textures");
     o.registerModel<textureBlender>("Textures");
     o.registerModel<AverageBrightness>("Textures");
     o.registerModel<textureInfo>("Textures");
