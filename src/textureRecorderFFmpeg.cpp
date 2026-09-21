@@ -32,8 +32,21 @@ textureRecorderFFmpeg::textureRecorderFFmpeg() : ofxOceanodeNodeModel("Texture R
 
     addParameter(recordAlpha.set("Alpha?", false));
 
-    addParameterDropdown(codec, "Codec", 0,
-        {"ProRes 422", "ProRes 4444", "ProRes (HW)", "H.264", "HEVC (HW)"});
+    addParameterDropdown(codec, "Codec", ProRes422Software,
+        {"ProRes 422",
+         "ProRes 4444",
+         "ProRes 422 HQ (HW)",
+         "H.264",
+         "HEVC Main (HW)",
+         "ProRes 422 Proxy (HW)",
+         "ProRes 422 LT (HW)",
+         "ProRes 422 (HW)",
+         "ProRes 4444 (HW)",
+         "ProRes 4444 XQ (HW)",
+         "H.264 High (HW)",
+         "HEVC Main 10 (HW)",
+         "HEVC 422 10-bit (HW)",
+         "HEVC Alpha (HW)"});
     addInspectorParameter(frameRate.set("FPS", 60, 1, 240));
     addInspectorParameter(ffmpegPath.set("ffmpeg", "/opt/homebrew/bin/ffmpeg"));
     addOutputParameter(status.set("Status", ""));
@@ -48,6 +61,10 @@ textureRecorderFFmpeg::textureRecorderFFmpeg() : ofxOceanodeNodeModel("Texture R
         // The pipe and FBO channel count must agree for the entire file.
         if(record.get()) record = false;
         resetStreamSetups();
+    }));
+    listeners.push(codec.newListener([this](int &){
+        // All files in a recording group must use the same encoder.
+        if(record.get()) record = false;
     }));
 }
 
@@ -117,7 +134,17 @@ std::string textureRecorderFFmpeg::resolveFfmpeg() const {
 }
 
 std::string textureRecorderFFmpeg::outputExtension() const{
-    return (codec.get() == 3 || codec.get() == 4) ? ".mp4" : ".mov";
+    switch(codec.get()){
+        case H264Software:
+        case HEVCMainHardware:
+        case H264HighHardware:
+        case HEVCMain10Hardware:
+            return ".mp4";
+        default:
+            // ProRes, HEVC 4:2:2 and HEVC alpha have the broadest Apple
+            // compatibility in a QuickTime container.
+            return ".mov";
+    }
 }
 
 std::string textureRecorderFFmpeg::buildCommand(const std::string &outPath, int w, int h) const {
@@ -130,11 +157,51 @@ std::string textureRecorderFFmpeg::buildCommand(const std::string &outPath, int 
     cmd += " -i -";
 
     switch(codec.get()){
-        case 0: cmd += " -c:v prores_ks -profile:v 3 -pix_fmt yuv422p10le"; break;
-        case 1: cmd += " -c:v prores_ks -profile:v 4 -pix_fmt yuva444p10le"; break;
-        case 2: cmd += " -c:v prores_videotoolbox -profile:v 3"; break;
-        case 3: cmd += " -c:v libx264 -preset fast -crf 18 -pix_fmt yuv420p"; break;
-        default: cmd += " -c:v hevc_videotoolbox -tag:v hvc1"; break;
+        case ProRes422Software:
+            cmd += " -c:v prores_ks -profile:v 3 -pix_fmt yuv422p10le";
+            break;
+        case ProRes4444Software:
+            cmd += " -c:v prores_ks -profile:v 4 -pix_fmt yuva444p10le";
+            break;
+        case ProRes422HQHardware:
+            cmd += " -c:v prores_videotoolbox -profile:v 3";
+            break;
+        case H264Software:
+            cmd += " -c:v libx264 -preset fast -crf 18 -pix_fmt yuv420p";
+            break;
+        case HEVCMainHardware:
+            cmd += " -c:v hevc_videotoolbox -profile:v main -pix_fmt yuv420p -tag:v hvc1";
+            break;
+        case ProRes422ProxyHardware:
+            cmd += " -c:v prores_videotoolbox -profile:v 0";
+            break;
+        case ProRes422LTHardware:
+            cmd += " -c:v prores_videotoolbox -profile:v 1";
+            break;
+        case ProRes422StandardHardware:
+            cmd += " -c:v prores_videotoolbox -profile:v 2";
+            break;
+        case ProRes4444Hardware:
+            cmd += " -c:v prores_videotoolbox -profile:v 4 -pix_fmt bgra";
+            break;
+        case ProRes4444XQHardware:
+            cmd += " -c:v prores_videotoolbox -profile:v 5 -pix_fmt bgra";
+            break;
+        case H264HighHardware:
+            cmd += " -c:v h264_videotoolbox -profile:v high -pix_fmt yuv420p";
+            break;
+        case HEVCMain10Hardware:
+            cmd += " -c:v hevc_videotoolbox -profile:v main10 -pix_fmt p010le -tag:v hvc1";
+            break;
+        case HEVCMain42210Hardware:
+            cmd += " -c:v hevc_videotoolbox -profile:v main42210 -pix_fmt p210le -tag:v hvc1";
+            break;
+        case HEVCAlphaHardware:
+            cmd += " -c:v hevc_videotoolbox -pix_fmt bgra -alpha_quality 1 -tag:v hvc1";
+            break;
+        default:
+            cmd += " -c:v prores_ks -profile:v 3 -pix_fmt yuv422p10le";
+            break;
     }
     // ffmpeg's own progress output would flood the console; its errors still
     // reach stderr, which is where a failure needs to be visible.

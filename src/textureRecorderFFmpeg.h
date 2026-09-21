@@ -35,6 +35,25 @@ public:
     void loadBeforeConnections(ofJson &json) override;
 
 private:
+    // Values 0-4 are persisted in existing presets. Keep them stable and add
+    // new codec choices after them.
+    enum CodecOption : int{
+        ProRes422Software = 0,
+        ProRes4444Software = 1,
+        ProRes422HQHardware = 2,
+        H264Software = 3,
+        HEVCMainHardware = 4,
+        ProRes422ProxyHardware = 5,
+        ProRes422LTHardware = 6,
+        ProRes422StandardHardware = 7,
+        ProRes4444Hardware = 8,
+        ProRes4444XQHardware = 9,
+        H264HighHardware = 10,
+        HEVCMain10Hardware = 11,
+        HEVCMain42210Hardware = 12,
+        HEVCAlphaHardware = 13
+    };
+
     struct StreamState{
         ofFbo fbo;
         int width = 0;
