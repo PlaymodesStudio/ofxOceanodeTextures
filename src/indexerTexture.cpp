@@ -329,49 +329,49 @@ void indexerTexture::setParametersInfoMaps(){
 void indexerTexture::setShaderParameterDataToTBO(){
     vector<float> accumulateParametersShaderParameters;
     
-    vector<float> indexNumWavesX_tempVec(height, indexNumWaves[0].get()[0]);
+    vector<float> indexNumWavesX_tempVec(height, (indexNumWaves[0].get().empty() ? 0 : indexNumWaves[0].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexNumWavesX_tempVec.begin(), indexNumWavesX_tempVec.end());
-    vector<float> indexNumWavesY_tempVec(width, indexNumWaves[1].get()[0]);
+    vector<float> indexNumWavesY_tempVec(width, (indexNumWaves[1].get().empty() ? 0 : indexNumWaves[1].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexNumWavesY_tempVec.begin(), indexNumWavesY_tempVec.end());
     
-    vector<float> indexInvertX_tempVec(height, indexInvert[0].get()[0]);
+    vector<float> indexInvertX_tempVec(height, (indexInvert[0].get().empty() ? 0 : indexInvert[0].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexInvertX_tempVec.begin(), indexInvertX_tempVec.end());
-    vector<float> indexInvertY_tempVec(width, indexInvert[1].get()[0]);
+    vector<float> indexInvertY_tempVec(width, (indexInvert[1].get().empty() ? 0 : indexInvert[1].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexInvertY_tempVec.begin(), indexInvertY_tempVec.end());
     
-    vector<float> indexRandomX_tempVec(height, indexRandom[0].get()[0]);
+    vector<float> indexRandomX_tempVec(height, (indexRandom[0].get().empty() ? 0 : indexRandom[0].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexRandomX_tempVec.begin(), indexRandomX_tempVec.end());
-    vector<float> indexRandomY_tempVec(width, indexRandom[1].get()[0]);
+    vector<float> indexRandomY_tempVec(width, (indexRandom[1].get().empty() ? 0 : indexRandom[1].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexRandomY_tempVec.begin(), indexRandomY_tempVec.end());
     
-    vector<float> indexOffsetX_tempVec(height, indexOffset[0].get()[0]);
+    vector<float> indexOffsetX_tempVec(height, (indexOffset[0].get().empty() ? 0 : indexOffset[0].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexOffsetX_tempVec.begin(), indexOffsetX_tempVec.end());
-    vector<float> indexOffsetY_tempVec(width, indexOffset[1].get()[0]);
+    vector<float> indexOffsetY_tempVec(width, (indexOffset[1].get().empty() ? 0 : indexOffset[1].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexOffsetY_tempVec.begin(), indexOffsetY_tempVec.end());
     
-    vector<float> indexCombinationX_tempVec(height, indexCombination[0].get()[0]);
+    vector<float> indexCombinationX_tempVec(height, (indexCombination[0].get().empty() ? 0 : indexCombination[0].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexCombinationX_tempVec.begin(), indexCombinationX_tempVec.end());
-    vector<float> indexCombinationY_tempVec(width, indexCombination[1].get()[0]);
+    vector<float> indexCombinationY_tempVec(width, (indexCombination[1].get().empty() ? 0 : indexCombination[1].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexCombinationY_tempVec.begin(), indexCombinationY_tempVec.end());
     
-    vector<float> indexSymmetryX_tempVec(height, indexSymmetry[0].get()[0]);
+    vector<float> indexSymmetryX_tempVec(height, (indexSymmetry[0].get().empty() ? 0 : indexSymmetry[0].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexSymmetryX_tempVec.begin(), indexSymmetryX_tempVec.end());
-    vector<float> indexSymmetryY_tempVec(width, indexSymmetry[1].get()[0]);
+    vector<float> indexSymmetryY_tempVec(width, (indexSymmetry[1].get().empty() ? 0 : indexSymmetry[1].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexSymmetryY_tempVec.begin(), indexSymmetryY_tempVec.end());
     
-    vector<float> indexQuantizationX_tempVec(height, indexQuantization[0].get()[0]);
+    vector<float> indexQuantizationX_tempVec(height, (indexQuantization[0].get().empty() ? 0 : indexQuantization[0].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexQuantizationX_tempVec.begin(), indexQuantizationX_tempVec.end());
-    vector<float> indexQuantizationY_tempVec(width, indexQuantization[1].get()[0]);
+    vector<float> indexQuantizationY_tempVec(width, (indexQuantization[1].get().empty() ? 0 : indexQuantization[1].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexQuantizationY_tempVec.begin(), indexQuantizationY_tempVec.end());
     
-    vector<float> indexModuloX_tempVec(height, indexModulo[0].get()[0]);
+    vector<float> indexModuloX_tempVec(height, (indexModulo[0].get().empty() ? 0 : indexModulo[0].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexModuloX_tempVec.begin(), indexModuloX_tempVec.end());
-    vector<float> indexModuloY_tempVec(width, indexModulo[1].get()[0]);
+    vector<float> indexModuloY_tempVec(width, (indexModulo[1].get().empty() ? 0 : indexModulo[1].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexModuloY_tempVec.begin(), indexModuloY_tempVec.end());
     
-    vector<float> widthVec_tempVec(height, widthVec.get()[0]);
+    vector<float> widthVec_tempVec(height, (widthVec.get().empty() ? 0 : widthVec.get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), widthVec_tempVec.begin(), widthVec_tempVec.end());
-    vector<float> heightVec_tempVec(width, heightVec.get()[0]);
+    vector<float> heightVec_tempVec(width, (heightVec.get().empty() ? 0 : heightVec.get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), heightVec_tempVec.begin(), heightVec_tempVec.end());
     
     
@@ -476,6 +476,7 @@ vector<float> indexerTexture::newRandomValuesVector(bool x, bool y){
 
 #pragma mark Parameter Listeners
 void indexerTexture::onShaderParameterChanged(ofAbstractParameter &p, vector<float> &vf){
+    if(vf.empty()) return; // ignore empty vectors (e.g. Vector Resize with all-zero sizes), draw() reads vf[0]
     changedParameters.emplace_back(p.getName(), vf);
 }
 
@@ -841,49 +842,49 @@ void indexerTexture2::setParametersInfoMaps(){
 void indexerTexture2::setShaderParameterDataToTBO(){
     vector<float> accumulateParametersShaderParameters;
     
-    vector<float> indexNumWavesR_tempVec(angleResolution, indexNumWaves[0].get()[0]);
+    vector<float> indexNumWavesR_tempVec(angleResolution, (indexNumWaves[0].get().empty() ? 0 : indexNumWaves[0].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexNumWavesR_tempVec.begin(), indexNumWavesR_tempVec.end());
-    vector<float> indexNumWavesA_tempVec(radiusResolution, indexNumWaves[1].get()[0]);
+    vector<float> indexNumWavesA_tempVec(radiusResolution, (indexNumWaves[1].get().empty() ? 0 : indexNumWaves[1].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexNumWavesA_tempVec.begin(), indexNumWavesA_tempVec.end());
     
-    vector<float> indexInvertR_tempVec(angleResolution, indexInvert[0].get()[0]);
+    vector<float> indexInvertR_tempVec(angleResolution, (indexInvert[0].get().empty() ? 0 : indexInvert[0].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexInvertR_tempVec.begin(), indexInvertR_tempVec.end());
-    vector<float> indexInvertA_tempVec(radiusResolution, indexInvert[1].get()[0]);
+    vector<float> indexInvertA_tempVec(radiusResolution, (indexInvert[1].get().empty() ? 0 : indexInvert[1].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexInvertA_tempVec.begin(), indexInvertA_tempVec.end());
     
-    vector<float> indexRandomR_tempVec(angleResolution, indexRandom[0].get()[0]);
+    vector<float> indexRandomR_tempVec(angleResolution, (indexRandom[0].get().empty() ? 0 : indexRandom[0].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexRandomR_tempVec.begin(), indexRandomR_tempVec.end());
-    vector<float> indexRandomA_tempVec(radiusResolution, indexRandom[1].get()[0]);
+    vector<float> indexRandomA_tempVec(radiusResolution, (indexRandom[1].get().empty() ? 0 : indexRandom[1].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexRandomA_tempVec.begin(), indexRandomA_tempVec.end());
     
-    vector<float> indexOffsetR_tempVec(angleResolution, indexOffset[0].get()[0]);
+    vector<float> indexOffsetR_tempVec(angleResolution, (indexOffset[0].get().empty() ? 0 : indexOffset[0].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexOffsetR_tempVec.begin(), indexOffsetR_tempVec.end());
-    vector<float> indexOffsetA_tempVec(radiusResolution, indexOffset[1].get()[0]);
+    vector<float> indexOffsetA_tempVec(radiusResolution, (indexOffset[1].get().empty() ? 0 : indexOffset[1].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexOffsetA_tempVec.begin(), indexOffsetA_tempVec.end());
     
-    vector<float> indexCombinationR_tempVec(angleResolution, indexCombination[0].get()[0]);
+    vector<float> indexCombinationR_tempVec(angleResolution, (indexCombination[0].get().empty() ? 0 : indexCombination[0].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexCombinationR_tempVec.begin(), indexCombinationR_tempVec.end());
-    vector<float> indexCombinationA_tempVec(radiusResolution, indexCombination[1].get()[0]);
+    vector<float> indexCombinationA_tempVec(radiusResolution, (indexCombination[1].get().empty() ? 0 : indexCombination[1].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexCombinationA_tempVec.begin(), indexCombinationA_tempVec.end());
     
-    vector<float> indexSymmetryR_tempVec(angleResolution, indexSymmetry[0].get()[0]);
+    vector<float> indexSymmetryR_tempVec(angleResolution, (indexSymmetry[0].get().empty() ? 0 : indexSymmetry[0].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexSymmetryR_tempVec.begin(), indexSymmetryR_tempVec.end());
-    vector<float> indexSymmetryA_tempVec(radiusResolution, indexSymmetry[1].get()[0]);
+    vector<float> indexSymmetryA_tempVec(radiusResolution, (indexSymmetry[1].get().empty() ? 0 : indexSymmetry[1].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexSymmetryA_tempVec.begin(), indexSymmetryA_tempVec.end());
     
-    vector<float> indexQuantizationR_tempVec(angleResolution, indexQuantization[0].get()[0]);
+    vector<float> indexQuantizationR_tempVec(angleResolution, (indexQuantization[0].get().empty() ? 0 : indexQuantization[0].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexQuantizationR_tempVec.begin(), indexQuantizationR_tempVec.end());
-    vector<float> indexQuantizationA_tempVec(radiusResolution, indexQuantization[1].get()[0]);
+    vector<float> indexQuantizationA_tempVec(radiusResolution, (indexQuantization[1].get().empty() ? 0 : indexQuantization[1].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexQuantizationA_tempVec.begin(), indexQuantizationA_tempVec.end());
     
-    vector<float> indexModuloR_tempVec(angleResolution, indexModulo[0].get()[0]);
+    vector<float> indexModuloR_tempVec(angleResolution, (indexModulo[0].get().empty() ? 0 : indexModulo[0].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexModuloR_tempVec.begin(), indexModuloR_tempVec.end());
-    vector<float> indexModuloA_tempVec(radiusResolution, indexModulo[1].get()[0]);
+    vector<float> indexModuloA_tempVec(radiusResolution, (indexModulo[1].get().empty() ? 0 : indexModulo[1].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexModuloA_tempVec.begin(), indexModuloA_tempVec.end());
     
-    vector<float> widthVec_tempVec(height, widthVec.get()[0]);
+    vector<float> widthVec_tempVec(height, (widthVec.get().empty() ? 0 : widthVec.get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), widthVec_tempVec.begin(), widthVec_tempVec.end());
-    vector<float> heightVec_tempVec(width, heightVec.get()[0]);
+    vector<float> heightVec_tempVec(width, (heightVec.get().empty() ? 0 : heightVec.get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), heightVec_tempVec.begin(), heightVec_tempVec.end());
     
     
@@ -979,6 +980,7 @@ vector<float> indexerTexture2::newRandomValuesVector(bool x, bool y){
 
 #pragma mark Parameter Listeners
 void indexerTexture2::onShaderParameterChanged(ofAbstractParameter &p, vector<float> &vf){
+    if(vf.empty()) return; // ignore empty vectors (e.g. Vector Resize with all-zero sizes), draw() reads vf[0]
     changedParameters.emplace_back(p.getName(), vf);
 }
 
