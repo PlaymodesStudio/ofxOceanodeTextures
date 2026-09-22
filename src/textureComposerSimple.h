@@ -69,6 +69,7 @@ public:
             for(int i = start; i < start + count; i++){
                 const std::string suffix = ofToString(i + 1, 2, '0');
 
+                addSeparator("Layer " + suffix);
                 addParameter(inputs[i].set("In " + suffix, nullptr));
                 addParameter(xPositions[i].set("X " + suffix, 0, -50000, 50000));
                 addParameter(yPositions[i].set("Y " + suffix, 0, -50000, 50000));
@@ -89,6 +90,7 @@ public:
             if(oldSize > newSize){
                 for(int i = oldSize - 1; i >= newSize; i--){
                     const std::string suffix = ofToString(i + 1, 2, '0');
+                    removeSeparator("Layer " + suffix);
                     removeParameter("In " + suffix);
                     removeParameter("X " + suffix);
                     removeParameter("Y " + suffix);
