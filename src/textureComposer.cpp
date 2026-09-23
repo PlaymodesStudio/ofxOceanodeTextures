@@ -55,7 +55,9 @@ void textureComposer::setup()
     addParameter(transformOutput.set("T. Out", {glm::identity<glm::mat4>()}));
     
     addInspectorParameter(normalizedAnchor.set("Normalized Anchor", false));
+    addInspectorParameter(normalizedZAnchor.set("Normalize Z Anchor", false));
     addInspectorParameter(normalizedPosition.set("Normalized Positioning", false));
+    addInspectorParameter(normalizedZPosition.set("Normalize Z Position", false));
     
 //    listeners.push(normalizedAnchor.newListener([this](bool &b){
 //        if(!b){
@@ -120,6 +122,10 @@ void textureComposer::calculate(){
                 float sca_z = getValueForPosition(scale[2], i);
                 
                 //Translate
+                // Z normalization is independent of X/Y and uses the composer height.
+                if(normalizedZPosition){
+                    pos_z *= height.get();
+                }
                 if(!normalizedPosition){
                     matrices[i] = glm::translate(matrices[i], glm::vec3(pos_x, pos_y, pos_z));
                 }else{
@@ -133,6 +139,10 @@ void textureComposer::calculate(){
                 matrices[i] = glm::scale(matrices[i], glm::vec3(sca_x, sca_y, 1));
                 
                 //Translate to anchor
+                // Z normalization is independent of X/Y and uses the input texture height.
+                if(normalizedZAnchor){
+                    anch_z *= tex->getHeight();
+                }
                 if(!normalizedAnchor){
                     matrices[i] = glm::translate(matrices[i], glm::vec3(-anch_x, -anch_y, -anch_z));
                 }else{

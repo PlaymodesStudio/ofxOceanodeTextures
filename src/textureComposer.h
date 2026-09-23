@@ -36,7 +36,9 @@ private:
     vector<ofParameter<vector<float>>> scale;
     
     ofParameter<bool> normalizedAnchor;
+    ofParameter<bool> normalizedZAnchor;
     ofParameter<bool> normalizedPosition;
+    ofParameter<bool> normalizedZPosition;
 
     ofParameter<std::vector<ofTexture*>> output;
     ofParameter<std::vector<glm::mat4>> transformOutput;
