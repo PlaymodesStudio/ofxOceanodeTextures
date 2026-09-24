@@ -7,7 +7,10 @@
 
 #include "textureBlender.h"
 
+#include <algorithm>
 #include <array>
+#include <cfloat>
+#include <cmath>
 
 namespace{
 enum BlendFunctionIndex{
@@ -101,8 +104,23 @@ void textureBlender::setup()
 	addSeparator("Opacity/Alpha",ofColor(255,255,0));
     addParameter(opacity.set("Opacity", {1}, {0}, {1}));
     addParameter(alpha.set("Alpha", {1}, {0}, {1}));
+	addSeparator("Camera",ofColor(0,128,255));
+    addParameterDropdown(cameraProjection, "Projection", 0, {"Perspective", "Orthographic"});
+    addParameter(cameraFov.set("Field of View", 60.0f, 1.0f, 179.0f));
+    addParameter(cameraAutoDistance.set("Auto Distance", true));
+    addParameter(cameraDistance.set("Camera Distance", 1000.0f, 0.001f, FLT_MAX));
+    addParameter(cameraNearClip.set("Near Clip (0 = Auto)", 0.0f, 0.0f, FLT_MAX));
+    addParameter(cameraFarClip.set("Far Clip (0 = Auto)", 0.0f, 0.0f, FLT_MAX));
 	addSeparator("Output",ofColor(128,128,128));
     addOutputParameter(output.set("Ouput", nullptr));
+
+    cameraListeners.push(cameraProjection.newListener([this](int &){ render(); }));
+    cameraListeners.push(cameraAutoDistance.newListener([this](bool &){ render(); }));
+    auto cameraChanged = [this](float &){ render(); };
+    cameraListeners.push(cameraFov.newListener(cameraChanged));
+    cameraListeners.push(cameraDistance.newListener(cameraChanged));
+    cameraListeners.push(cameraNearClip.newListener(cameraChanged));
+    cameraListeners.push(cameraFarClip.newListener(cameraChanged));
 
     blendModeListeners.push(blendMode.newListener([this](int &mode){
         if(!updatingBlendMode && !loadingPreset){
@@ -120,95 +138,135 @@ void textureBlender::setup()
     blendModeListeners.push(blendColorEquation.newListener(blendParameterChanged));
     blendModeListeners.push(blendAlphaEquation.newListener(blendParameterChanged));
     
-    listener = input.newListener([this](std::vector<ofTexture*> &vec){
-        if(active)
-        {
-            bool hasValidTexture = false;
-            for(auto *texture : vec){
-                if(texture != nullptr && texture->isAllocated()){
-                    hasValidTexture = true;
-                    break;
-                }
-            }
-
-            if(hasValidTexture){
-                if(!fbo.isAllocated() || fbo.getWidth() != width || fbo.getHeight() != height){
-                    fbo.allocate(width, height, GL_RGBA32F);
-                }
-                
-                fbo.begin();
-                ofClear(0, 0, 0, 255);
-                glBlendColor(blendColor->r, blendColor->g, blendColor->b, blendColor->a);
-               
-                auto getGLenumFromFunctionInt = [](int val)->GLenum{
-                    switch(val){
-                        case 0: return GL_ZERO;
-                        case 1: return GL_ONE;
-                        case 2: return GL_SRC_COLOR;
-                        case 3: return GL_ONE_MINUS_SRC_COLOR;
-                        case 4: return GL_DST_COLOR;
-                        case 5: return GL_ONE_MINUS_DST_COLOR;
-                        case 6: return GL_SRC_ALPHA;
-                        case 7: return GL_ONE_MINUS_SRC_ALPHA;
-                        case 8: return GL_DST_ALPHA;
-                        case 9: return GL_ONE_MINUS_DST_ALPHA;
-                        case 10: return GL_CONSTANT_COLOR;
-                        case 11: return GL_ONE_MINUS_CONSTANT_COLOR;
-                        case 12: return GL_CONSTANT_ALPHA;
-                        case 13: return GL_ONE_MINUS_CONSTANT_ALPHA;
-                        case 14: return GL_SRC_ALPHA_SATURATE;
-                        default: return GL_INVALID_ENUM;
-                    }
-                };
-                
-                auto getGLenumFromEquationInt = [](int val)->GLenum{
-                    switch(val){
-                        case 0: return GL_FUNC_ADD;
-                        case 1: return GL_FUNC_SUBTRACT;
-                        case 2: return GL_FUNC_REVERSE_SUBTRACT;
-                        case 3: return GL_MIN;
-                        case 4: return GL_MAX;
-                        default: return GL_INVALID_ENUM;
-                    }
-                };
-                
-                glBlendFuncSeparate(getGLenumFromFunctionInt(blendSrcColorFunction), getGLenumFromFunctionInt(blendDstColorFunction),  getGLenumFromFunctionInt(blendSrcAlphaFunction), getGLenumFromFunctionInt(blendDstAlphaFunction));
-                glBlendEquationSeparate(getGLenumFromEquationInt(blendColorEquation), getGLenumFromEquationInt(blendAlphaEquation));
-
-                bool hasBaseLayer = false;
-                for(std::size_t offset = 0; offset < vec.size(); offset++){
-                    std::size_t i = layerOrder == 0 ? offset : vec.size() - 1 - offset;
-                    if(vec[i] == nullptr || !vec[i]->isAllocated()) continue;
-
-                    if(hasBaseLayer){
-                        glEnable(GL_BLEND);
-                    }else{
-                        glDisable(GL_BLEND);
-                    }
-
-                    float _opacity = opacity->at(0);
-                    if(opacity->size() == vec.size()) _opacity = opacity->at(i);
-                    float _alpha = alpha->at(0);
-                    if(alpha->size() == vec.size()) _alpha = alpha->at(i);
-                    ofSetColor(_opacity * 255.0, _opacity * 255.0, _opacity * 255.0, _alpha * 255.0);
-                    
-                    ofPushMatrix();
-                    if(transformInput->size() == vec.size())
-                        ofMultMatrix(transformInput->at(i));
-                    
-                    vec[i]->draw(0, 0);
-                    ofPopMatrix();
-
-                    hasBaseLayer = true;
-                }
-                glDisable(GL_BLEND);
-                fbo.end();
-                
-                output = &fbo.getTexture();
-            }
-
-        }
+    listener = input.newListener([this](std::vector<ofTexture*> &){
+        render();
     });
+}
+
+void textureBlender::render()
+{
+    if(loadingPreset) return;
+    const auto &vec = input.get();
+    if(active)
+    {
+        bool hasValidTexture = false;
+        for(auto *texture : vec){
+            if(texture != nullptr && texture->isAllocated()){
+                hasValidTexture = true;
+                break;
+            }
+        }
+
+        if(hasValidTexture){
+            if(!fbo.isAllocated() || fbo.getWidth() != width || fbo.getHeight() != height){
+                fbo.allocate(width, height, GL_RGBA32F);
+            }
+
+            fbo.begin();
+            configureCamera();
+            camera.begin(ofRectangle(0, 0, fbo.getWidth(), fbo.getHeight()));
+            ofClear(0, 0, 0, 255);
+            glBlendColor(blendColor->r, blendColor->g, blendColor->b, blendColor->a);
+
+            auto getGLenumFromFunctionInt = [](int val)->GLenum{
+                switch(val){
+                    case 0: return GL_ZERO;
+                    case 1: return GL_ONE;
+                    case 2: return GL_SRC_COLOR;
+                    case 3: return GL_ONE_MINUS_SRC_COLOR;
+                    case 4: return GL_DST_COLOR;
+                    case 5: return GL_ONE_MINUS_DST_COLOR;
+                    case 6: return GL_SRC_ALPHA;
+                    case 7: return GL_ONE_MINUS_SRC_ALPHA;
+                    case 8: return GL_DST_ALPHA;
+                    case 9: return GL_ONE_MINUS_DST_ALPHA;
+                    case 10: return GL_CONSTANT_COLOR;
+                    case 11: return GL_ONE_MINUS_CONSTANT_COLOR;
+                    case 12: return GL_CONSTANT_ALPHA;
+                    case 13: return GL_ONE_MINUS_CONSTANT_ALPHA;
+                    case 14: return GL_SRC_ALPHA_SATURATE;
+                    default: return GL_INVALID_ENUM;
+                }
+            };
+
+            auto getGLenumFromEquationInt = [](int val)->GLenum{
+                switch(val){
+                    case 0: return GL_FUNC_ADD;
+                    case 1: return GL_FUNC_SUBTRACT;
+                    case 2: return GL_FUNC_REVERSE_SUBTRACT;
+                    case 3: return GL_MIN;
+                    case 4: return GL_MAX;
+                    default: return GL_INVALID_ENUM;
+                }
+            };
+
+            glBlendFuncSeparate(getGLenumFromFunctionInt(blendSrcColorFunction), getGLenumFromFunctionInt(blendDstColorFunction),  getGLenumFromFunctionInt(blendSrcAlphaFunction), getGLenumFromFunctionInt(blendDstAlphaFunction));
+            glBlendEquationSeparate(getGLenumFromEquationInt(blendColorEquation), getGLenumFromEquationInt(blendAlphaEquation));
+
+            bool hasBaseLayer = false;
+            for(std::size_t offset = 0; offset < vec.size(); offset++){
+                std::size_t i = layerOrder == 0 ? offset : vec.size() - 1 - offset;
+                if(vec[i] == nullptr || !vec[i]->isAllocated()) continue;
+
+                if(hasBaseLayer){
+                    glEnable(GL_BLEND);
+                }else{
+                    glDisable(GL_BLEND);
+                }
+                
+                float _opacity = opacity->at(0);
+                if(opacity->size() == vec.size()) _opacity = opacity->at(i);
+                float _alpha = alpha->at(0);
+                if(alpha->size() == vec.size()) _alpha = alpha->at(i);
+                ofSetColor(_opacity * 255.0, _opacity * 255.0, _opacity * 255.0, _alpha * 255.0);
+               
+                ofPushMatrix();
+                if(transformInput->size() == vec.size())
+                    ofMultMatrix(transformInput->at(i));
+                
+                vec[i]->draw(0, 0);
+                ofPopMatrix();
+                
+                hasBaseLayer = true;
+            }
+            glDisable(GL_BLEND);
+            camera.end();
+            fbo.end();
+
+            output = &fbo.getTexture();
+        }
+
+    }
+}
+
+void textureBlender::configureCamera()
+{
+    // Match the default FBO view: centred on Z = 0 with pixel-sized coordinates.
+    const float fov = ofClamp(cameraFov.get(), 1.0f, 179.0f);
+    const float fittedDistance = (fbo.getHeight() * 0.5f) / std::tan(glm::radians(fov * 0.5f));
+    // Keep extreme user-entered distances finite during projection calculations.
+    const float maxDistance = 1.0e12f;
+    const float distance = cameraAutoDistance ? fittedDistance : ofClamp(cameraDistance.get(), 0.001f, maxDistance);
+    const float nearClip = cameraNearClip > 0.0f
+        ? ofClamp(cameraNearClip.get(), 0.000001f, maxDistance) : distance / 10.0f;
+    const float requestedFarClip = cameraFarClip > 0.0f
+        ? ofClamp(cameraFarClip.get(), 0.000001f, maxDistance) : distance * 10.0f;
+    // Equal or reversed clip planes would make the projection invalid.
+    const float farClip = std::max(requestedFarClip, nearClip + std::max(0.001f, nearClip * 0.001f));
+
+    camera.setFov(fov);
+    camera.setNearClip(nearClip);
+    camera.setFarClip(farClip);
+    camera.setForceAspectRatio(false);
+    // Preserve the orientation already established by fbo.begin().
+    camera.setVFlip(ofGetCurrentRenderer()->isVFlipped());
+    camera.setPosition(fbo.getWidth() * 0.5f, fbo.getHeight() * 0.5f, distance);
+    camera.lookAt(glm::vec3(fbo.getWidth() * 0.5f, fbo.getHeight() * 0.5f, 0.0f), glm::vec3(0, 1, 0));
+    if(cameraProjection == 1){
+        camera.enableOrtho();
+    }else{
+        camera.disableOrtho();
+    }
 }
 
 void textureBlender::applyBlendMode(int mode)
