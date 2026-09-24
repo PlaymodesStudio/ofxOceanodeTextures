@@ -351,7 +351,7 @@ private:
 			if(!allocated){
 				ImGui::SameLine(0.0f, 6.0f);
 				ImGui::TextDisabled("| %s | %s", blendModeName(blendmodes[i]),
-					texture == nullptr ? "No texture connected" : "Texture not allocated");
+					texture == nullptr ? "No texture" : "Texture not allocated");
 				ImGui::Spacing();
 				continue;
 			}
