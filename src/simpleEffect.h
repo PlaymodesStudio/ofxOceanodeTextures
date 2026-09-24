@@ -13,6 +13,7 @@
 
 #include <cctype>
 #include <cmath>
+#include <cstdint>
 #include <regex>
 
 class simpleEffect : public ofxOceanodeNodeModel {
@@ -26,7 +27,9 @@ public:
     void setup() override{
         allocateBlackTexture();
 
-        addParameter(input.set("Input", nullptr));
+        auto inputParameter = addParameter(input.set("Input", nullptr));
+        inputParameter->addConnectFunc([this](){ clearHistory(); });
+        inputParameter->addDisconnectFunc([this](){ clearHistory(); });
         addParameter(bypass.set("Bypass", false));
         addEffectParameters();
         addOutputParameter(output.set("Output", nullptr));
@@ -43,9 +46,18 @@ public:
         addInspectorParameter(shaderStatus);
 
         listeners.push(input.newListener([this](ofTexture* &){
+            ++inputRevision;
+            if(input.get() == nullptr || !input.get()->isAllocated()){
+                clearHistory();
+            }
             requestCompute();
         }));
         listeners.push(bypass.newListener([this](bool &){
+            clearHistory();
+            requestCompute();
+        }));
+        listeners.push(clearButton.newListener([this](){
+            clearHistory();
             requestCompute();
         }));
         listeners.push(drawOnEvent.newListener([this](bool &enabled){
@@ -59,6 +71,15 @@ public:
         }));
 
         loadShader();
+        syncHistoryClearControl(); // Initial setup runs before the node GUI exists.
+    }
+
+    void update(ofEventArgs &) override{
+        // A Reload Shader click can happen while the Inspector iterates its
+        // controls. Apply any control change safely on the next update.
+        if(historyClearControlDirty){
+            syncHistoryClearControl();
+        }
     }
 
     void draw(ofEventArgs &) override{
@@ -70,11 +91,13 @@ public:
     void compute(){
         ofTexture* source = input.get();
         if(source == nullptr || !source->isAllocated() || source->getWidth() <= 0 || source->getHeight() <= 0){
+            clearHistory();
             output = nullptr;
             return;
         }
 
         if(bypass){
+            clearHistory();
             output = source;
             return;
         }
@@ -84,7 +107,31 @@ public:
             return;
         }
 
-        if(!fbo.isAllocated() || fbo.getWidth() != source->getWidth() || fbo.getHeight() != source->getHeight()){
+        if((usesHistory || usesOutputHistory) && source->getTextureData().textureTarget != GL_TEXTURE_2D){
+            clearHistory();
+            output = nullptr;
+            return;
+        }
+
+        // Opt in by declaring an active tPreviousSource sampler. Keep a stable
+        // pair across redraws and control edits; only Input notifications advance it.
+        if(usesHistory){
+            if(!prepareHistory(*source)){
+                output = nullptr;
+                return;
+            }
+            source = &history[historyIndex].getTexture();
+        }
+
+        ofFbo *renderTarget = &fbo;
+        if(usesOutputHistory){
+            if(!prepareOutputHistory(*source)){
+                output = nullptr;
+                return;
+            }
+            // Never sample the texture attached to the current render target.
+            renderTarget = &outputHistory[1 - outputHistoryIndex];
+        }else if(!fbo.isAllocated() || fbo.getWidth() != source->getWidth() || fbo.getHeight() != source->getHeight()){
             ofFbo::Settings settings;
             settings.height = source->getHeight();
             settings.width = source->getWidth();
@@ -99,34 +146,166 @@ public:
             fbo.allocate(settings);
         }
 
+        if(!renderTarget->isAllocated()){
+            output = nullptr;
+            return;
+        }
+
         boundTextureUnits.clear();
 
-        fbo.begin();
+        renderTarget->begin();
         ofClear(0, 0, 0, 0);
         shader.begin();
         ofPushStyle();
+        if(usesHistory || usesOutputHistory){
+            ofDisableAlphaBlending(); // Preserve shader RGBA exactly, including temporal data.
+            ofFill();
+        }
         ofSetColor(255, 255, 255, 255);
 
         bindTextureUniform("tSource", *source, 0);
+        if(usesHistory){
+            bindTextureUniform("tPreviousSource", historyValid ? history[1 - historyIndex].getTexture() : blackTexture, 1);
+            shader.setUniform1i("tPreviousSourceConnected", historyValid ? 1 : 0);
+        }
+        if(usesOutputHistory){
+            bindTextureUniform("tPreviousOutput", outputHistoryValid ? outputHistory[outputHistoryIndex].getTexture() : blackTexture,
+                               usesHistory ? 2 : 1);
+            shader.setUniform1i("tPreviousOutputConnected", outputHistoryValid ? 1 : 0);
+        }
         bindStandardUniforms(*source);
         bindEffectUniforms();
 
-        ofDrawRectangle(0, 0, fbo.getWidth(), fbo.getHeight());
+        ofDrawRectangle(0, 0, renderTarget->getWidth(), renderTarget->getHeight());
 
         ofPopStyle();
         shader.end();
-        fbo.end();
+        renderTarget->end();
 
         cleanupTextureUnits();
-        output = &fbo.getTexture();
+        if(usesOutputHistory){
+            outputHistoryIndex = 1 - outputHistoryIndex;
+            outputHistoryValid = true;
+            // ofTexture assignment shares GPU storage. Publish a stable pointer
+            // so consumers do not mistake buffer alternation for reconnection.
+            feedbackOutput = renderTarget->getTexture();
+            output = &feedbackOutput;
+        }else{
+            output = &fbo.getTexture();
+        }
     }
 
     void deactivate() override{
         fbo.clear();
+        clearHistory();
         output = nullptr;
     }
 
 private:
+    void syncHistoryClearControl(){
+        const bool needed = usesHistory || usesOutputHistory;
+        historyClearControlDirty = false;
+        if(needed == historyClearControlVisible) return;
+
+        if(historyClearControlVisible){
+            removeParameter("Clear");
+        }
+        if(needed){
+            addParameter(clearButton.set("Clear"));
+            getParameterGroup().reorder({"Input", "Bypass", "Clear"});
+        }
+        historyClearControlVisible = needed;
+    }
+
+    void clearHistory(){
+        history[0].clear();
+        history[1].clear();
+        historyIndex = 0;
+        historyCaptured = false;
+        historyValid = false;
+        clearOutputHistory();
+    }
+
+    void clearOutputHistory(){
+        feedbackOutput.clear();
+        outputHistory[0].clear();
+        outputHistory[1].clear();
+        outputHistoryIndex = 0;
+        outputHistoryValid = false;
+    }
+
+    bool prepareOutputHistory(const ofTexture &source){
+        if(!outputHistory[0].isAllocated() || !outputHistory[1].isAllocated() ||
+           outputHistory[0].getWidth() != source.getWidth() || outputHistory[0].getHeight() != source.getHeight()){
+            clearOutputHistory();
+            ofFbo::Settings settings;
+            settings.width = source.getWidth();
+            settings.height = source.getHeight();
+            settings.internalformat = GL_RGBA32F;
+            settings.textureTarget = GL_TEXTURE_2D;
+            settings.minFilter = GL_NEAREST;
+            settings.maxFilter = GL_NEAREST;
+            settings.numColorbuffers = 1;
+            settings.useDepth = false;
+            settings.useStencil = false;
+            outputHistory[0].allocate(settings);
+            outputHistory[1].allocate(settings);
+            if(!outputHistory[0].isAllocated() || !outputHistory[1].isAllocated()){
+                clearOutputHistory();
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool prepareHistory(const ofTexture &source){
+        if(!history[0].isAllocated() || !history[1].isAllocated() ||
+           history[0].getWidth() != source.getWidth() || history[0].getHeight() != source.getHeight()){
+            clearHistory();
+            ofFbo::Settings settings;
+            settings.width = source.getWidth();
+            settings.height = source.getHeight();
+            settings.internalformat = GL_RGBA32F;
+            settings.textureTarget = GL_TEXTURE_2D;
+            settings.minFilter = GL_NEAREST;
+            settings.maxFilter = GL_NEAREST;
+            settings.numColorbuffers = 1;
+            settings.useDepth = false;
+            settings.useStencil = false;
+            history[0].allocate(settings);
+            history[1].allocate(settings);
+            if(!history[0].isAllocated() || !history[1].isAllocated()){
+                clearHistory();
+                return false;
+            }
+        }
+
+        if(!historyCaptured || capturedRevision != inputRevision){
+            if(historyCaptured){
+                historyIndex = 1 - historyIndex;
+            }
+            history[historyIndex].begin();
+            ofPushStyle();
+            ofDisableAlphaBlending();
+            ofFill();
+            ofSetColor(255);
+            historyCopyShader.begin();
+            historyCopyShader.setUniformTexture("tSource", source, 0);
+            // Copy texels directly, without texture.draw()'s display flip or tint.
+            ofDrawRectangle(0, 0, source.getWidth(), source.getHeight());
+            historyCopyShader.end();
+            ofPopStyle();
+            history[historyIndex].end();
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, 0);
+
+            historyValid = historyCaptured;
+            historyCaptured = true;
+            capturedRevision = inputRevision;
+        }
+        return true;
+    }
+
     enum class ParameterType {
         Float,
         Color,
@@ -361,7 +540,39 @@ private:
             return;
         }
 
+        const bool candidateUsesHistory = candidate.getUniformLocation("tPreviousSource") >= 0;
+        const bool candidateUsesOutputHistory = candidate.getUniformLocation("tPreviousOutput") >= 0;
+        if(candidateUsesHistory && !historyCopyShader.isLoaded()){
+            ofShader copyCandidate;
+            const std::string copyFragment = R"(#version 410
+uniform sampler2D tSource;
+out vec4 out_color;
+void main(){ out_color = texelFetch(tSource, ivec2(gl_FragCoord.xy), 0); }
+)";
+            if(!copyCandidate.setupShaderFromSource(GL_VERTEX_SHADER, defaultVertSource) ||
+               !copyCandidate.setupShaderFromSource(GL_FRAGMENT_SHADER, copyFragment) ||
+               !copyCandidate.bindDefaults()){
+                setShaderFailure("Could not compile/link the input history copy shader");
+                return;
+            }
+            copyCandidate.linkProgram();
+            GLint copyLinkStatus = GL_FALSE;
+            glGetProgramiv(copyCandidate.getProgram(), GL_LINK_STATUS, &copyLinkStatus);
+            if(copyLinkStatus != GL_TRUE){
+                setShaderFailure("Input history copy shader link failed: " + programInfoLog(copyCandidate));
+                return;
+            }
+            historyCopyShader = std::move(copyCandidate);
+        }
+
         shader = std::move(candidate);
+        usesHistory = candidateUsesHistory;
+        usesOutputHistory = candidateUsesOutputHistory;
+        historyClearControlDirty = true;
+        clearHistory();
+        if(usesOutputHistory){
+            fbo.clear(); // Feedback renders directly into its two alternating buffers.
+        }
         shaderValid = true;
 
         std::vector<std::string> warnings = metadataWarnings;
@@ -480,7 +691,7 @@ private:
     }
 
     void bindEffectUniforms(){
-        int textureUnit = 1; // Unit 0 is reserved for tSource.
+        int textureUnit = 1 + (usesHistory ? 1 : 0) + (usesOutputHistory ? 1 : 0);
 
         for(size_t i = 0; i < effectParameters.size(); i++){
             const auto &spec = effectParameters[i];
@@ -544,10 +755,26 @@ private:
     ofParameter<bool> drawOnEvent;
     ofParameter<bool> bypass;
     ofParameter<void> reloadShader;
+    ofParameter<void> clearButton;
+    bool historyClearControlVisible = false;
+    bool historyClearControlDirty = false;
     ofParameter<bool> shaderValid;
     ofParameter<std::string> shaderStatus;
 
     ofFbo fbo;
+    ofFbo history[2];
+    ofFbo outputHistory[2];
+    ofTexture feedbackOutput;
+    ofShader historyCopyShader;
+    bool usesHistory = false;
+    bool usesOutputHistory = false;
+    bool outputHistoryValid = false;
+    int outputHistoryIndex = 0;
+    bool historyCaptured = false;
+    bool historyValid = false;
+    int historyIndex = 0;
+    uint64_t inputRevision = 0;
+    uint64_t capturedRevision = 0;
     ofTexture blackTexture;
     ofShader shader;
 

@@ -41,9 +41,11 @@
 #include "textureComposerSimple.h"
 #include "textureBlender.h"
 #include "averageBrightness.h"
+#include "presenceDetector.h"
 #include "textureInfo.h"
 #include "injectAlpha.h"
 #include "AlphaTrails.h"
+#include "textureFeedbackDelay.h"
 #include "TextureChannels.h"
 #include "textureUnitMonitor.h"
 #include "ColorTexture.h"
@@ -86,12 +88,14 @@ static void registerModels(ofxOceanode &o){
     o.registerModel<textureComposerSimple>("Textures");
     o.registerModel<textureBlender>("Textures");
     o.registerModel<AverageBrightness>("Textures");
+    o.registerModel<presenceDetector>("Textures");
     o.registerModel<textureInfo>("Textures");
 	o.registerModel<textureResizeFast>("Textures");
 	
     
     o.registerModel<injectAlpha>("Textures");
     o.registerModel<AlphaTrails>("Textures");
+    o.registerModel<textureFeedbackDelay>("Textures");
     o.registerModel<TextureChannels>("Textures");
     o.registerModel<ColorTexture>("Textures");
 	o.registerModel<textureDisplay>("Textures");

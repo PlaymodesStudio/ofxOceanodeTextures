@@ -23,6 +23,7 @@ public:
 
         addInspectorParameter(displayWidth.set("Width",  320.f, 32.f, 4096.f));
         addInspectorParameter(displayHeight.set("Height", 180.f, 32.f, 4096.f));
+        addInspectorParameter(keepAspectRatio.set("Keep Aspect Ratio", true));
         addInspectorParameter(globalSearch.set("Global Search", false));
         addInspectorParameter(selectedPortalName.set("Selected Portal", ""));
 
@@ -97,6 +98,27 @@ public:
             needsAutoFit = true;
         });
 
+        keepAspectRatioListener = keepAspectRatio.newListener([this](bool &keepAspect) {
+            // Disabling the control in the Inspector starts from a known
+            // square display. Shift-drag disables it too, but suppresses this
+            // reset so the drag can keep the dimensions the user chose.
+            if (!keepAspect) {
+                if (!suppressAspectRatioReset) {
+                    displayWidth.set(kFreeResizeDefaultSize);
+                    displayHeight.set(kFreeResizeDefaultSize);
+                }
+                return;
+            }
+
+            // Re-enabling the control immediately restores the active
+            // texture's aspect ratio, preserving the current width.
+            ofTexture *tex = resolveActiveTexture();
+            if (tex && tex->isAllocated()
+                && tex->getWidth() > 0 && tex->getHeight() > 0) {
+                applyAspectToCurrentWidth(tex->getWidth() / tex->getHeight());
+            }
+        });
+
         presetLoadedListener = ofxOceanodeShared::getPresetHasLoadedEvent().newListener([this]() {
             updatePortalList();
             restoreSelectionByName(selectedPortalName.get());
@@ -129,9 +151,11 @@ public:
                     || texHeight != lastObservedTextureHeight);
 
             if (needsAutoFit) {
-                applyAutoFit(tex->getWidth() / tex->getHeight());
+                if (keepAspectRatio.get()) {
+                    applyAutoFit(tex->getWidth() / tex->getHeight());
+                }
                 needsAutoFit = false;
-            } else if (dimensionsChanged) {
+            } else if (dimensionsChanged && keepAspectRatio.get()) {
                 // Preserve the user's current canvas width while deriving the
                 // height from the new texture aspect ratio.
                 applyAspectToCurrentWidth(texWidth / texHeight);
@@ -150,6 +174,7 @@ public:
 private:
     // Inspector parameters
     ofParameter<float>  displayWidth, displayHeight;
+    ofParameter<bool>   keepAspectRatio;
     ofParameter<bool>   globalSearch;
     ofParameter<string> selectedPortalName;
     ofParameter<int>    selectedPortalIndex;
@@ -164,6 +189,7 @@ private:
 
     // Listeners
     ofEventListener dropdownListener, presetLoadedListener, globalSearchListener;
+    ofEventListener keepAspectRatioListener;
     ofEventListener inputTextureListener;
     customGuiRegion displayRegion;
 
@@ -182,6 +208,11 @@ private:
     // Resize-handle state
     bool                     isResizing = false;
 
+    // Used while Shift-dragging: the Inspector control should reflect that
+    // aspect locking was disabled, without resetting the in-progress drag to
+    // the Inspector's 200x200 free-resize default.
+    bool                     suppressAspectRatioReset = false;
+
     // Auto-fit state: set true when the portal source changes (user action),
     // consumed once a valid texture is observed. NEVER set from preset-recall.
     bool                     needsAutoFit = false;
@@ -195,6 +226,7 @@ private:
 
     // Default width used by auto-fit (matches displayWidth default).
     static constexpr float   kDefaultWidth = 320.f;
+    static constexpr float   kFreeResizeDefaultSize = 200.f;
 
     // ---- aspect-ratio helpers ----
 
@@ -238,6 +270,13 @@ private:
         auto [nw, nh] = applyAspectClamp(currentWidth, currentWidth / aspect, aspect);
         displayWidth.set(nw);
         displayHeight.set(nh);
+    }
+
+    void disableAspectRatioFromCanvas() {
+        if (!keepAspectRatio.get()) return;
+        suppressAspectRatioReset = true;
+        keepAspectRatio.set(false);
+        suppressAspectRatioReset = false;
     }
 
     // Returns true if `p` is currently a live portal owned by the shared
@@ -527,10 +566,12 @@ private:
                     float deltaX  = (mouse.x - rdMp.x) / z;
                     float deltaY  = (mouse.y - rdMp.y) / z;
 
-                    // Live modifier check: Shift = free resize, otherwise aspect-locked
-                    // (only if a valid texture aspect is available).
+                    // Shift starts free resizing and makes that choice visible
+                    // in the Inspector. It must not reset the dimensions while
+                    // the user is dragging.
                     bool shiftHeld  = ImGui::GetIO().KeyShift;
-                    bool freeResize = shiftHeld || (texAspect <= 0.f);
+                    if (shiftHeld) disableAspectRatioFromCanvas();
+                    bool freeResize = !keepAspectRatio.get() || (texAspect <= 0.f);
 
                     float newW, newH;
                     if (freeResize) {
@@ -628,7 +669,9 @@ private:
         // connection bullet sits at the vertical center of the texture's
         // left edge.)
         if (inResize && !isResizing) {
-            ImGui::SetTooltip("%s", "Drag to resize (aspect-locked). Hold Shift for free resize.");
+            ImGui::SetTooltip("%s", keepAspectRatio.get()
+                ? "Drag to resize with aspect ratio. Hold Shift for free resize."
+                : "Drag to resize freely. Turn on Keep Aspect Ratio in the Inspector to lock it.");
         }
 
         // ── Position the cursor for the NEXT parameter (the NoGuiWidget

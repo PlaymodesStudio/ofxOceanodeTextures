@@ -9,6 +9,7 @@
 #define textureBlender_h
 
 #include "ofxOceanodeNodeModel.h"
+#include "ofCamera.h"
 
 class textureBlender : public ofxOceanodeNodeModel{
 public:
@@ -23,6 +24,7 @@ public:
     void presetRecallAfterSettingParameters(ofJson &) override{
         loadingPreset = false;
         updateBlendModeFromParameters();
+        render();
     }
     
     void deactivate(){
@@ -31,11 +33,14 @@ public:
     }
     
 private:
+    void render();
+    void configureCamera();
     void applyBlendMode(int mode);
     void updateBlendModeFromParameters();
 
     ofEventListener listener;
     ofEventListeners blendModeListeners;
+    ofEventListeners cameraListeners;
 
     ofParameter<int> blendMode;
     ofParameter<int> layerOrder;
@@ -60,6 +65,13 @@ private:
     ofParameter<ofTexture*> output;
     
     ofFbo fbo;
+    ofCamera camera;
+    ofParameter<int> cameraProjection;
+    ofParameter<float> cameraFov;
+    ofParameter<bool> cameraAutoDistance;
+    ofParameter<float> cameraDistance;
+    ofParameter<float> cameraNearClip;
+    ofParameter<float> cameraFarClip;
     
     ofParameter<bool> active;
 
