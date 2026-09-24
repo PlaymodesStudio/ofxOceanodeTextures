@@ -44,6 +44,11 @@ public:
                 resizeMesh();
             }
             fbo.begin();
+            ofClear(0, 0, 0, 0);
+            ofPushStyle();
+            ofSetColor(255, 255, 255, 255);
+            ofSetRectMode(OF_RECTMODE_CORNER);
+            ofDisableAlphaBlending();
             if(interpolate){
                 shader.begin();
                 shader.setUniformTexture("textureIn", *input.get(), 0);
@@ -56,6 +61,7 @@ public:
             }else{
                 input.get()->draw(0,0, width, height);
             }
+            ofPopStyle();
             fbo.end();
             output = &fbo.getTexture();
         }
