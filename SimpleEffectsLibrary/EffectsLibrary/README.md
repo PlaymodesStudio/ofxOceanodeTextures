@@ -100,7 +100,7 @@ The first input after a reset yields zero motion and confidence. History advance
 on Input notifications, not on slider changes or redraws, so a slow video source
 keeps its latest flow between updates. With `Draw On Event` off, notifications
 between draws are coalesced; turn it on to process each notification immediately.
-Use `Reset History` after seeking or changing content within the same source
+Use `Clear` after seeking or changing content within the same source
 node. Reconnection, resizing, bypass changes, successful reload, and deactivation
 reset history automatically. Optical Flow uses input history; recursive image
 feedback uses the separate previous-output support described below.
@@ -129,7 +129,7 @@ feedback uses the separate previous-output support described below.
    to the left input pin of `Texture Display` (`Texture In`). A second display
    on the resizer's output makes the live/processed comparison easy.
 5. In Feedback's inspector, leave `Draw On Event = false`, keep `Bypass = false`,
-   and check `Shader Valid = true` and `Shader Status = OK`. `Reset History` is
+   and check `Shader Valid = true` and `Shader Status = OK`. `Clear` is
    on the node directly after `Bypass`. There is no history socket to wire and
    no need to connect Output back to Input.
 
@@ -196,11 +196,11 @@ transparent transformed borders stay black.
 For a pure white/black loop, connect an opaque white texture to `Feedback.Input`.
 Use `Persistence = 1`, `BlendMode = 0` (Mix), `InvertHistory = 1`, `Zoom = 1`,
 `Rotation = 0`, `OffsetX = 0`, and `OffsetY = 0`. Set `InputGain = 1` and leave
-`Draw On Event` off. Press `Reset History`: the first render seeds white, the
+`Draw On Event` off. Press `Clear`: the first render seeds white, the
 second is black, the third white, and so on. Mix at persistence one ignores
 the input after the seed. The switching happens every application draw and can
 look grey or flicker at normal frame rates. For a camera rather than a white
-source, Reset History seeds from the current camera frame, then flips that
+source, Clear seeds from the current camera frame, then flips that
 frozen image's colours on alternate renders.
 
 For an evolving inverted trail, start with `InvertHistory = 1`,
@@ -224,10 +224,10 @@ so `Reload Shader` alone cannot add the new control.
 - Set `InputGain = 0`: existing RGB trails should continue transforming and
   fade to black. Restore it to 1 to inject the camera again.
 - In Mix mode with `Persistence = 1`, `Zoom = 1`, `Rotation = 0`, and zero
-  offsets, press `Reset History`: the current camera frame should seed a frozen
+  offsets, press `Clear`: the current camera frame should seed a frozen
   image. Moving the camera afterwards should not change it. Restore persistence
   below 1 to blend new frames again.
-- Press `Reset History` with normal settings: accumulated trails disappear and
+- Press `Clear` with normal settings: accumulated trails disappear and
   the next render starts with the current input. Toggle Bypass on then off, reconnect
   Input, change resizer dimensions, or successfully reload the shader to check
   the same reset behavior. Disconnecting input should clear the output.
