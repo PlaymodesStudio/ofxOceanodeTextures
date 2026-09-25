@@ -6,6 +6,9 @@
 #include "textureRecorderFFmpeg.h"
 
 #include <algorithm>
+#include <cerrno>
+#include <cstdlib>
+#include <cstring>
 #include <utility>
 
 namespace {
@@ -20,6 +23,7 @@ std::string shellQuote(const std::string &value){
 }
 
 textureRecorderFFmpeg::textureRecorderFFmpeg() : ofxOceanodeNodeModel("Texture Recorder FFmpeg"){
+    addSeparator("Capture");
     addParameter(phasorIn.set("Phase", 0, 0, 1));
     addParameter(record.set("Record", false));
     addParameter(autoRecLoop.set("Auto.Rec", false));
@@ -47,12 +51,19 @@ textureRecorderFFmpeg::textureRecorderFFmpeg() : ofxOceanodeNodeModel("Texture R
          "HEVC Main 10 (HW)",
          "HEVC 422 10-bit (HW)",
          "HEVC Alpha (HW)"});
+
+    addSeparator("Audio");
+    addParameter(wavPath.set("WAV", ""));
+    addParameter(embed.set("Embed"), ofxOceanodeParameterFlags_DisableSavePreset);
+
     addInspectorParameter(frameRate.set("FPS", 60, 1, 240));
     addInspectorParameter(ffmpegPath.set("ffmpeg", "/opt/homebrew/bin/ffmpeg"));
+    addSeparator("Output");
     addOutputParameter(status.set("Status", ""));
 
     listeners.push(phasorIn.newListener(this, &textureRecorderFFmpeg::phasorInListener));
     listeners.push(record.newListener(this, &textureRecorderFFmpeg::recordListener));
+    listeners.push(embed.newListener([this](){ embedListener(); }));
     listeners.push(numInputs.newListener([this](int &newSize){
         if(record.get()) record = false;
         resizeInputs(newSize);
@@ -70,6 +81,15 @@ textureRecorderFFmpeg::textureRecorderFFmpeg() : ofxOceanodeNodeModel("Texture R
 
 textureRecorderFFmpeg::~textureRecorderFFmpeg(){
     stopAllPipes();
+    if(embedThread.joinable()) embedThread.join();
+}
+
+void textureRecorderFFmpeg::update(ofEventArgs &){
+    if(embedThread.joinable() && !embedRunning.load()){
+        embedThread.join();
+        std::lock_guard<std::mutex> lock(embedResultMutex);
+        status = embedResult;
+    }
 }
 
 void textureRecorderFFmpeg::loadBeforeConnections(ofJson &json){
@@ -131,6 +151,15 @@ std::string textureRecorderFFmpeg::resolveFfmpeg() const {
         if(ofFile::doesFileExist(candidate)) return candidate;
     }
     return "ffmpeg"; // fall back to PATH
+}
+
+std::string textureRecorderFFmpeg::resolveInputPath(const std::string &path) const{
+    if(path.empty()) return "";
+    if(ofFile::doesFileExist(path)) return ofFilePath::getAbsolutePath(path);
+
+    const std::string dataPath = ofToDataPath(path, true);
+    if(ofFile::doesFileExist(dataPath)) return dataPath;
+    return "";
 }
 
 std::string textureRecorderFFmpeg::outputExtension() const{
@@ -291,7 +320,10 @@ void textureRecorderFFmpeg::stopAllPipes(){
     int failures = 0;
     for(std::size_t i = 0; i < streams.size(); i++){
         const int result = stopPipe(*streams[i], i);
-        if(result == 0) filesWritten++;
+        if(result == 0){
+            filesWritten++;
+            if(!streams[i]->outputPath.empty()) lastRecordedPaths.push_back(streams[i]->outputPath);
+        }
         else if(result > 0) failures++;
     }
 
@@ -302,6 +334,87 @@ void textureRecorderFFmpeg::stopAllPipes(){
             status = ofToString(filesWritten) + " files written";
         }
     }
+}
+
+int textureRecorderFFmpeg::embedAudio(const std::string &ffmpegExecutable,
+                                      const std::string &videoPath,
+                                      const std::string &audioPath) const{
+    const std::string extension = ofToLower(ofFilePath::getFileExt(videoPath));
+    const std::string base = ofFilePath::removeExt(videoPath);
+    const std::string tempPath = base + ".audio-" + ofGetTimestampString("%Y%m%d%H%M%S%i")
+                               + "." + extension;
+
+    std::string command = shellQuote(ffmpegExecutable);
+    command += " -y -nostdin -loglevel error";
+    command += " -i " + shellQuote(videoPath);
+    command += " -i " + shellQuote(audioPath);
+    command += " -map 0:v:0 -map 1:a:0 -c:v copy";
+    // QuickTime accepts uncompressed PCM, preserving the NRT render. MP4 does
+    // not, so use a high bitrate AAC stream for that container.
+    command += extension == "mp4" ? " -c:a aac -b:a 320k" : " -c:a pcm_s24le";
+    command += " -map_metadata 0 " + shellQuote(tempPath);
+
+    ofLogNotice("textureRecorderFFmpeg") << "Embedding " << audioPath
+                                          << " into " << videoPath;
+    const int result = std::system(command.c_str());
+    if(result != 0 || !ofFile::doesFileExist(tempPath)){
+        ofFile::removeFile(tempPath, false);
+        return result == 0 ? -1 : result;
+    }
+
+    // The temporary file lives beside the original, so POSIX rename replaces
+    // it atomically. Until this succeeds the recorded video remains untouched.
+    if(std::rename(tempPath.c_str(), videoPath.c_str()) != 0){
+        ofLogError("textureRecorderFFmpeg") << "Could not replace " << videoPath
+                                             << ": " << std::strerror(errno);
+        ofFile::removeFile(tempPath, false);
+        return -1;
+    }
+    return 0;
+}
+
+void textureRecorderFFmpeg::embedListener(){
+    if(embedRunning.load()){
+        status = "audio embedding is already running";
+        return;
+    }
+    if(record.get()){
+        status = "stop recording before embedding audio";
+        return;
+    }
+    if(lastRecordedPaths.empty()){
+        status = "no recorded video to embed";
+        return;
+    }
+
+    const std::string audioPath = resolveInputPath(wavPath.get());
+    if(audioPath.empty()){
+        status = "WAV file not found";
+        return;
+    }
+
+    if(embedThread.joinable()) embedThread.join();
+    const std::vector<std::string> videos = lastRecordedPaths;
+    const std::string ffmpegExecutable = resolveFfmpeg();
+    embedRunning = true;
+    status = videos.size() == 1 ? "embedding audio" : "embedding audio in " + ofToString(videos.size()) + " videos";
+    embedThread = std::thread([this, videos, audioPath, ffmpegExecutable](){
+        int completed = 0;
+        for(const auto &video : videos){
+            if(embedAudio(ffmpegExecutable, video, audioPath) == 0) completed++;
+        }
+
+        std::lock_guard<std::mutex> lock(embedResultMutex);
+        if(completed == (int)videos.size()){
+            embedResult = videos.size() == 1
+                ? "audio embedded -> " + ofFilePath::getFileName(videos.front())
+                : "audio embedded in " + ofToString(completed) + " videos";
+        }else{
+            embedResult = "audio embedding failed (" + ofToString(completed) + "/"
+                        + ofToString(videos.size()) + ")";
+        }
+        embedRunning = false;
+    });
 }
 
 ofPixels textureRecorderFFmpeg::acquireBuffer(StreamState &stream){
@@ -414,6 +527,12 @@ void textureRecorderFFmpeg::inputListener(std::size_t index, ofTexture* &texture
 
 void textureRecorderFFmpeg::recordListener(bool &b){
     if(b){
+        if(embedRunning.load()){
+            status = "wait for audio embedding to finish";
+            record = false;
+            return;
+        }
+        lastRecordedPaths.clear();
         recordingTimestamp.clear();
         setFlags(ofxOceanodeNodeModelFlags_ForceFrameMode);
         // Each pipe opens on its input's first frame, once its resolution is

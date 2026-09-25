@@ -33,6 +33,7 @@ public:
     ~textureRecorderFFmpeg();
 
     void loadBeforeConnections(ofJson &json) override;
+    void update(ofEventArgs &args) override;
 
 private:
     // Values 0-4 are persisted in existing presets. Keep them stable and add
@@ -80,6 +81,7 @@ private:
     void phasorInListener(float &f);
     void inputListener(std::size_t index, ofTexture* &texture);
     void recordListener(bool &b);
+    void embedListener();
     void resizeInputs(int newSize);
     void resetStreamSetups();
 
@@ -95,13 +97,19 @@ private:
 
     std::string buildCommand(const std::string &outPath, int w, int h) const;
     std::string resolveFfmpeg() const;
+    std::string resolveInputPath(const std::string &path) const;
     std::string inputName(std::size_t index) const;
     std::string outputExtension() const;
+    int embedAudio(const std::string &ffmpegExecutable,
+                   const std::string &videoPath,
+                   const std::string &audioPath) const;
 
     ofParameter<float>       phasorIn;
     ofParameter<bool>        record;
     ofParameter<bool>        autoRecLoop;
     ofParameter<std::string> filename;
+    ofParameter<std::string> wavPath;
+    ofParameter<void>        embed;
     ofParameter<int>         numInputs;
     ofParameter<bool>        recordAlpha;
     ofParameter<int>         codec;
@@ -116,6 +124,12 @@ private:
 
     float oldPhasor = 0;
     std::string recordingTimestamp;
+    std::vector<std::string> lastRecordedPaths;
+
+    std::thread embedThread;
+    std::atomic<bool> embedRunning{false};
+    std::mutex embedResultMutex;
+    std::string embedResult;
 
     static constexpr int maxInputs = 16;
 };
