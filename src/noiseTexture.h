@@ -18,7 +18,9 @@ public:
     noiseTexture() : ofxOceanodeNodeModel("Noise Texture"){};
     
     void setup(){
-        addParameterDropdown(noiseType, "Type", 0, {"Perlin", "Voronoi", "Gradient", "Value", "Cellular", "Meatballs", "Fbm"});
+        // Keep new algorithms at the end so the numeric values stored in existing
+        // presets continue to select the same noise type.
+        addParameterDropdown(noiseType, "Type", 0, {"Perlin", "Voronoi", "Gradient", "Value", "Cellular", "Meatballs", "Fbm", "Perlin2"});
 //        addParameter(reload.set("Reload"));
         addParameter(width.set("Width", 100, 1, 50000));
         addParameter(height.set("Height", 100, 1, 50000));
@@ -61,6 +63,11 @@ public:
 		
         addParameter(warping.set("Warp", 1, 1, 10));
         addParameter(modulator.set("Mod", 0, 0, 1));
+        octaves2Ref = addParameter(octaves2.set("Octaves2", 4, 1, 10));
+        setOctaves2Visible(false);
+        noiseTypeListener = noiseType.newListener([this](int &type){
+            setOctaves2Visible(type == 7);
+        });
         addParameter(value.set("f", 0, -FLT_MAX, FLT_MAX));
 		addParameter(fTex.set("f_tex", nullptr));
 		
@@ -146,6 +153,7 @@ public:
 		shader.setUniform2f("offset", offsetX, offsetY);
         shader.setUniform1f("warping", warping);
         shader.setUniform1f("modulator", modulator);
+        shader.setUniform1f("octaves2", octaves2);
         ofDrawRectangle(0, 0, width, height);
         shader.end();
         
@@ -173,13 +181,23 @@ public:
     }
     
 private:
+    void setOctaves2Visible(bool visible){
+        if(!octaves2Ref) return;
+        if(visible){
+            octaves2Ref->setFlags(octaves2Ref->getFlags() & ~ofxOceanodeParameterFlags_NoGuiWidget);
+        }else{
+            octaves2Ref->setFlags(octaves2Ref->getFlags() | ofxOceanodeParameterFlags_NoGuiWidget);
+        }
+    }
+
     ofShader shader;
     
     ofParameter<ofTexture*> output;
     ofParameter<int> width, height;
     ofParameter<int> noiseType;
     ofParameter<void> reload;
-    ofParameter<float> value, scaleX, scaleY, offsetX, offsetY, modulator, warping, posX, posY, rotation, rotationCenterX, rotationCenterY;
+    ofParameter<float> value, scaleX, scaleY, offsetX, offsetY, modulator, warping, octaves2, posX, posY, rotation, rotationCenterX, rotationCenterY;
+	shared_ptr<ofxOceanodeParameter<float>> octaves2Ref;
 	ofParameter<ofTexture*> fTex;
 	ofTexture* scaleXTex;
 	ofTexture* scaleYTex;
@@ -189,6 +207,7 @@ private:
 	ofTexture blackTexture;
     
     ofEventListener listener;
+	ofEventListener noiseTypeListener;
 	ofEventListeners sizeListeners;
     
     ofFbo fbo;
