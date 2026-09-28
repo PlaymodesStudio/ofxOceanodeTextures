@@ -1,6 +1,6 @@
 # Simple Effects shader library
 
-This folder contains the complete 93-effect collection, organized in the same
+This folder contains the complete 95-effect collection, organized in the same
 categories shown by Oceanode's New Node menu.
 
 Copy the category folders and `SimpleEffectCommon.inc` into the application's
@@ -35,9 +35,19 @@ the current input.
 
 ## Transform and distortion
 
-- `Transform2D`, `CropFeather`, `Mirror`, `TileOffset`, `Kaleidoscope`
+- `Transform2D`, `TextureOffset`, `CropFeather`, `Mirror`, `TileOffset`, `Kaleidoscope`
 - `Twirl`, `BulgePinch`, `WaveWarp`, `Ripple`, `LensDistortion`
 - `CornerPin`, `ChromaticAberration`, `DisplacementMap`, `VectorWarp`
+
+`TextureOffset` translates the complete source image and wraps anything that
+leaves one edge back through the opposite edge. `OffsetX` and `OffsetY` are
+normalized fractions of the texture dimensions: `0.5` moves by half the width
+or height, while `1` and `-1` make a full wrap and therefore reproduce the
+original image. Positive X moves the visible image right. Positive Y follows
+increasing texture V and can appear vertically reversed by display flips. The
+existing `TileOffset` can produce the same basic wrap with one tile, but also
+adds repetition, mirrored tiles, and mixing; use `TextureOffset` when only a
+two-axis wrapped translation is needed.
 
 ## Blur and detail
 
@@ -46,9 +56,15 @@ the current input.
 
 ## Stylize
 
-- `Pixelate`, `Halftone`, `Dither`, `Grain`, `Scanlines`, `RGBSplit`
+- `Pixelate`, `PixelStretch`, `Halftone`, `Dither`, `Grain`, `Scanlines`, `RGBSplit`
 - `BadTVGlitch`, `QuantizeColor`, `DuotonePosterize`, `Vignette`
 - `DropShadow`, `InnerShadow`, `GlowExtract`, `FilmLook`
+
+`PixelStretch` repeats a single row or column from `Position` toward the edge
+selected by `Direction`. Position is normalized, so the effect behaves the
+same at every input resolution. Directions zero through three are Negative X,
+Positive X, Negative Y, and Positive Y; vertical direction follows texture
+coordinates and can appear reversed by display flips.
 
 ## Motion analysis
 
