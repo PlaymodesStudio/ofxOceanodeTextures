@@ -9,6 +9,7 @@
 #define videoPlayer_h
 
 #include "ofxOceanodeNodeModel.h"
+#include <algorithm>
 
 class videoPlayer : public ofxOceanodeNodeModel {
 public:
@@ -20,26 +21,33 @@ public:
         ofDirectory dir;
         dir.open("Movies");
         dir.sort();
-        vector<string> files = {"None"};
-        for(int i = 0; i < dir.listDir(); i++){
+        files = {"None"};
+        int fileCount = dir.listDir();
+        for(int i = 0; i < fileCount; i++){
             files.push_back(dir.getName(i));
         }
         dir.close();
         
-        addParameterDropdown(fileIndex, "File s", 0, files);
+        addParameterDropdown(fileIndex, "File s", 0, files,
+                             ofxOceanodeParameterFlags_DisableSavePreset |
+                             ofxOceanodeParameterFlags_DisableSaveProject);
         addParameter(loop.set("Loop", true));
         addParameter(play.set("Play", false));
         addParameter(speed.set("Speed", 1, 0, 10));
         addParameter(position.set("Position", 0, 0, 1));
         addOutputParameter(texture.set("Output", nullptr));
         
-        listeners.push(fileIndex.newListener([this, files](int &i){
-            string filename = files[i];
-            if(filename == "None"){
-                //vPlayer.unload();
+        listeners.push(fileIndex.newListener([this](int &i){
+            if(i <= 0 || i >= static_cast<int>(files.size())){
+                vPlayer.stop();
+                vPlayer.close();
+                texture = &blackTexture;
             }else{
+                const string &filename = files[i];
                 vPlayer.load("Movies/" + filename);
                 vPlayer.setLoopState(loop ? OF_LOOP_NORMAL : OF_LOOP_NONE);
+                vPlayer.setSpeed(speed);
+                if(play) vPlayer.play();
             }
         }));
         
@@ -91,9 +99,33 @@ public:
     void deactivate(){
         texture = nullptr;
     }
+
+    void presetSave(ofJson &json) override {
+        const int index = fileIndex.get();
+        json["selectedVideoFile"] = index > 0 && index < static_cast<int>(files.size())
+                                  ? files[index] : "";
+    }
+
+    void presetRecallAfterSettingParameters(ofJson &json) override {
+        if(getOceanodeParameter(fileIndex).hasInConnection()) return;
+
+        auto selected = json.find("selectedVideoFile");
+        if(selected != json.end() && selected->is_string()){
+            const string filename = selected->get<string>();
+            auto it = std::find(files.begin() + 1, files.end(), filename);
+            fileIndex = it == files.end() ? 0 : static_cast<int>(it - files.begin());
+        }else{
+            // Presets saved before filename persistence only have the dropdown index.
+            auto legacy = json.find(fileIndex.getEscapedName());
+            if(legacy != json.end() && legacy->is_number_integer()){
+                int index = legacy->get<int>();
+                fileIndex = index >= 0 && index < static_cast<int>(files.size()) ? index : 0;
+            }
+        }
+    }
     
 private:
-    //ofParameter<string> filename;
+    vector<string> files;
     ofParameter<int> fileIndex;
     ofParameter<bool> loop;
     ofParameter<bool> play;
