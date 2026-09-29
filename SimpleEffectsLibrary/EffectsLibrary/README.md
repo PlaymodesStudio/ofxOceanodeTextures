@@ -1,6 +1,6 @@
 # Simple Effects shader library
 
-This folder contains the complete 95-effect collection, organized in the same
+This folder contains the complete 101-effect collection, organized in the same
 categories shown by Oceanode's New Node menu.
 
 Copy the category folders and `SimpleEffectCommon.inc` into the application's
@@ -16,15 +16,25 @@ the current input.
 
 ## Color and tone
 
-- `Exposure`, `BrightnessContrast`, `LevelsPro`, `LiftGammaGain`, `HSVAdjust`
+- `Exposure`, `BrightnessContrast`, `LevelsPro`, `LiftGammaGain`, `HSVAdjust`, `HSLAdjust`
 - `Vibrance`, `TemperatureTint`, `Tint`, `Tritone`, `ChannelMixer`
-- `SelectiveChannel`, `Posterize`, `Solarize`, `ClampRange`
+- `SelectiveChannel`, `Posterize`, `Solarize`, `ClampRange`, `ColorWrap`
+
+`HSLAdjust` changes saturation and lightness in HSL space, which produces a
+different result from `HSVAdjust` around bright and dark colours. `ColorWrap`
+cycles multiplied or offset RGB values back through zero instead of clipping.
 
 ## Keying, matte, and alpha
 
 - `ChromaKey`, `DifferenceKey`, `InvertedLumaKey`, `LumaRangeKey`
 - `LumaKey`, `Minimax`, `AlphaFromChannel`, `MatteChoker`, `MatteBlur`
+- `WipeMask`, `PolarMap`
 - `AlphaPremultiply`, `AlphaUnpremultiply`
+
+`WipeMask` emits an opaque grayscale matte: `Progress` zero is black and one is
+white, with circular, directional, and symmetric-linear modes. `PolarMap`
+emits inward radial falloff in red, wrapped polar angle in green, zero in blue,
+and one in alpha. Both use the input only to establish output dimensions.
 
 ## Compositing and multi-texture processing
 
@@ -36,6 +46,7 @@ the current input.
 ## Transform and distortion
 
 - `Transform2D`, `TextureOffset`, `CropFeather`, `Mirror`, `TileOffset`, `Kaleidoscope`
+- `DiagonalBend`
 - `Twirl`, `BulgePinch`, `WaveWarp`, `Ripple`, `LensDistortion`
 - `CornerPin`, `ChromaticAberration`, `DisplacementMap`, `VectorWarp`
 
@@ -48,6 +59,10 @@ increasing texture V and can appear vertically reversed by display flips. The
 existing `TileOffset` can produce the same basic wrap with one tile, but also
 adds repetition, mirrored tiles, and mixing; use `TextureOffset` when only a
 two-axis wrapped translation is needed.
+
+`DiagonalBend` defines its crease with normalized `TopX` and `BottomX`
+positions, so the same setup scales to every input resolution. Its border mode
+can return transparent pixels, clamp to the source edge, or wrap coordinates.
 
 ## Blur and detail
 
@@ -126,6 +141,9 @@ feedback uses the separate previous-output support described below.
 - `Feedback`: recursive previous-output accumulation with fading, zoom,
   rotation, translation, inversion, and Mix / Lighten / Add modes. Appears at
   `Modules/Effects/Temporal/Feedback`.
+- `HistoryScan`: slit-scan history that moves the previous output and inserts a
+  selected row or column from the current source at the entering edge. Its
+  normalized `Speed` advances once per render, and `Clear` resets its history.
 
 ### Install and connect a camera
 
