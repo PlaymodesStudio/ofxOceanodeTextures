@@ -22,6 +22,10 @@ accepted.
 - `Name:default` creates an unbounded float.
 - `Name:default:min:max` creates a ranged float. `min` and `max` can be used as
   open-ended range markers.
+- `Name:bool` creates a boolean checkbox, defaulting to false, bound to
+  `uniform bool Name`. `Name:bool:true` or `Name:bool:1` defaults to true;
+  `false` and `0` explicitly default to false. Booleans are scalar controls
+  and do not accept control textures.
 - `Name:color` creates an `ofFloatColor` parameter bound to `uniform vec4 Name`.
 - `Name:color:R:G:B` and `Name:color:R:G:B:A` set its default color.
 - `Name:texture` creates a texture parameter bound to `uniform sampler2D Name`.
@@ -76,7 +80,13 @@ sentinel.
 
 ## Output conventions
 
-- The output is an RGBA32F texture matching `tSource` dimensions.
+- The output is an RGBA32F texture matching `tSource` dimensions by default.
+- A `// @swap-dimensions Name` annotation names a boolean metadata parameter.
+  When true, the output width and height are exchanged. `uResolution`,
+  `resolution`, and `uTexelSize` describe the output canvas; use
+  `textureSize(tSource, 0)` for the source dimensions. Such canvas transforms
+  render with blending disabled to preserve the shader's RGBA exactly.
+  `Flip&Rotate` uses this contract for its `Rotate90` checkbox.
 - Use `gl_FragCoord.xy / uResolution` for normalized sampling coordinates.
 - Use `texelFetch(tSource, ivec2(gl_FragCoord.xy), 0)` for exact pixel access.
 - Preserve `source.a` by default. Change alpha only when it is part of the

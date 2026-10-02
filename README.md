@@ -1,6 +1,6 @@
 # ofxOceanodeTextures
 
-Texture processing nodes and a [catalog of 101 Simple Effects shaders](SimpleEffectsLibrary/EffectsLibrary/README.md).
+Texture processing nodes and a [catalog of 102 Simple Effects shaders](SimpleEffectsLibrary/EffectsLibrary/README.md).
 
 - [Shader authoring, input history, and output feedback](SIMPLE_EFFECT_GUIDE.md)
 - [Optical Flow: motion vectors, masks, confidence, and previews](SimpleEffectsLibrary/EffectsLibrary/README.md#motion-analysis)
