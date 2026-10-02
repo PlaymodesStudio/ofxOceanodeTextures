@@ -100,7 +100,14 @@ void textureComposer::setup()
     }));
 }
 
+bool textureComposer::getPreviewPivot(std::size_t index, glm::vec3 &worldPivot) const{
+    if(index >= previewPivots.size() || index >= input->size() || input->at(index) == nullptr) return false;
+    worldPivot = previewPivots[index];
+    return true;
+}
+
 void textureComposer::calculate(){
+    previewPivots.assign(input->size(), glm::vec3(0.0f));
     if(input->size() > 0){
         vector<glm::mat4> matrices(input->size());
         for(int i = 0; i < input->size(); i++){
@@ -126,10 +133,13 @@ void textureComposer::calculate(){
                 if(normalizedZPosition){
                     pos_z *= height.get();
                 }
+                // Retain the pivot alongside the matrix that it belongs to.
                 if(!normalizedPosition){
                     matrices[i] = glm::translate(matrices[i], glm::vec3(pos_x, pos_y, pos_z));
+                    previewPivots[i] = glm::vec3(pos_x, pos_y, pos_z);
                 }else{
                     matrices[i] = glm::translate(matrices[i], glm::vec3(pos_x * width, pos_y * height, pos_z));
+                    previewPivots[i] = glm::vec3(pos_x * width, pos_y * height, pos_z);
                 }
                 
                 //Scale and rotate
