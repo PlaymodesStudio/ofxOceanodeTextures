@@ -405,24 +405,29 @@ std::vector<textureBlender::PreviewLayer> textureBlender::getPreviewLayers()
     const auto &textures = input.get();
     const auto &transforms = transformInput.get();
     auto *composer = transforms.size() == textures.size() ? getPreviewComposer() : nullptr;
+    const glm::mat4 previewWorld = getPreviewWorldTransform();
     layers.reserve(textures.size());
     for(std::size_t i = 0; i < textures.size(); ++i){
         const auto *texture = textures[i];
         if(texture == nullptr || !texture->isAllocated()) continue;
 
-        // Retain native texture UVs and anchors, using the preview camera's
-        // Y-up orientation rather than the output camera's screen-space flip.
+        // Use exactly the mesh/UV mapping that texture.draw() uses in render().
+        // Convert the completed world transform to Y-up afterwards: flipping
+        // each texture locally first would reverse rotations and misplace anchors.
         const auto mesh = texture->getMeshForSubsection(0, 0, 0,
             texture->getWidth(), texture->getHeight(), 0, 0,
-            texture->getWidth(), texture->getHeight(), previewCamera.isVFlipped(), ofGetRectMode());
+            texture->getWidth(), texture->getHeight(), camera.isVFlipped(), ofGetRectMode());
         if(mesh.getNumVertices() != 4) continue;
-        const glm::mat4 transform = transforms.size() == textures.size()
-            ? transforms[i] : glm::mat4(1.0f);
+        const glm::mat4 transform = previewWorld * (transforms.size() == textures.size()
+            ? transforms[i] : glm::mat4(1.0f));
         PreviewLayer layer;
         layer.index = i;
         layer.origin = transform * glm::vec4(0, 0, 0, 1);
         layer.hasComposerPivot = composer != nullptr && composer->getPreviewPivot(i, layer.composerPivot)
             && finitePoint(glm::vec4(layer.composerPivot, 1.0f));
+        if(layer.hasComposerPivot){
+            layer.composerPivot = glm::vec3(previewWorld * glm::vec4(layer.composerPivot, 1.0f));
+        }
         bool valid = true;
         for(std::size_t corner = 0; corner < 4; ++corner){
             const glm::vec4 point = transform * glm::vec4(mesh.getVertex(corner), 1.0f);
@@ -442,6 +447,13 @@ std::vector<textureBlender::PreviewLayer> textureBlender::getPreviewLayers()
     return layers;
 }
 
+glm::mat4 textureBlender::getPreviewWorldTransform() const
+{
+    // Output pixels use screen Y (down) when the output camera is V-flipped.
+    // Reflect the entire scene for the independent Y-up navigation camera.
+    return glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, camera.isVFlipped() ? -1.0f : 1.0f, 1.0f));
+}
+
 std::array<glm::vec3, 4> textureBlender::getCameraPreviewCorners(float distance) const
 {
     const float halfHeight = camera.getOrtho() ? height.get() * 0.5f
@@ -451,13 +463,15 @@ std::array<glm::vec3, 4> textureBlender::getCameraPreviewCorners(float distance)
         {-halfWidth, -halfHeight, -distance}, {halfWidth, -halfHeight, -distance},
         {halfWidth, halfHeight, -distance}, {-halfWidth, halfHeight, -distance}
     }};
-    for(auto &corner : corners) corner = glm::vec3(camera.getGlobalTransformMatrix() * glm::vec4(corner, 1.0f));
+    const glm::mat4 previewCameraWorld = getPreviewWorldTransform() * camera.getGlobalTransformMatrix();
+    for(auto &corner : corners) corner = glm::vec3(previewCameraWorld * glm::vec4(corner, 1.0f));
     return corners;
 }
 
 float textureBlender::getPreviewLayerAlpha(const PreviewLayer &layer) const
 {
-    const glm::mat4 view = camera.getModelViewMatrix();
+    // The reflection is its own inverse; measure clipping in output-camera space.
+    const glm::mat4 view = camera.getModelViewMatrix() * getPreviewWorldTransform();
     for(const auto &corner : layer.corners){
         const float depth = -(view * glm::vec4(corner, 1.0f)).z;
         if(depth < camera.getNearClip() || depth > camera.getFarClip()) return 0.25f;
@@ -479,13 +493,15 @@ void textureBlender::updatePreviewGridStep(float viewportHeight)
 
 void textureBlender::framePreview(const std::vector<PreviewLayer> &layers, float aspectRatio)
 {
-    glm::vec3 minimum(0.0f);
-    glm::vec3 maximum(width.get(), height.get(), 0.0f);
+    const glm::mat4 previewWorld = getPreviewWorldTransform();
+    const glm::vec3 canvasEnd(previewWorld * glm::vec4(width.get(), height.get(), 0.0f, 1.0f));
+    glm::vec3 minimum = glm::min(glm::vec3(0.0f), canvasEnd);
+    glm::vec3 maximum = glm::max(glm::vec3(0.0f), canvasEnd);
     auto include = [&](const glm::vec3 &point){
         minimum = glm::min(minimum, point);
         maximum = glm::max(maximum, point);
     };
-    include(camera.getGlobalPosition());
+    include(glm::vec3(previewWorld * glm::vec4(camera.getGlobalPosition(), 1.0f)));
     const float imageDistance = ofClamp(camera.getGlobalPosition().z, camera.getNearClip(), camera.getFarClip());
     for(const auto &corner : getCameraPreviewCorners(imageDistance)) include(corner);
     for(const auto &corner : getCameraPreviewCorners(camera.getNearClip())) include(corner);
@@ -589,6 +605,7 @@ void textureBlender::drawPreviewScene(const std::vector<PreviewLayer> &layers, c
         std::sin(previewPitch), std::cos(previewYaw) * std::cos(previewPitch));
     previewCamera.setPosition(previewTarget + offset * previewDistance);
     previewCamera.lookAt(previewTarget, glm::vec3(0, 1, 0));
+    previewCamera.setVFlip(false);
     previewCamera.setFov(45.0f);
     previewCamera.setNearClip(std::max(0.00001f, previewDistance * 0.0001f));
     previewCamera.setFarClip(std::max(previewDistance * 100.0f, previewSceneRadius * 100.0f));
@@ -666,13 +683,14 @@ void textureBlender::drawPreviewScene(const std::vector<PreviewLayer> &layers, c
     for(int i = 0; i < 3; ++i){
         glm::vec3 end(0.0f);
         end[i] = axisLength;
+        end = glm::vec3(getPreviewWorldTransform() * glm::vec4(end, 1.0f));
         line(glm::vec3(0.0f), end, axisColors[i], 2.0f);
         label(end, axisColors[i], std::string(1, "XYZ"[i]));
     }
     label(glm::vec3(0.0f), IM_COL32(190, 195, 205, 255), "0");
 
     const ImU32 cameraColor = IM_COL32(255, 200, 85, 255);
-    const glm::vec3 eye = camera.getGlobalPosition();
+    const glm::vec3 eye(getPreviewWorldTransform() * glm::vec4(camera.getGlobalPosition(), 1.0f));
     // The usual camera icon reaches the Z=0 image plane. Full near/far clip
     // volumes are optional because the far plane can dwarf the texture scene.
     const float imageDistance = ofClamp(eye.z, camera.getNearClip(), camera.getFarClip());

@@ -53,6 +53,7 @@ private:
     void configureBlending();
     textureComposer *getPreviewComposer();
     std::vector<PreviewLayer> getPreviewLayers();
+    glm::mat4 getPreviewWorldTransform() const;
     std::array<glm::vec3, 4> getCameraPreviewCorners(float distance) const;
     float getPreviewLayerAlpha(const PreviewLayer &layer) const;
     void updatePreviewGridStep(float viewportHeight);
