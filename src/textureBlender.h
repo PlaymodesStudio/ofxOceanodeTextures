@@ -110,10 +110,11 @@ private:
     float previewDistance = 1000.0f;
     float previewSceneRadius = 100.0f;
     float previewGridStep = 0.0f;
-    float previewTextureOpacity = 0.5f;
+    float previewTextureOpacity = 0.0f;
     bool previewInitialized = false;
     bool previewClipPlanes = false;
-    bool previewShowTextures = false;
+    bool previewShowGizmo = true;
+    bool previewShowCamera = true;
     bool previewShowAxis = true;
     bool previewShowGrid = false;
 

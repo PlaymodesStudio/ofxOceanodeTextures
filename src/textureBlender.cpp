@@ -539,13 +539,20 @@ void textureBlender::draw(ofEventArgs &)
     auto checkboxWidth = [&](const char *label){
         return ImGui::GetFrameHeight() + style.ItemInnerSpacing.x + ImGui::CalcTextSize(label).x;
     };
-    // Reserve enough width for the three checkboxes and a usable opacity
-    // slider, so resizing the window never hides controls or adds a third row.
-    const float controlsWidth = checkboxWidth("Show textures") + checkboxWidth("Show Axis")
-        + checkboxWidth("Show Grid") + 60.0f + ImGui::CalcTextSize("Opacity").x
-        + style.ItemInnerSpacing.x + style.ItemSpacing.x * 3.0f;
+    auto buttonWidth = [&](const char *label){
+        return ImGui::CalcTextSize(label).x + style.FramePadding.x * 2.0f;
+    };
+    // Reserve enough width for both rows, including a usable opacity slider.
+    const float firstRowWidth = buttonWidth("Frame All") + buttonWidth("Reset View")
+        + checkboxWidth("Clip planes") + buttonWidth("[?]")
+        + 60.0f + ImGui::CalcTextSize("Tex.Opacity").x
+        + style.ItemInnerSpacing.x + style.ItemSpacing.x * 4.0f;
+    const float secondRowWidth = checkboxWidth("Show Camera") + checkboxWidth("Show Gizmo")
+        + checkboxWidth("Show Axis") + checkboxWidth("Show Grid")
+        + style.ItemSpacing.x * 3.0f;
     ImGui::SetNextWindowSize(ImVec2(760, 540), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSizeConstraints(ImVec2(std::max(360.0f, controlsWidth + style.WindowPadding.x * 2.0f), 260), ImVec2(FLT_MAX, FLT_MAX));
+    ImGui::SetNextWindowSizeConstraints(ImVec2(std::max(360.0f,
+        std::max(firstRowWidth, secondRowWidth) + style.WindowPadding.x * 2.0f), 260), ImVec2(FLT_MAX, FLT_MAX));
     if(ImGui::Begin(title.c_str(), &open, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)){
         configureCamera();
         const auto layers = getPreviewLayers();
@@ -553,7 +560,19 @@ void textureBlender::draw(ofEventArgs &)
         ImGui::SameLine();
         const bool resetView = ImGui::Button("Reset View");
         ImGui::SameLine();
+        ImGui::BeginDisabled(!previewShowCamera);
         const bool clipPlanesChanged = ImGui::Checkbox("Clip planes", &previewClipPlanes);
+        ImGui::EndDisabled();
+        ImGui::SameLine();
+        const float sliderSpace = ImGui::GetContentRegionAvail().x
+            - ImGui::CalcTextSize("Tex.Opacity").x - style.ItemInnerSpacing.x
+            - buttonWidth("[?]") - style.ItemSpacing.x;
+        ImGui::SetNextItemWidth(std::max(60.0f, std::min(160.0f, sliderSpace)));
+        ImGui::SliderFloat("Tex.Opacity", &previewTextureOpacity, 0.0f, 1.0f, "%.2f");
+        if(previewTextureOpacity <= 0.0f){
+            previewFbo.clear();
+            previewLayersFbo.clear();
+        }
         ImGui::SameLine();
         const bool countMismatch = transformInput->size() != input->size();
         if(countMismatch) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.78f, 0.33f, 1.0f));
@@ -568,21 +587,13 @@ void textureBlender::draw(ofEventArgs &)
             }
             ImGui::EndTooltip();
         }
-        ImGui::Checkbox("Show textures", &previewShowTextures);
+        ImGui::Checkbox("Show Camera", &previewShowCamera);
+        ImGui::SameLine();
+        ImGui::Checkbox("Show Gizmo", &previewShowGizmo);
         ImGui::SameLine();
         ImGui::Checkbox("Show Axis", &previewShowAxis);
         ImGui::SameLine();
         ImGui::Checkbox("Show Grid", &previewShowGrid);
-        if(previewShowTextures){
-            ImGui::SameLine();
-            const float sliderSpace = ImGui::GetContentRegionAvail().x
-                - ImGui::CalcTextSize("Opacity").x - style.ItemInnerSpacing.x;
-            ImGui::SetNextItemWidth(std::max(60.0f, std::min(160.0f, sliderSpace)));
-            ImGui::SliderFloat("Opacity", &previewTextureOpacity, 0.0f, 1.0f, "%.2f");
-        }else{
-            previewFbo.clear();
-            previewLayersFbo.clear();
-        }
 
         const ImVec2 size = ImGui::GetContentRegionAvail();
         if(size.x > 1.0f && size.y > 1.0f){
@@ -663,6 +674,7 @@ void textureBlender::drawPreviewScene(const std::vector<PreviewLayer> &layers, c
         drawList->AddCircle(previewScreenPoint(clip, viewport), radius, color, 16, 1.5f);
     };
 
+    const bool showTextures = previewTextureOpacity > 0.0f;
     ofMesh grid;
     grid.setMode(OF_PRIMITIVE_LINES);
     if(previewShowGrid){
@@ -675,7 +687,7 @@ void textureBlender::drawPreviewScene(const std::vector<PreviewLayer> &layers, c
         const int gridLines = std::min(240, static_cast<int>(std::ceil(previewDistance * 6.0f / gridStep)));
         const float extent = gridStep * gridLines;
         auto gridLine = [&](const glm::vec3 &a, const glm::vec3 &b, ImU32 color){
-            if(previewShowTextures){
+            if(showTextures){
                 const ImVec4 rgba = ImGui::ColorConvertU32ToFloat4(color);
                 const ofFloatColor gridColor(rgba.x, rgba.y, rgba.z, rgba.w);
                 grid.addVertex(a);
@@ -695,7 +707,7 @@ void textureBlender::drawPreviewScene(const std::vector<PreviewLayer> &layers, c
             gridLine(glm::vec3(gridX - extent, 0, z), glm::vec3(gridX + extent, 0, z), zColor);
         }
     }
-    if(previewShowTextures){
+    if(showTextures){
         renderPreviewTextures(layers, viewport, grid);
         const ImTextureID textureID = (ImTextureID)(uintptr_t)previewFbo.getTexture().getTextureData().textureID;
         drawList->AddImage(textureID, topLeft, bottomRight, ImVec2(0, 1), ImVec2(1, 0));
@@ -714,38 +726,40 @@ void textureBlender::drawPreviewScene(const std::vector<PreviewLayer> &layers, c
         label(glm::vec3(0.0f), IM_COL32(190, 195, 205, 255), "0");
     }
 
-    const ImU32 cameraColor = IM_COL32(255, 200, 85, 255);
-    const glm::vec3 eye(getPreviewWorldTransform() * glm::vec4(camera.getGlobalPosition(), 1.0f));
-    // The usual camera icon reaches the Z=0 image plane. Full near/far clip
-    // volumes are optional because the far plane can dwarf the texture scene.
-    const float imageDistance = ofClamp(eye.z, camera.getNearClip(), camera.getFarClip());
-    const auto imageCorners = getCameraPreviewCorners(imageDistance);
-    const auto nearCorners = getCameraPreviewCorners(camera.getNearClip());
-    rectangle(imageCorners, cameraColor, 1.5f);
-    for(std::size_t i = 0; i < 4; ++i){
-        line(camera.getOrtho() ? nearCorners[i] : eye, imageCorners[i], cameraColor);
-    }
-    if(camera.getOrtho()) rectangle(nearCorners, cameraColor, 1.0f);
-    if(previewClipPlanes){
-        const auto farCorners = getCameraPreviewCorners(camera.getFarClip());
-        const ImU32 clipColor = IM_COL32(255, 200, 85, 110);
-        rectangle(nearCorners, clipColor, 1.0f);
-        rectangle(farCorners, clipColor, 1.0f);
-        for(std::size_t i = 0; i < 4; ++i) line(nearCorners[i], farCorners[i], clipColor);
-    }
-    std::size_t composerPivots = 0;
-    for(const auto &layer : layers){
-        const int alpha = static_cast<int>(getPreviewLayerAlpha(layer) * 128.0f + 0.5f);
-        const ImU32 color = IM_COL32(0, 255, 255, alpha);
-        rectangle(layer.corners, color, 1.0f);
-        marker(layer.origin, IM_COL32(255, 80, 80, alpha), 4.0f);
-        if(layer.hasComposerPivot){
-            marker(glm::vec4(layer.composerPivot, 1.0f), IM_COL32(90, 150, 255, alpha), 6.0f);
-            ++composerPivots;
+    if(previewShowCamera){
+        const ImU32 cameraColor = IM_COL32(255, 200, 85, 255);
+        const glm::vec3 eye(getPreviewWorldTransform() * glm::vec4(camera.getGlobalPosition(), 1.0f));
+        // The usual camera icon reaches the Z=0 image plane. Full near/far clip
+        // volumes are optional because the far plane can dwarf the texture scene.
+        const float imageDistance = ofClamp(eye.z, camera.getNearClip(), camera.getFarClip());
+        const auto imageCorners = getCameraPreviewCorners(imageDistance);
+        const auto nearCorners = getCameraPreviewCorners(camera.getNearClip());
+        rectangle(imageCorners, cameraColor, 1.5f);
+        for(std::size_t i = 0; i < 4; ++i){
+            line(camera.getOrtho() ? nearCorners[i] : eye, imageCorners[i], cameraColor);
         }
-        glm::vec3 center(0.0f);
-        for(const auto &corner : layer.corners) center += corner * 0.25f;
-        label(center, color, "[" + ofToString(layer.index) + "]");
+        if(camera.getOrtho()) rectangle(nearCorners, cameraColor, 1.0f);
+        if(previewClipPlanes){
+            const auto farCorners = getCameraPreviewCorners(camera.getFarClip());
+            const ImU32 clipColor = IM_COL32(255, 200, 85, 110);
+            rectangle(nearCorners, clipColor, 1.0f);
+            rectangle(farCorners, clipColor, 1.0f);
+            for(std::size_t i = 0; i < 4; ++i) line(nearCorners[i], farCorners[i], clipColor);
+        }
+    }
+    if(previewShowGizmo){
+        for(const auto &layer : layers){
+            const int alpha = static_cast<int>(getPreviewLayerAlpha(layer) * 128.0f + 0.5f);
+            const ImU32 color = IM_COL32(0, 255, 255, alpha);
+            rectangle(layer.corners, color, 1.0f);
+            marker(layer.origin, IM_COL32(255, 80, 80, alpha), 4.0f);
+            if(layer.hasComposerPivot){
+                marker(glm::vec4(layer.composerPivot, 1.0f), IM_COL32(90, 150, 255, alpha), 6.0f);
+            }
+            glm::vec3 center(0.0f);
+            for(const auto &corner : layer.corners) center += corner * 0.25f;
+            label(center, color, "[" + ofToString(layer.index) + "]");
+        }
     }
     drawList->PopClipRect();
 }
