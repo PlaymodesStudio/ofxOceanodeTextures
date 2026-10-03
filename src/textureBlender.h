@@ -114,6 +114,8 @@ private:
     bool previewInitialized = false;
     bool previewClipPlanes = false;
     bool previewShowTextures = false;
+    bool previewShowAxis = true;
+    bool previewShowGrid = false;
 
     bool updatingBlendMode = false;
     bool loadingPreset = false;

@@ -535,8 +535,17 @@ void textureBlender::draw(ofEventArgs &)
     // Canvas IDs distinguish nodes with the same identifier in nested macros.
     const std::string title = "Texture Blender " + ofToString(getNumIdentifier())
         + " - 3D Preview###TextureBlenderPreview_" + canvasID + "_" + ofToString(getNumIdentifier());
+    const auto &style = ImGui::GetStyle();
+    auto checkboxWidth = [&](const char *label){
+        return ImGui::GetFrameHeight() + style.ItemInnerSpacing.x + ImGui::CalcTextSize(label).x;
+    };
+    // Reserve enough width for the three checkboxes and a usable opacity
+    // slider, so resizing the window never hides controls or adds a third row.
+    const float controlsWidth = checkboxWidth("Show textures") + checkboxWidth("Show Axis")
+        + checkboxWidth("Show Grid") + 60.0f + ImGui::CalcTextSize("Opacity").x
+        + style.ItemInnerSpacing.x + style.ItemSpacing.x * 3.0f;
     ImGui::SetNextWindowSize(ImVec2(760, 540), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSizeConstraints(ImVec2(360, 260), ImVec2(FLT_MAX, FLT_MAX));
+    ImGui::SetNextWindowSizeConstraints(ImVec2(std::max(360.0f, controlsWidth + style.WindowPadding.x * 2.0f), 260), ImVec2(FLT_MAX, FLT_MAX));
     if(ImGui::Begin(title.c_str(), &open, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)){
         configureCamera();
         const auto layers = getPreviewLayers();
@@ -545,22 +554,34 @@ void textureBlender::draw(ofEventArgs &)
         const bool resetView = ImGui::Button("Reset View");
         ImGui::SameLine();
         const bool clipPlanesChanged = ImGui::Checkbox("Clip planes", &previewClipPlanes);
+        ImGui::SameLine();
+        const bool countMismatch = transformInput->size() != input->size();
+        if(countMismatch) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.78f, 0.33f, 1.0f));
+        ImGui::Button("[?]");
+        if(countMismatch) ImGui::PopStyleColor();
+        if(ImGui::IsItemHovered()){
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted("Drag: orbit\nShift+drag / right / middle: pan\nWheel: zoom");
+            if(countMismatch){
+                ImGui::Separator();
+                ImGui::TextUnformatted("T. In / Input count mismatch:\nTransforms are ignored, as in the output.");
+            }
+            ImGui::EndTooltip();
+        }
         ImGui::Checkbox("Show textures", &previewShowTextures);
+        ImGui::SameLine();
+        ImGui::Checkbox("Show Axis", &previewShowAxis);
+        ImGui::SameLine();
+        ImGui::Checkbox("Show Grid", &previewShowGrid);
         if(previewShowTextures){
             ImGui::SameLine();
             const float sliderSpace = ImGui::GetContentRegionAvail().x
-                - ImGui::CalcTextSize("Texture opacity").x - ImGui::GetStyle().ItemInnerSpacing.x;
+                - ImGui::CalcTextSize("Opacity").x - style.ItemInnerSpacing.x;
             ImGui::SetNextItemWidth(std::max(60.0f, std::min(160.0f, sliderSpace)));
-            ImGui::SliderFloat("Texture opacity", &previewTextureOpacity, 0.0f, 1.0f, "%.2f");
+            ImGui::SliderFloat("Opacity", &previewTextureOpacity, 0.0f, 1.0f, "%.2f");
         }else{
             previewFbo.clear();
             previewLayersFbo.clear();
-        }
-        ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
-        ImGui::TextWrapped("Drag: orbit | Shift+drag / right / middle: pan | Wheel: zoom");
-        ImGui::PopStyleColor();
-        if(transformInput->size() != input->size()){
-            ImGui::TextWrapped("T. In / Input count mismatch: transforms are ignored, as in the output.");
         }
 
         const ImVec2 size = ImGui::GetContentRegionAvail();
@@ -642,35 +663,37 @@ void textureBlender::drawPreviewScene(const std::vector<PreviewLayer> &layers, c
         drawList->AddCircle(previewScreenPoint(clip, viewport), radius, color, 16, 1.5f);
     };
 
-    updatePreviewGridStep(viewport.height);
-    const float gridStep = previewGridStep;
-    const float gridX = std::floor(previewTarget.x / gridStep) * gridStep;
-    const float gridZ = std::floor(previewTarget.z / gridStep) * gridStep;
-    // Cover the visible floor independently of the grid spacing, so refining
-    // the grid does not suddenly collapse the floor patch around the origin.
-    const int gridLines = std::min(240, static_cast<int>(std::ceil(previewDistance * 6.0f / gridStep)));
-    const float extent = gridStep * gridLines;
     ofMesh grid;
     grid.setMode(OF_PRIMITIVE_LINES);
-    auto gridLine = [&](const glm::vec3 &a, const glm::vec3 &b, ImU32 color){
-        if(previewShowTextures){
-            const ImVec4 rgba = ImGui::ColorConvertU32ToFloat4(color);
-            const ofFloatColor gridColor(rgba.x, rgba.y, rgba.z, rgba.w);
-            grid.addVertex(a);
-            grid.addVertex(b);
-            grid.addColor(gridColor);
-            grid.addColor(gridColor);
-        }else{
-            line(a, b, color);
+    if(previewShowGrid){
+        updatePreviewGridStep(viewport.height);
+        const float gridStep = previewGridStep;
+        const float gridX = std::floor(previewTarget.x / gridStep) * gridStep;
+        const float gridZ = std::floor(previewTarget.z / gridStep) * gridStep;
+        // Cover the visible floor independently of the grid spacing, so refining
+        // the grid does not suddenly collapse the floor patch around the origin.
+        const int gridLines = std::min(240, static_cast<int>(std::ceil(previewDistance * 6.0f / gridStep)));
+        const float extent = gridStep * gridLines;
+        auto gridLine = [&](const glm::vec3 &a, const glm::vec3 &b, ImU32 color){
+            if(previewShowTextures){
+                const ImVec4 rgba = ImGui::ColorConvertU32ToFloat4(color);
+                const ofFloatColor gridColor(rgba.x, rgba.y, rgba.z, rgba.w);
+                grid.addVertex(a);
+                grid.addVertex(b);
+                grid.addColor(gridColor);
+                grid.addColor(gridColor);
+            }else{
+                line(a, b, color);
+            }
+        };
+        for(int i = -gridLines; i <= gridLines; ++i){
+            const float x = gridX + i * gridStep;
+            const float z = gridZ + i * gridStep;
+            const ImU32 xColor = IM_COL32(65, 70, 80, std::fmod(std::abs(x / gridStep), 5.0f) < 0.5f ? 200 : 95);
+            const ImU32 zColor = IM_COL32(65, 70, 80, std::fmod(std::abs(z / gridStep), 5.0f) < 0.5f ? 200 : 95);
+            gridLine(glm::vec3(x, 0, gridZ - extent), glm::vec3(x, 0, gridZ + extent), xColor);
+            gridLine(glm::vec3(gridX - extent, 0, z), glm::vec3(gridX + extent, 0, z), zColor);
         }
-    };
-    for(int i = -gridLines; i <= gridLines; ++i){
-        const float x = gridX + i * gridStep;
-        const float z = gridZ + i * gridStep;
-        const ImU32 xColor = IM_COL32(65, 70, 80, std::fmod(std::abs(x / gridStep), 5.0f) < 0.5f ? 200 : 95);
-        const ImU32 zColor = IM_COL32(65, 70, 80, std::fmod(std::abs(z / gridStep), 5.0f) < 0.5f ? 200 : 95);
-        gridLine(glm::vec3(x, 0, gridZ - extent), glm::vec3(x, 0, gridZ + extent), xColor);
-        gridLine(glm::vec3(gridX - extent, 0, z), glm::vec3(gridX + extent, 0, z), zColor);
     }
     if(previewShowTextures){
         renderPreviewTextures(layers, viewport, grid);
@@ -678,16 +701,18 @@ void textureBlender::drawPreviewScene(const std::vector<PreviewLayer> &layers, c
         drawList->AddImage(textureID, topLeft, bottomRight, ImVec2(0, 1), ImVec2(1, 0));
     }
 
-    const float axisLength = previewSceneRadius * 0.3f;
-    const std::array<ImU32, 3> axisColors = {{IM_COL32(255, 80, 80, 255), IM_COL32(90, 230, 110, 255), IM_COL32(90, 150, 255, 255)}};
-    for(int i = 0; i < 3; ++i){
-        glm::vec3 end(0.0f);
-        end[i] = axisLength;
-        end = glm::vec3(getPreviewWorldTransform() * glm::vec4(end, 1.0f));
-        line(glm::vec3(0.0f), end, axisColors[i], 2.0f);
-        label(end, axisColors[i], std::string(1, "XYZ"[i]));
+    if(previewShowAxis){
+        const float axisLength = previewSceneRadius * 0.3f;
+        const std::array<ImU32, 3> axisColors = {{IM_COL32(255, 80, 80, 255), IM_COL32(90, 230, 110, 255), IM_COL32(90, 150, 255, 255)}};
+        for(int i = 0; i < 3; ++i){
+            glm::vec3 end(0.0f);
+            end[i] = axisLength;
+            end = glm::vec3(getPreviewWorldTransform() * glm::vec4(end, 1.0f));
+            line(glm::vec3(0.0f), end, axisColors[i], 4.0f);
+            label(end, axisColors[i], std::string(1, "XYZ"[i]));
+        }
+        label(glm::vec3(0.0f), IM_COL32(190, 195, 205, 255), "0");
     }
-    label(glm::vec3(0.0f), IM_COL32(190, 195, 205, 255), "0");
 
     const ImU32 cameraColor = IM_COL32(255, 200, 85, 255);
     const glm::vec3 eye(getPreviewWorldTransform() * glm::vec4(camera.getGlobalPosition(), 1.0f));
@@ -710,9 +735,9 @@ void textureBlender::drawPreviewScene(const std::vector<PreviewLayer> &layers, c
     }
     std::size_t composerPivots = 0;
     for(const auto &layer : layers){
-        const int alpha = static_cast<int>(getPreviewLayerAlpha(layer) * 255.0f + 0.5f);
+        const int alpha = static_cast<int>(getPreviewLayerAlpha(layer) * 128.0f + 0.5f);
         const ImU32 color = IM_COL32(0, 255, 255, alpha);
-        rectangle(layer.corners, color, 2.0f);
+        rectangle(layer.corners, color, 1.0f);
         marker(layer.origin, IM_COL32(255, 80, 80, alpha), 4.0f);
         if(layer.hasComposerPivot){
             marker(glm::vec4(layer.composerPivot, 1.0f), IM_COL32(90, 150, 255, alpha), 6.0f);
@@ -722,14 +747,6 @@ void textureBlender::drawPreviewScene(const std::vector<PreviewLayer> &layers, c
         for(const auto &corner : layer.corners) center += corner * 0.25f;
         label(center, color, "[" + ofToString(layer.index) + "]");
     }
-    drawList->AddText(ImVec2(viewport.x + 10.0f, viewport.y + 10.0f), IM_COL32(175, 185, 200, 255),
-        ("XZ floor | Grid: " + ofToString(gridStep) + " px | Textures: " + ofToString(layers.size())).c_str());
-    const float legendY = viewport.y + 10.0f + ImGui::GetTextLineHeightWithSpacing();
-    drawList->AddText(ImVec2(viewport.x + 10.0f, legendY), IM_COL32(255, 80, 80, 255), "Origin");
-    const float legendX = viewport.x + 24.0f + ImGui::CalcTextSize("Origin").x;
-    drawList->AddText(ImVec2(legendX, legendY), IM_COL32(90, 150, 255, 255),
-        composerPivots > 0 ? "Composer pivot" : "Composer pivot (unavailable)");
-    drawList->AddRect(topLeft, bottomRight, IM_COL32(75, 80, 90, 255));
     drawList->PopClipRect();
 }
 
