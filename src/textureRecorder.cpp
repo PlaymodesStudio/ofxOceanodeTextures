@@ -98,13 +98,19 @@ void textureRecorder::writerLoop(){
 }
 
 void textureRecorder::phasorInListener(float &f){
-    if(autoRecLoop){
-        if(f < oldPhasor){
-            if(!record) record = true;
-            else record = false;
+    const bool phaseWrapped = f < oldPhasor;
+    oldPhasor = f;
+
+    if(autoRecLoop && phaseWrapped){
+        if(record.get()){
+            // Auto recording is one-shot: disarm before ending the recording
+            // so the next phase wrap cannot start another file.
+            autoRecLoop = false;
+            record = false;
+        }else{
+            record = true;
         }
     }
-    oldPhasor = f;
 }
 
 void textureRecorder::draw(ofEventArgs &a){
