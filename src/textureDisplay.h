@@ -20,7 +20,8 @@ public:
         description = "Displays a texture from a portal with a resizable area.\n"
                       "Accepts a direct ofTexture* input (top-left pin) which overrides the portal selection.";
 
-        setFlags(ofxOceanodeNodeModelFlags_TransparentNode);
+        setFlags(ofxOceanodeNodeModelFlags_TransparentNode |
+                 ofxOceanodeNodeModelFlags_KeepGuiVisibleAtLowZoom);
 
         addInspectorParameter(displayWidth.set("Width",  320.f, 32.f, 4096.f));
         addInspectorParameter(displayHeight.set("Height", 180.f, 32.f, 4096.f));
@@ -534,6 +535,7 @@ private:
         float h = displayHeight.get();
 
         float zoom = std::max(0.1f, ofxOceanodeShared::getZoomLevel());
+        const bool renderText = (zoom > 0.5f);
         float screenW = w * zoom;
         float screenH = h * zoom;
 
@@ -675,12 +677,14 @@ private:
                          ImVec2(pos.x + screenW, pos.y + screenH),
                          ImVec2(0, 0), ImVec2(1, 1));
         } else {
-            // Dark placeholder with a centered label.
+            // Keep the placeholder visible at every zoom; hide its label with canvas text.
             dl->AddRectFilled(pos, ImVec2(pos.x + screenW, pos.y + screenH), IM_COL32(30, 30, 30, 255));
-            const char *label = "No texture";
-            ImVec2 ts = ImGui::CalcTextSize(label);
-            dl->AddText(ImVec2(pos.x + (screenW - ts.x) * 0.5f, pos.y + (screenH - ts.y) * 0.5f),
-                        IM_COL32(120, 120, 120, 255), label);
+            if (renderText) {
+                const char *label = "No texture";
+                ImVec2 ts = ImGui::CalcTextSize(label);
+                dl->AddText(ImVec2(pos.x + (screenW - ts.x) * 0.5f, pos.y + (screenH - ts.y) * 0.5f),
+                            IM_COL32(120, 120, 120, 255), label);
+            }
         }
 
         // Fixed one-screen-pixel frame. Keep it independent of canvas zoom so
@@ -708,7 +712,7 @@ private:
         // (No body tooltip, no in-display marker — the canvas-drawn input
         // connection bullet sits at the vertical center of the texture's
         // left edge.)
-        if (inResize && !isResizing) {
+        if (renderText && inResize && !isResizing) {
             ImGui::SetTooltip("%s", keepAspectRatio.get()
                 ? "Drag to resize with aspect ratio. Hold Shift for free resize."
                 : "Drag to resize freely. Turn on Keep Aspect Ratio in the Inspector to lock it.");
