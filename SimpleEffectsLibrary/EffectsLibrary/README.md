@@ -1,6 +1,6 @@
 # Simple Effects shader library
 
-This folder contains the complete 101-effect collection, organized in the same
+This folder contains the complete 102-effect collection, organized in the same
 categories shown by Oceanode's New Node menu.
 
 Copy the category folders and `SimpleEffectCommon.inc` into the application's
@@ -46,7 +46,7 @@ and one in alpha. Both use the input only to establish output dimensions.
 ## Transform and distortion
 
 - `Transform2D`, `TextureOffset`, `CropFeather`, `Mirror`, `TileOffset`, `Kaleidoscope`
-- `DiagonalBend`
+- `DiagonalBend`, `Flip&Rotate`
 - `Twirl`, `BulgePinch`, `WaveWarp`, `Ripple`, `LensDistortion`
 - `CornerPin`, `ChromaticAberration`, `DisplacementMap`, `VectorWarp`
 
@@ -63,6 +63,17 @@ two-axis wrapped translation is needed.
 `DiagonalBend` defines its crease with normalized `TopX` and `BottomX`
 positions, so the same setup scales to every input resolution. Its border mode
 can return transparent pixels, clamp to the source edge, or wrap coordinates.
+
+`Flip&Rotate` provides three boolean checkboxes: `FlipX`, `FlipY`, and
+`Rotate90`, all off by default. Flips act on the source axes before a clockwise
+quarter-turn. Rotation exchanges output width and height (1920x1080 becomes
+1080x1920), preserving proportions and every RGBA texel without cropping or
+interpolation. `Transform2D` already supports rotation inside a fixed canvas,
+but its scales are positive; `Mirror` reflects one side across an axis rather
+than reversing the complete image. Rebuild with the updated `simpleEffect.h`,
+copy `Transform and distortion/Flip&Rotate.glsl` to the matching folder under
+`bin/data/Effects/`, and restart. The node appears at
+`Modules/Effects/Transform and distortion/Flip&Rotate`.
 
 ## Blur and detail
 

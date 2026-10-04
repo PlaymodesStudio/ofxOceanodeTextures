@@ -38,6 +38,14 @@ show resolution.
   Mix zero is identity.
 - **Transform2D:** defaults are identity; anchor, position, rotation, scale, and
   transparent out-of-bounds areas behave independently.
+- **Flip&Rotate:** all three controls are boolean checkboxes and default to
+  false. Test all eight combinations with asymmetric corner labels: FlipX
+  reverses source columns, FlipY reverses source rows, then Rotate90 turns
+  clockwise. Rotation exchanges width/height without cropping or stretching.
+  Every output texel must match a source RGBA texel exactly, including alpha,
+  negative values, and values above one. Toggle rotation with Draw On Event
+  enabled; dimensions must update immediately. Bypass restores the original
+  input pointer and dimensions, and disabling it reapplies the transform.
 - **Pixelate:** cell dimensions are measured in pixels; Mix zero is identity;
   odd resolutions do not create uninitialized borders.
 - **SobelEdge:** a flat image produces no edges; a black-white boundary produces

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ofxOceanodeNodeModel.h"
+#include "ofxOceanodeConnection.h"
 #include "ofxOceanodeShared.h"
 #include "ofxOceanodeInspectorController.h"
 #include "portal.h"
@@ -19,7 +20,8 @@ public:
         description = "Displays a texture from a portal with a resizable area.\n"
                       "Accepts a direct ofTexture* input (top-left pin) which overrides the portal selection.";
 
-        setFlags(ofxOceanodeNodeModelFlags_TransparentNode);
+        setFlags(ofxOceanodeNodeModelFlags_TransparentNode |
+                 ofxOceanodeNodeModelFlags_KeepGuiVisibleAtLowZoom);
 
         addInspectorParameter(displayWidth.set("Width",  320.f, 32.f, 4096.f));
         addInspectorParameter(displayHeight.set("Height", 180.f, 32.f, 4096.f));
@@ -57,27 +59,32 @@ public:
                                         | ofxOceanodeParameterFlags_DisableOutConnection);
         }
 
-        // Listen for input texture changes: when a NEW connection brings a
-        // texture to the input pin, request an auto-fit.
-        //
-        // NOTE: ofParameter<ofTexture*> is set every frame by the upstream
-        // node while a connection is active, so a naive "t != nullptr"
-        // listener would fire every frame and reset the user's manual
-        // resize on the next update() tick. We therefore only trigger
-        // auto-fit on a *transition*: nullptr → non-null (fresh connect)
-        // or pointer-change → different upstream texture.
+        // Auto-fit when the input cable/source changes. The same producer can
+        // alternate texture pointers (buffers, video frames, routing) or emit
+        // a temporary nullptr without creating a new connection. Those updates
+        // must preserve the user's canvas size, including after a resize drag.
         lastSeenInputTexture = nullptr;
         inputTextureListener = inputTexture.newListener([this](ofTexture* &t) {
-            if (t != nullptr && t != lastSeenInputTexture) {
-                // True connection event (or upstream texture pointer changed):
-                // schedule a one-shot auto-fit.
+            auto *connection = inputTextureParam->getInConnection();
+            auto *source = connection ? &connection->getSourceParameter() : nullptr;
+            const bool sourceChanged = connection
+                ? (connection != lastSeenInputConnection || source != lastSeenInputSource)
+                : (t != nullptr && lastSeenInputTexture == nullptr);
+            if (!isRestoringPreset() && awaitingRestoredTexture
+                && connection != restoredInputConnection) {
+                awaitingRestoredTexture = false;
+            }
+            if (sourceChanged && !isRestoringPreset() && !awaitingRestoredTexture) {
+                // Remain pending if the new source has no allocated texture yet.
                 needsAutoFit = true;
             }
             lastSeenInputTexture = t;
+            lastSeenInputConnection = connection;
+            lastSeenInputSource = source;
         });
 
         dropdownListener = selectedPortalIndex.newListener([this](int &) {
-            if (!ofxOceanodeShared::isPresetLoading()) {
+            if (!isRestoringPreset()) {
                 updateSelectedPortalInstance();
                 // Only treat this as a USER-driven portal change when the
                 // write to selectedPortalIndex did NOT come from our own
@@ -86,19 +93,25 @@ public:
                 // Otherwise the appearance of a new portal in the patch
                 // would wipe out the user's manual resize.
                 if (!suppressDropdownAutoFit) {
+                    awaitingRestoredTexture = false;
                     needsAutoFit = true;
                 }
             }
         });
 
         globalSearchListener = globalSearch.newListener([this](bool &) {
+            if (isRestoringPreset()) return;
             updatePortalList();
             updateSelectedPortalInstance();
             // Treat as a portal-source change.
+            awaitingRestoredTexture = false;
             needsAutoFit = true;
         });
 
         keepAspectRatioListener = keepAspectRatio.newListener([this](bool &keepAspect) {
+            // Inspector values are deserialized by JSON key order. Resizing
+            // here would overwrite Width/Height restored from the preset.
+            if (isRestoringPreset()) return;
             // Disabling the control in the Inspector starts from a known
             // square display. Shift-drag disables it too, but suppresses this
             // reset so the drag can keep the dimensions the user chose.
@@ -128,6 +141,7 @@ public:
     }
 
     void update(ofEventArgs &) override {
+        if (isRestoringPreset()) return;
         static int counter = 0;
         if (++counter % 60 == 0) updatePortalList();
 
@@ -146,6 +160,14 @@ public:
             && tex->getWidth() > 0 && tex->getHeight() > 0) {
             const float texWidth  = tex->getWidth();
             const float texHeight = tex->getHeight();
+            if (awaitingRestoredTexture) {
+                // Reconnecting the saved source can happen after parameter
+                // recall, or later when the producer first allocates a texture.
+                // Establish a new baseline without resizing the saved display.
+                needsAutoFit = false;
+                hasObservedTextureDimensions = false;
+                awaitingRestoredTexture = false;
+            }
             const bool dimensionsChanged = hasObservedTextureDimensions
                 && (texWidth != lastObservedTextureWidth
                     || texHeight != lastObservedTextureHeight);
@@ -167,7 +189,17 @@ public:
         }
     }
 
+    void presetRecallBeforeSettingParameters(ofJson &) override {
+        restoringPresetParameters = true;
+        needsAutoFit = false;
+        hasObservedTextureDimensions = false;
+    }
+
     void presetRecallAfterSettingParameters(ofJson &) override {
+        restoringPresetParameters = false;
+        needsAutoFit = false;
+        awaitingRestoredTexture = true;
+        restoredInputConnection = inputTextureParam->getInConnection();
         needsDelayedRestore = true;
     }
 
@@ -182,10 +214,10 @@ private:
     // Direct texture input (pin-only parameter, no widget on the node)
     ofParameter<ofTexture*> inputTexture;
     shared_ptr<ofxOceanodeAbstractParameter> inputTextureParam;
-    // Tracks the last texture pointer observed on the input listener so we
-    // can detect *transitions* (fresh connection / source change) and avoid
-    // re-triggering auto-fit every frame while a connection is active.
+    // Pointer identities only; never dereferenced after the input callback.
     ofTexture *lastSeenInputTexture = nullptr;
+    ofxOceanodeAbstractConnection *lastSeenInputConnection = nullptr;
+    ofxOceanodeAbstractParameter *lastSeenInputSource = nullptr;
 
     // Listeners
     ofEventListener dropdownListener, presetLoadedListener, globalSearchListener;
@@ -198,6 +230,15 @@ private:
     vector<portal<ofTexture*>*> compatiblePortals;
     portal<ofTexture*>*      selectedPortalInstance;
     bool                     needsDelayedRestore = false;
+    bool                     restoringPresetParameters = false;
+    bool                     awaitingRestoredTexture = false;
+    // Identity only; never dereferenced. A new user-created connection must
+    // still auto-fit even if the saved source has not produced a texture yet.
+    ofxOceanodeAbstractConnection* restoredInputConnection = nullptr;
+
+    bool isRestoringPreset() const {
+        return restoringPresetParameters || ofxOceanodeShared::isPresetLoading();
+    }
 
     // True while we are programmatically reconciling selectedPortalIndex
     // (e.g. after a portal list refresh). The dropdownListener consults
@@ -346,7 +387,7 @@ private:
     void buildPortalList(vector<string> &names, vector<portal<ofTexture*>*> &portals) {
         names.clear();
         portals.clear();
-        set<string> seen;
+        std::set<string> seen;
         string currentScope = getParents();
 
         for (auto *p : ofxOceanodeShared::getAllPortals<ofTexture*>()) {
@@ -494,6 +535,7 @@ private:
         float h = displayHeight.get();
 
         float zoom = std::max(0.1f, ofxOceanodeShared::getZoomLevel());
+        const bool renderText = (zoom > 0.5f);
         float screenW = w * zoom;
         float screenH = h * zoom;
 
@@ -635,12 +677,14 @@ private:
                          ImVec2(pos.x + screenW, pos.y + screenH),
                          ImVec2(0, 0), ImVec2(1, 1));
         } else {
-            // Dark placeholder with a centered label.
+            // Keep the placeholder visible at every zoom; hide its label with canvas text.
             dl->AddRectFilled(pos, ImVec2(pos.x + screenW, pos.y + screenH), IM_COL32(30, 30, 30, 255));
-            const char *label = "No texture";
-            ImVec2 ts = ImGui::CalcTextSize(label);
-            dl->AddText(ImVec2(pos.x + (screenW - ts.x) * 0.5f, pos.y + (screenH - ts.y) * 0.5f),
-                        IM_COL32(120, 120, 120, 255), label);
+            if (renderText) {
+                const char *label = "No texture";
+                ImVec2 ts = ImGui::CalcTextSize(label);
+                dl->AddText(ImVec2(pos.x + (screenW - ts.x) * 0.5f, pos.y + (screenH - ts.y) * 0.5f),
+                            IM_COL32(120, 120, 120, 255), label);
+            }
         }
 
         // Fixed one-screen-pixel frame. Keep it independent of canvas zoom so
@@ -668,7 +712,7 @@ private:
         // (No body tooltip, no in-display marker — the canvas-drawn input
         // connection bullet sits at the vertical center of the texture's
         // left edge.)
-        if (inResize && !isResizing) {
+        if (renderText && inResize && !isResizing) {
             ImGui::SetTooltip("%s", keepAspectRatio.get()
                 ? "Drag to resize with aspect ratio. Hold Shift for free resize."
                 : "Drag to resize freely. Turn on Keep Aspect Ratio in the Inspector to lock it.");

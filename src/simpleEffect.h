@@ -123,18 +123,24 @@ public:
             source = &history[historyIndex].getTexture();
         }
 
+        int outputWidth = static_cast<int>(source->getWidth());
+        int outputHeight = static_cast<int>(source->getHeight());
+        if(swapDimensionsParameter >= 0 && boolParams[swapDimensionsParameter].get()){
+            std::swap(outputWidth, outputHeight);
+        }
+
         ofFbo *renderTarget = &fbo;
         if(usesOutputHistory){
-            if(!prepareOutputHistory(*source)){
+            if(!prepareOutputHistory(outputWidth, outputHeight)){
                 output = nullptr;
                 return;
             }
             // Never sample the texture attached to the current render target.
             renderTarget = &outputHistory[1 - outputHistoryIndex];
-        }else if(!fbo.isAllocated() || fbo.getWidth() != source->getWidth() || fbo.getHeight() != source->getHeight()){
+        }else if(!fbo.isAllocated() || fbo.getWidth() != outputWidth || fbo.getHeight() != outputHeight){
             ofFbo::Settings settings;
-            settings.height = source->getHeight();
-            settings.width = source->getWidth();
+            settings.height = outputHeight;
+            settings.width = outputWidth;
             settings.internalformat = GL_RGBA32F;
             settings.maxFilter = GL_NEAREST;
             settings.minFilter = GL_NEAREST;
@@ -157,8 +163,8 @@ public:
         ofClear(0, 0, 0, 0);
         shader.begin();
         ofPushStyle();
-        if(usesHistory || usesOutputHistory){
-            ofDisableAlphaBlending(); // Preserve shader RGBA exactly, including temporal data.
+        if(usesHistory || usesOutputHistory || swapDimensionsParameter >= 0){
+            ofDisableAlphaBlending(); // Preserve RGBA exactly for history and canvas transforms.
             ofFill();
         }
         ofSetColor(255, 255, 255, 255);
@@ -173,7 +179,7 @@ public:
                                usesHistory ? 2 : 1);
             shader.setUniform1i("tPreviousOutputConnected", outputHistoryValid ? 1 : 0);
         }
-        bindStandardUniforms(*source);
+        bindStandardUniforms(outputWidth, outputHeight);
         bindEffectUniforms();
 
         ofDrawRectangle(0, 0, renderTarget->getWidth(), renderTarget->getHeight());
@@ -234,13 +240,13 @@ private:
         outputHistoryValid = false;
     }
 
-    bool prepareOutputHistory(const ofTexture &source){
+    bool prepareOutputHistory(int width, int height){
         if(!outputHistory[0].isAllocated() || !outputHistory[1].isAllocated() ||
-           outputHistory[0].getWidth() != source.getWidth() || outputHistory[0].getHeight() != source.getHeight()){
+           outputHistory[0].getWidth() != width || outputHistory[0].getHeight() != height){
             clearOutputHistory();
             ofFbo::Settings settings;
-            settings.width = source.getWidth();
-            settings.height = source.getHeight();
+            settings.width = width;
+            settings.height = height;
             settings.internalformat = GL_RGBA32F;
             settings.textureTarget = GL_TEXTURE_2D;
             settings.minFilter = GL_NEAREST;
@@ -308,6 +314,7 @@ private:
 
     enum class ParameterType {
         Float,
+        Bool,
         Color,
         Texture
     };
@@ -318,6 +325,7 @@ private:
         float defaultValue = 0.0f;
         float minValue = -FLT_MAX;
         float maxValue = FLT_MAX;
+        bool defaultBool = false;
         ofFloatColor defaultColor = ofFloatColor(1.0, 1.0, 1.0, 1.0);
     };
 
@@ -364,7 +372,21 @@ private:
             EffectParameterSpec spec;
             spec.name = fields[0];
 
-            if(fields.size() >= 2 && ofToLower(fields[1]) == "color"){
+            if(fields.size() >= 2 && ofToLower(fields[1]) == "bool"){
+                spec.type = ParameterType::Bool;
+                if(fields.size() != 2 && fields.size() != 3){
+                    metadataWarnings.push_back("Boolean parameter " + spec.name + " expects Name:bool[:false|true|0|1]");
+                    continue;
+                }
+                if(fields.size() == 3){
+                    const std::string value = ofToLower(fields[2]);
+                    if(value != "false" && value != "true" && value != "0" && value != "1"){
+                        metadataWarnings.push_back("Invalid boolean default for " + spec.name + ": " + fields[2]);
+                        continue;
+                    }
+                    spec.defaultBool = value == "true" || value == "1";
+                }
+            }else if(fields.size() >= 2 && ofToLower(fields[1]) == "color"){
                 spec.type = ParameterType::Color;
                 if(fields.size() != 2 && fields.size() != 5 && fields.size() != 6){
                     metadataWarnings.push_back("Color parameter " + spec.name + " expects Name:color or Name:color:R:G:B[:A]");
@@ -432,6 +454,7 @@ private:
 
         const size_t numParams = effectParameters.size();
         floatParams.resize(numParams);
+        boolParams.resize(numParams);
         colorParams.resize(numParams);
         textureParams.resize(numParams);
         textures.resize(numParams, nullptr);
@@ -439,7 +462,12 @@ private:
         for(size_t i = 0; i < numParams; i++){
             const auto &spec = effectParameters[i];
 
-            if(spec.type == ParameterType::Color){
+            if(spec.type == ParameterType::Bool){
+                addParameter(boolParams[i].set(spec.name, spec.defaultBool));
+                listeners.push(boolParams[i].newListener([this](bool &){
+                    requestCompute();
+                }));
+            }else if(spec.type == ParameterType::Color){
                 addParameter(colorParams[i].set(spec.name,
                                                 spec.defaultColor,
                                                 ofFloatColor(0.0, 0.0, 0.0, 0.0),
@@ -576,6 +604,7 @@ void main(){ out_color = texelFetch(tSource, ivec2(gl_FragCoord.xy), 0); }
         shaderValid = true;
 
         std::vector<std::string> warnings = metadataWarnings;
+        swapDimensionsParameter = findSwapDimensionsParameter(fragmentBuffer.getText(), warnings);
         const auto interfaceWarnings = validateShaderInterface(shader.getShaderSource(GL_FRAGMENT_SHADER));
         warnings.insert(warnings.end(), interfaceWarnings.begin(), interfaceWarnings.end());
 
@@ -623,6 +652,23 @@ void main(){ out_color = texelFetch(tSource, ivec2(gl_FragCoord.xy), 0); }
         }
     }
 
+    int findSwapDimensionsParameter(const std::string &source, std::vector<std::string> &warnings) const{
+        const std::string prefix = "// @swap-dimensions ";
+        for(const auto &line : ofSplitString(source, "\n")){
+            const std::string trimmedLine = ofTrim(line);
+            if(trimmedLine.rfind(prefix, 0) != 0) continue;
+
+            const std::string name = ofTrim(trimmedLine.substr(prefix.size()));
+            for(size_t i = 0; i < effectParameters.size(); i++){
+                if(effectParameters[i].name == name && effectParameters[i].type == ParameterType::Bool){
+                    return static_cast<int>(i);
+                }
+            }
+            warnings.push_back("@swap-dimensions must name a boolean metadata parameter: " + name);
+        }
+        return -1;
+    }
+
     std::vector<std::string> validateShaderInterface(const std::string &source) const{
         std::vector<std::string> warnings;
 
@@ -630,6 +676,7 @@ void main(){ out_color = texelFetch(tSource, ivec2(gl_FragCoord.xy), 0); }
             std::string expectedType;
             switch(spec.type){
                 case ParameterType::Float: expectedType = "float"; break;
+                case ParameterType::Bool: expectedType = "bool"; break;
                 case ParameterType::Color: expectedType = "vec4"; break;
                 case ParameterType::Texture: expectedType = "sampler2D"; break;
             }
@@ -674,9 +721,7 @@ void main(){ out_color = texelFetch(tSource, ivec2(gl_FragCoord.xy), 0); }
         return ofTrim(std::string(log.data(), static_cast<size_t>(written)));
     }
 
-    void bindStandardUniforms(const ofTexture &source){
-        const float width = source.getWidth();
-        const float height = source.getHeight();
+    void bindStandardUniforms(float width, float height){
         const float time = ofGetElapsedTimef();
         const int frame = static_cast<int>(ofGetFrameNum());
 
@@ -696,7 +741,9 @@ void main(){ out_color = texelFetch(tSource, ivec2(gl_FragCoord.xy), 0); }
         for(size_t i = 0; i < effectParameters.size(); i++){
             const auto &spec = effectParameters[i];
 
-            if(spec.type == ParameterType::Color){
+            if(spec.type == ParameterType::Bool){
+                shader.setUniform1i(spec.name, boolParams[i].get() ? 1 : 0);
+            }else if(spec.type == ParameterType::Color){
                 shader.setUniform4f(spec.name, colorParams[i]);
             }else if(spec.type == ParameterType::Texture){
                 const bool connected = textures[i] != nullptr && textures[i]->isAllocated();
@@ -744,6 +791,7 @@ void main(){ out_color = texelFetch(tSource, ivec2(gl_FragCoord.xy), 0); }
     std::vector<EffectParameterSpec> effectParameters;
     std::vector<std::string> metadataWarnings;
     std::vector<ofParameter<float>> floatParams;
+    std::vector<ofParameter<bool>> boolParams;
     std::vector<ofParameter<ofFloatColor>> colorParams;
     std::vector<ofParameter<ofTexture*>> textureParams;
     std::vector<ofTexture*> textures;
@@ -768,6 +816,7 @@ void main(){ out_color = texelFetch(tSource, ivec2(gl_FragCoord.xy), 0); }
     ofShader historyCopyShader;
     bool usesHistory = false;
     bool usesOutputHistory = false;
+    int swapDimensionsParameter = -1;
     bool outputHistoryValid = false;
     int outputHistoryIndex = 0;
     bool historyCaptured = false;

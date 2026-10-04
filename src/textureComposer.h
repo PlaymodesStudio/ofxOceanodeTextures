@@ -19,9 +19,12 @@ public:
     void setup() override;
     
     void calculate();
+    bool getPreviewPivot(std::size_t index, glm::vec3 &worldPivot) const;
+    const ofParameter<std::vector<glm::mat4>> &getTransformOutput() const { return transformOutput; }
     
     void deactivate(){
         output = {nullptr};
+        previewPivots.clear();
     }
 
 private:
@@ -42,6 +45,7 @@ private:
 
     ofParameter<std::vector<ofTexture*>> output;
     ofParameter<std::vector<glm::mat4>> transformOutput;
+    std::vector<glm::vec3> previewPivots;
 
     template <typename T>
     T getValueForPosition(const ofParameter<vector<T>> &param, int index){
