@@ -120,3 +120,51 @@ Host-app acceptance checks (the automated checks do not launch Oceanode):
    uncompiled valid draft. The previous working ports and shader must survive.
 7. Load a feedback shader, connect a trigger to Clear, and save/recall the preset.
    Clear must exist before connections restore; failed edits must retain history.
+
+## Shader save dialog and publisher
+
+The default regression runner now also creates temporary local Git repositories
+and verifies descriptions, category paths, symlink/traversal rejection, README
+merging, the exact files in the publishing commit, author metadata, new folders,
+repeat saves, and rejected pushes. It does not contact the real GitHub repository.
+
+Host checks:
+
+1. Choose an existing nested category, then a new one. Confirm the `.glsl`, category
+   README, and library README are saved under data/Effects.
+   The selector is labeled Category, with a [+] button after the label and a
+   Create new category tooltip. Create selects a new category; Cancel leaves
+   the selection unchanged. Invalid paths remain in the category dialog with an
+   error. Confirm the old category text field and the two explanatory paragraphs
+   are absent, with extra padding between dialog contents and window edges.
+2. Generate an AI description and confirm the parameter header remains line 1,
+   the old description is replaced, and both README catalogs use the new text.
+   With an invalid API key, no local files should be written.
+3. Edit source while description generation is pending. The file must contain the
+   submitted snapshot while the editor retains the newer changes.
+4. Select Push to GitHub with a configured SSH key. Confirm the target category,
+   author metadata, shader, and merged README files in the same commit.
+5. Retry an unchanged save with AI description disabled. No extra commit should
+   be created. Publishing failures should preserve the local shader and report
+   whether a recovery checkout was retained.
+6. Edit both local and remote README documentation, then publish. Both copies
+   must contain both sets of notes and one entry per shader in the catalog.
+
+## Shader Inspector presentation
+
+- Confirm there is no shader-source field in the Inspector; source still survives
+  preset save/recall and remains editable in the Code tab.
+- Confirm Shader Name, Shader Category, and Git SSH Key are labeled editable
+  fields that apply changes on Enter.
+- Repository, branch, repository folder, author name/email and Shader Valid must
+  be informational text. Older presets must not override fixed Git settings.
+- Save Status and Shader Status must wrap in secondary-colored text with no input
+  background. Short messages reserve two lines; longer errors expand without
+  clipping and remain visible at narrow Inspector widths.
+
+- Saving messages appear immediately below Save Shader without a Save Status
+  label. Git repository, branch and author values have no labels; the compact
+  folder shows /SimpleEffectsLibrary/EffectsLibrary/... with its full category
+  and shader path available in the tooltip.
+- Separators divide saving, Git information, editor appearance and rendering
+  controls. Hovering the compact folder shows the full shader destination.

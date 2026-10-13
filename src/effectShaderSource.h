@@ -255,6 +255,8 @@ inline std::vector<std::string> validate(const std::string &source){
         "Shader_Source", "Shader_Name", "Load_Shader", "Save_Shader", "Live_Compile",
         "Editor_Lines", "Editor_Width", "Editor_Font_Size", "expanded", "requesty_model",
         "shaderEditorActiveSource", "modelViewProjectionMatrix",
+        "Shader_Category", "AI_Description_On_Save", "Shader_Save_Dialog", "Save_Status",
+        "Git_Repository", "Git_Branch", "Git_Effects_Folder", "Git_SSH_Key", "Git_Author_Name", "Git_Author_Email",
         "tSource", "tSourceConnected", "tPreviousSource", "tPreviousSourceConnected",
         "tPreviousOutput", "tPreviousOutputConnected", "uResolution", "resolution",
         "uTexelSize", "uTime", "time", "uFrame", "frame"};

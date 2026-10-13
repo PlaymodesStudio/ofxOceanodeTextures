@@ -198,6 +198,14 @@ history. Details appear in **Shader Status** and the editor status tooltip.
 **Shader Valid** describes the running shader; it can remain true when the new
 draft has errors. **Draw On Event** should stay off for continuous animation.
 
+The Inspector hides the shader-source row; code remains available in the node's
+Code tab and is still saved in presets. Shader Name, Shader Category, and Git SSH
+Key have explicit labels and editable text fields (press Enter to apply changes).
+Saving messages appear immediately below Save Shader without a status label.
+Save Status and Shader Status are read-only, secondary-colored text without a
+field background. Their message area reserves at least two lines and expands
+for longer messages. Shader Valid is also read-only.
+
 The **AI** tab opens the same Requesty assistant as Formula, including its API
 key setup, model picker, Generate and Fix current modes. Its instructions include
 the full shader contract; generated source undergoes the same validation and
@@ -212,11 +220,71 @@ unfinished edit can be reopened while retaining the working ports. With Live
 Compile off, an uncompiled draft stays uncompiled on recall.
 
 In the inspector, **Load Shader** imports a GLSL file and expands relative
-`#include`/`#pragma include` files into the editor. **Shader Name** and **Save
-Shader** export the current draft to `bin/data/Effects/<name>.glsl`; saving the
-same name overwrites that file. Names are restricted to letters, digits, `_`, and
-`-` (spaces become `_`). New files appear as regular Effects nodes after an app
-restart; existing effect instances can use Reload Shader.
+`#include`/`#pragma include` files into the editor. **Save Shader** opens a dialog
+with the shader name and a **Category** selector. The **[+]** button beside Category
+opens a name dialog, with a **Create new category** hover hint. New categories
+are selected immediately and can include nested folders; their directories are
+created when the shader is saved. The dialogs have extra padding around their
+contents. Files are saved below `bin/data/Effects/<category>/<name>.glsl`; the
+category is created if needed. The last category is retained in presets. Saving
+the same name overwrites that file. Names are restricted to letters, digits,
+`_`, and `-` (spaces become `_`). New files appear as regular Effects nodes after
+an app restart; existing effect instances can use Reload Shader.
+
+**Generate AI description** is enabled by default in the save dialog. It uses the
+same Requesty credentials and selected model as the AI tab to describe the actual
+shader and its controls. The returned paragraph replaces existing
+`// @description` annotations immediately after the metadata header. A failed
+AI request saves nothing; retry or uncheck the option to retain the current
+description. Generation runs in the background and saves a snapshot, so newer
+editor changes are not overwritten by a completed request.
+
+Each save updates `README.md` both in the chosen category and at the Effects
+library root. Existing documentation is retained, with shader links and
+`@description` text listed in an `oceanode-shaders` managed catalog block.
+Repeating a save updates the entry rather than adding duplicates.
+
+### Publishing shader saves to GitHub
+
+**Push to GitHub** is off by default and must be selected for each save. Inspector
+settings initially target `https://github.com/PlaymodesStudio/ofxOceanodeTextures.git`,
+branch `megabranch26_A`, library folder `SimpleEffectsLibrary/EffectsLibrary`. The relative
+category path is preserved below that repository folder. These three settings
+are displayed as compact read-only information without repository/branch labels.
+The folder line shows `/SimpleEffectsLibrary/EffectsLibrary/...`; hover it for
+the full shader path, including its category. Author name/email also appear
+without labels. Separators divide saving, Git publishing, editor appearance and
+rendering controls. The repository, branch, library folder, author name, and
+author email are fixed; older preset values cannot
+override them. Only the local SSH-key path is editable.
+
+Publishing uses an isolated temporary checkout of the target branch and creates
+missing category folders. It merges the local and repository README documentation
+and catalog entries, commits the shader and affected READMEs together, then pushes
+normally. After a successful push, the same merged READMEs are written locally.
+Other files and existing local repository checkouts are untouched. If the branch
+moves while publishing, the normal push is rejected; retry the save to start
+from the new remote state. A failed publish retains the successful local save,
+reports the error in **Save Status**, and retains the temporary checkout when
+there is a recoverable commit.
+
+Git must be installed, and the pushing identity must have Write access to the
+repository and permission to push to the selected branch. **Git SSH Key** accepts
+an absolute private-key path for a dedicated automation account. A new Shader
+node automatically selects `~/.ssh/ofxOceanode_shader_ed25519` when that file
+exists on this computer. When set with a
+GitHub HTTPS URL, the publisher uses SSH with that specific key. The key must be
+usable non-interactively (for encrypted keys, unlock it in the SSH agent first).
+With no dedicated key selected, Git uses the computer's existing authentication
+configuration. Secrets are never stored in the shader, presets, or repository;
+only the key path is saved. Do not put tokens/passwords in the repository URL.
+
+**Git Author Name** and **Git Author Email** initially use `infoplaymodes`
+and `infoplaymodes@gmail.com`; these are commit metadata, separate from the login
+that authenticates the push. To use a new GitHub machine-user account, complete
+its signup/email verification, add the SSH public key to that account, and grant
+it Write access to this repository. A public repository still requires permission
+for pushing. The author name and email are fixed in this editor.
 
 Saving requires valid first-line metadata (`//` is valid for no controls),
 `#version 410` or `#version 410 core` as the first non-comment directive, matching
