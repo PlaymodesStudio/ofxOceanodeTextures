@@ -356,3 +356,145 @@ normalized zero-to-one value and mapped into the parameter's documented range.
 Discrete selectors and sampling-count controls deliberately remain scalar to
 avoid unstable per-pixel branching and variable rendering cost.
 Optical Flow also keeps `Regularization` scalar for a consistent solver baseline.
+
+# Shader library
+
+<!-- oceanode-shaders:start -->
+## Shader catalog
+
+- [Binarize](Binarize.glsl)
+- [BoxBlur](Blur%20and%20detail/BoxBlur.glsl) — Averages a square pixel neighborhood for a fast, graphic blur.
+- [DirectionalBlur](Blur%20and%20detail/DirectionalBlur.glsl) — Blurs the image along a chosen direction using up to seventeen samples.
+- [Emboss](Blur%20and%20detail/Emboss.glsl) — Converts directional luminance differences into a raised or engraved relief.
+- [GaussianBlur](Blur%20and%20detail/GaussianBlur.glsl) — Applies a soft two-dimensional Gaussian-style blur with adjustable sampling quality.
+- [HighPass](Blur%20and%20detail/HighPass.glsl) — Isolates image detail around middle gray using a local radial average.
+- [Outline](Blur%20and%20detail/Outline.glsl) — Draws a colored outline from local luminance and optional alpha discontinuities.
+- [RadialBlur](Blur%20and%20detail/RadialBlur.glsl) — Smears pixels around a center through an adjustable angular arc.
+- [Sharpen](Blur%20and%20detail/Sharpen.glsl) — Increases local edge contrast using four neighboring samples.
+- [SobelEdge](Blur%20and%20detail/SobelEdge.glsl) — Extracts luminance edges using a three-by-three Sobel convolution.
+- [UnsharpMask](Blur%20and%20detail/UnsharpMask.glsl) — Sharpens detail by subtracting a soft radial blur with an edge threshold.
+- [ZoomBlur](Blur%20and%20detail/ZoomBlur.glsl) — Smears pixels toward or away from a configurable center to suggest rapid zoom.
+- [Blur](Blur.glsl)
+- [BlurTrail](BlurTrail.glsl)
+- [BlurTrail2](BlurTrail2.glsl)
+- [CircularGradient Extended](CircularGradient%20Extended.glsl)
+- [CircularGradient](CircularGradient.glsl)
+- [CircularGradientEx2](CircularGradientEx2.glsl)
+- [BrightnessContrast](Color%20and%20tone/BrightnessContrast.glsl) — Adjusts linear brightness and contrast around a configurable tonal pivot.
+- [ChannelMixer](Color%20and%20tone/ChannelMixer.glsl) — Remixes RGB channels through a configurable three-by-three matrix.
+- [ClampRange](Color%20and%20tone/ClampRange.glsl) — Clamps arbitrary float RGB values and optionally normalizes the selected range.
+- [ColorWrap](Color%20and%20tone/ColorWrap.glsl) — Wraps RGB values cyclically instead of clipping them, producing repeating colour bands and overflow effects.
+- [Exposure](Color%20and%20tone/Exposure.glsl) — Adjusts image brightness using photographic exposure stops and a linear offset.
+- [HSLAdjust](Color%20and%20tone/HSLAdjust.glsl) — Adjusts hue, HSL saturation, and HSL lightness while preserving source alpha.
+- [HSVAdjust](Color%20and%20tone/HSVAdjust.glsl) — Adjusts hue, HSV saturation, and HSV value while preserving source alpha.
+- [LevelsPro](Color%20and%20tone/LevelsPro.glsl) — Remaps the input tonal range with gamma correction and a configurable output range.
+- [LiftGammaGain](Color%20and%20tone/LiftGammaGain.glsl) — Provides compact color grading controls for shadows, midtones, highlights, and saturation.
+- [Posterize](Color%20and%20tone/Posterize.glsl) — Reduces each RGB channel to a chosen number of discrete levels.
+- [SelectiveChannel](Color%20and%20tone/SelectiveChannel.glsl) — Extracts red, green, blue, luminance, or alpha as a grayscale image.
+- [Solarize](Color%20and%20tone/Solarize.glsl) — Inverts values above a luminance threshold with optional tonal softness.
+- [TemperatureTint](Color%20and%20tone/TemperatureTint.glsl) — Applies an approximate warm-cool and green-magenta white-balance adjustment.
+- [Tint](Color%20and%20tone/Tint.glsl) — Maps luminance between selected black and white colors.
+- [Tritone](Color%20and%20tone/Tritone.glsl) — Maps source luminance through independently chosen shadow, midtone, and highlight colors.
+- [Vibrance](Color%20and%20tone/Vibrance.glsl) — Adjusts muted colors more strongly than already saturated colors.
+- [ColorBalance](ColorBalance.glsl)
+- [BlendAdd](Compositing%20and%20multi-texture/BlendAdd.glsl) — Adds a second texture to the source with optional HDR-preserving output.
+- [BlendDifference](Compositing%20and%20multi-texture/BlendDifference.glsl) — Shows absolute RGB differences between the source and a second texture.
+- [BlendExclusion](Compositing%20and%20multi-texture/BlendExclusion.glsl) — Applies the lower-contrast Exclusion difference blend mode.
+- [BlendMax](Compositing%20and%20multi-texture/BlendMax.glsl) — Keeps the lighter per-channel value from two textures.
+- [BlendMin](Compositing%20and%20multi-texture/BlendMin.glsl) — Keeps the darker per-channel value from two textures.
+- [BlendMultiply](Compositing%20and%20multi-texture/BlendMultiply.glsl) — Multiplies the source with a second texture, producing a darker composite.
+- [BlendOverlay](Compositing%20and%20multi-texture/BlendOverlay.glsl) — Applies the Overlay blend mode using a second texture.
+- [BlendScreen](Compositing%20and%20multi-texture/BlendScreen.glsl) — Screens the source with a second texture, producing a lighter composite.
+- [BlendSoftLight](Compositing%20and%20multi-texture/BlendSoftLight.glsl) — Applies a smooth Soft Light contrast blend using a second texture.
+- [Crossfade](Compositing%20and%20multi-texture/Crossfade.glsl) — Crossfades RGBA between the source and a second texture.
+- [GradientMap](Compositing%20and%20multi-texture/GradientMap.glsl) — Replaces source colors by looking up luminance along a horizontal gradient texture.
+- [InjectAlpha](Compositing%20and%20multi-texture/InjectAlpha.glsl) — Replaces source alpha using a channel from another texture.
+- [LUT2D](Compositing%20and%20multi-texture/LUT2D.glsl) — Applies a horizontal-strip two-dimensional lookup table to source RGB.
+- [LightWrap](Compositing%20and%20multi-texture/LightWrap.glsl) — Wraps blurred background color into translucent foreground edges for softer integration.
+- [MaskedBlend](Compositing%20and%20multi-texture/MaskedBlend.glsl) — Composites a second texture through the luminance or alpha of a mask texture.
+- [SetColorKeepAlpha](Compositing%20and%20multi-texture/SetColorKeepAlpha.glsl) — Replaces source RGB from another texture while preserving source alpha.
+- [SetMatte](Compositing%20and%20multi-texture/SetMatte.glsl) — Applies luminance or alpha from a second texture to the source alpha.
+- [TextureRemap](Compositing%20and%20multi-texture/TextureRemap.glsl) — Remaps source coordinates from the red and green channels of a second texture.
+- [Directional\_Blur](Directional_Blur.glsl) — A motion-blur-style effect that samples the source repeatedly along a configurable line and combines the taps with a center-weighted triangular kernel to produce a directional smear. Amount sets the blur radius in pixels, Angle sets the direction in degrees (0 horizontal, 90 vertical), and Samples sets the tap count (2-64, higher is smoother); both Amount and Angle can additionally be driven per-pixel by connecting textures to them. An optional Mask texture blends between the untouched source and the blurred result, with white areas receiving full blur, while alpha is preserved.
+- [Feather](Feather.glsl)
+- [Grayscale](Grayscale.glsl)
+- [HSLFilter](HSLFilter.glsl)
+- [Invert](Invert.glsl)
+- [AlphaFromChannel](Keying%2C%20matte%20and%20alpha/AlphaFromChannel.glsl) — Builds output alpha from a selected source channel or luminance.
+- [AlphaPremultiply](Keying%2C%20matte%20and%20alpha/AlphaPremultiply.glsl) — Multiplies RGB by source alpha for premultiplied-alpha compositing.
+- [AlphaUnpremultiply](Keying%2C%20matte%20and%20alpha/AlphaUnpremultiply.glsl) — Divides RGB by alpha to recover straight color while safely handling transparent pixels.
+- [ChromaKey](Keying%2C%20matte%20and%20alpha/ChromaKey.glsl) — Removes pixels close to a selected chroma color and optionally suppresses color spill.
+- [DifferenceKey](Keying%2C%20matte%20and%20alpha/DifferenceKey.glsl) — Creates a matte from the RGB difference between the source and a reference texture.
+- [InvertedLumaKey](Keying%2C%20matte%20and%20alpha/InvertedLumaKey.glsl) — Keeps dark luminance values and removes bright values with a controllable soft rolloff.
+- [LumaKey](Keying%2C%20matte%20and%20alpha/LumaKey.glsl) — Produces a controlled soft luminance key that turns low-luminance values black.
+- [LumaRangeKey](Keying%2C%20matte%20and%20alpha/LumaRangeKey.glsl) — Creates a matte from a selectable luminance band with soft lower and upper boundaries.
+- [MatteBlur](Keying%2C%20matte%20and%20alpha/MatteBlur.glsl) — Softens source alpha with a radial blur while leaving color detail untouched.
+- [MatteChoker](Keying%2C%20matte%20and%20alpha/MatteChoker.glsl) — Contracts positive or expands negative alpha mattes using a radial neighborhood.
+- [Minimax](Keying%2C%20matte%20and%20alpha/Minimax.glsl) — Applies After Effects-style minimum and maximum channel morphology to expand, contract, open, or close image regions and mattes.
+- [PolarMap](Keying%2C%20matte%20and%20alpha/PolarMap.glsl) — Generates an aspect-correct polar control map with inward radial falloff in red and wrapped angle in green.
+- [WipeMask](Keying%2C%20matte%20and%20alpha/WipeMask.glsl) — Generates a reusable circular or directional wipe matte without requiring a second image.
+- [Levels](Levels.glsl)
+- [Luma](Luma.glsl)
+- [MirrorY](MirrorY.glsl)
+- [OpticalFlow](Motion%20analysis/OpticalFlow.glsl) — Estimates dense small-motion Lucas-Kanade optical flow between consecutive input updates. Input history is supplied automatically by simpleEffect. Raw output stores signed forward displacement in RG, confidence in B, and one in A. Start with a resized input for interactive performance.
+- [Overflow](Overflow.glsl)
+- [PixelStretch](PixelStretch.glsl)
+- [PixelStretchRange](PixelStretchRange.glsl)
+- [SpectrogramShift](SpectrogramShift.glsl)
+- [SpectrumLine](SpectrumLine.glsl)
+- [BadTVGlitch](Stylize/BadTVGlitch.glsl) — Combines block jitter, noise, RGB separation, and scanlines into an animated damaged-video look.
+- [Dither](Stylize/Dither.glsl) — Quantizes color with a stable four-by-four ordered dither pattern.
+- [DropShadow](Stylize/DropShadow.glsl) — Composites a colored, offset, softened copy of source alpha behind the image.
+- [DuotonePosterize](Stylize/DuotonePosterize.glsl) — Posterizes luminance and maps it between two selected colors.
+- [FilmLook](Stylize/FilmLook.glsl) — Combines faded contrast, warm tint, animated grain, flicker, and vignette into a compact film treatment.
+- [GlowExtract](Stylize/GlowExtract.glsl) — Extracts bright pixels, softens them radially, and optionally adds the glow over the source.
+- [Grain](Stylize/Grain.glsl) — Adds scalable monochrome or colored procedural grain with optional temporal motion.
+- [Halftone](Stylize/Halftone.glsl) — Converts luminance into a rotatable grid of dots, lines, or square halftone cells.
+- [InnerShadow](Stylize/InnerShadow.glsl) — Shades the inside of source alpha edges with an offset, softened color.
+- [PixelStretch](Stylize/PixelStretch.glsl) — Extends one source row or column from a chosen position to an image edge.
+- [Pixelate](Stylize/Pixelate.glsl) — Divides the image into rectangular cells and samples one color per cell.
+- [QuantizeColor](Stylize/QuantizeColor.glsl) — Reduces RGB channels to independent level counts with optional noise dithering.
+- [RGBSplit](Stylize/RGBSplit.glsl) — Offsets red and blue channels independently for graphic RGB separation.
+- [Scanlines](Stylize/Scanlines.glsl) — Overlays animated horizontal scanlines with optional display flicker.
+- [Vignette](Stylize/Vignette.glsl) — Darkens or brightens image edges using a soft adjustable elliptical mask.
+- [Feedback](Temporal/Feedback.glsl) — Recursive image feedback with fading, aspect-correct zoom, rotation, translation, and optional inversion of the previous output. Defaults pass the source through unchanged. History is automatic; connect only a source image. Feedback advances once per render, so speed and decay depend on rendering cadence.
+- [HistoryScan](Temporal/HistoryScan.glsl) — Builds a slit-scan history by shifting the previous output and inserting a row or column from the current source on every render.
+- [Test](Test.glsl)
+- [BulgePinch](Transform%20and%20distortion/BulgePinch.glsl) — Produces a radial bulge for positive values and pinch for negative values.
+- [ChromaticAberration](Transform%20and%20distortion/ChromaticAberration.glsl) — Separates red and blue samples linearly or radially for lens-like color fringing.
+- [CornerPin](Transform%20and%20distortion/CornerPin.glsl) — Bilinearly maps the output rectangle through four configurable source corners.
+- [CropFeather](Transform%20and%20distortion/CropFeather.glsl) — Crops each image edge independently and feathers the resulting alpha boundary.
+- [DiagonalBend](Transform%20and%20distortion/DiagonalBend.glsl) — Bends one side of a crease running between normalized positions on the top and bottom image edges.
+- [DisplacementMap](Transform%20and%20distortion/DisplacementMap.glsl) — Offsets source sampling coordinates using red and green channels from a second texture.
+- [Flip&Rotate](Transform%20and%20distortion/Flip%26Rotate.glsl) — Flips the complete source on either axis, then optionally rotates it 90 degrees clockwise. Rotation swaps output width and height without stretching or cropping. Preserves every source texel, including alpha. All controls off is identity.
+- [Kaleidoscope](Transform%20and%20distortion/Kaleidoscope.glsl) — Folds polar image sectors into a centered kaleidoscopic repetition.
+- [LensDistortion](Transform%20and%20distortion/LensDistortion.glsl) — Applies barrel or pincushion lens distortion with optional radial color separation.
+- [Mirror](Transform%20and%20distortion/Mirror.glsl) — Reflects one side of an image across a vertical, horizontal, or diagonal axis.
+- [Ripple](Transform%20and%20distortion/Ripple.glsl) — Sends concentric animated waves outward from a configurable center.
+- [TextureOffset](Transform%20and%20distortion/TextureOffset.glsl) — Moves the source texture horizontally and vertically, wrapping pixels across opposite edges.
+- [TileOffset](Transform%20and%20distortion/TileOffset.glsl) — Repeats, offsets, and optionally alternates mirrored image tiles.
+- [Transform2D](Transform%20and%20distortion/Transform2D.glsl) — Applies an inverse-sampled two-dimensional transform inside the source canvas.
+- [Twirl](Transform%20and%20distortion/Twirl.glsl) — Rotates pixels progressively around a center to create a twirl distortion.
+- [VectorWarp](Transform%20and%20distortion/VectorWarp.glsl) — Displaces source pixels using red and green vectors from a second texture.
+- [WaveWarp](Transform%20and%20distortion/WaveWarp.glsl) — Displaces image coordinates with independent horizontal and vertical sine waves.
+- [BurnLightTransition](Transitions/BurnLightTransition.glsl) — Dissolves into a second texture through noise with a bright colored burn front.
+- [DisplacementTransition](Transitions/DisplacementTransition.glsl) — Crossfades two textures while a map pushes them in opposite directions.
+- [IrisTransition](Transitions/IrisTransition.glsl) — Reveals a second texture through an expanding circular or rectangular iris.
+- [LinearWipe](Transitions/LinearWipe.glsl) — Reveals a second texture using an angle-controlled linear transition.
+- [LumaDissolve](Transitions/LumaDissolve.glsl) — Reveals a second texture according to a luminance map with an optional colored burn edge.
+- [NoiseDissolve](Transitions/NoiseDissolve.glsl) — Reveals a second texture through scalable procedural noise with an optional colored edge.
+- [PixelSortTransition](Transitions/PixelSortTransition.glsl) — Creates a pixel-sort-inspired transition using luminance-gated horizontal streaks.
+- [RGBSplitTransition](Transitions/RGBSplitTransition.glsl) — Crossfades two textures while their red and blue channels separate around the midpoint.
+- [RadialWipe](Transitions/RadialWipe.glsl) — Reveals a second texture around a configurable center like a clock wipe.
+- [WorkingSpectrogram](WorkingSpectrogram.glsl)
+- [columnHistogram](columnHistogram.glsl)
+- [cornerfold](cornerfold.glsl)
+- [diagonalBend](diagonalBend.glsl)
+- [diagonalBendStretch](diagonalBendStretch.glsl)
+- [diagonalBend\_coords](diagonalBend_coords.glsl)
+- [diagonalBend\_smode](diagonalBend_smode.glsl)
+- [diagonalBend\_variable\_smode](diagonalBend_variable_smode.glsl)
+- [metaballs](metaballs.glsl)
+- [pixelStretchVector](pixelStretchVector.glsl)
+- [vectorHeaderFill](vectorHeaderFill.glsl)
+<!-- oceanode-shaders:end -->
