@@ -15,6 +15,7 @@
 #include <cmath>
 #include <cstdint>
 #include <regex>
+#include "effectShaderSource.h"
 
 class simpleEffect : public ofxOceanodeNodeModel {
 public:
@@ -125,7 +126,7 @@ public:
 
         int outputWidth = static_cast<int>(source->getWidth());
         int outputHeight = static_cast<int>(source->getHeight());
-        if(swapDimensionsParameter >= 0 && boolParams[swapDimensionsParameter].get()){
+        if(swapDimensionsParameter >= 0 && controls[swapDimensionsParameter]->boolean.get()){
             std::swap(outputWidth, outputHeight);
         }
 
@@ -207,7 +208,7 @@ public:
         output = nullptr;
     }
 
-private:
+protected:
     void syncHistoryClearControl(){
         const bool needed = usesHistory || usesOutputHistory;
         historyClearControlDirty = false;
@@ -312,209 +313,90 @@ private:
         return true;
     }
 
-    enum class ParameterType {
-        Float,
-        Bool,
-        Color,
-        Texture
-    };
-
-    struct EffectParameterSpec {
-        std::string name;
-        ParameterType type = ParameterType::Float;
-        float defaultValue = 0.0f;
-        float minValue = -FLT_MAX;
-        float maxValue = FLT_MAX;
-        bool defaultBool = false;
-        ofFloatColor defaultColor = ofFloatColor(1.0, 1.0, 1.0, 1.0);
-    };
-
-    static bool isValidUniformName(const std::string &name){
-        if(name.empty() || !(std::isalpha(static_cast<unsigned char>(name.front())) || name.front() == '_')){
-            return false;
-        }
-
-        for(char c : name){
-            if(!(std::isalnum(static_cast<unsigned char>(c)) || c == '_')){
-                return false;
-            }
-        }
-        return true;
-    }
-
-    static bool parseFiniteFloat(const std::string &text, float &value){
-        try{
-            size_t parsedCharacters = 0;
-            value = std::stof(text, &parsedCharacters);
-            return parsedCharacters == text.size() && std::isfinite(value);
-        }catch(...){
-            return false;
-        }
-    }
+    using ParameterType = effectShaderSource::ParameterType;
+    using EffectParameterSpec = effectShaderSource::EffectParameterSpec;
 
     void parseConfiguration(){
-        effectParameters.clear();
-        metadataWarnings.clear();
-
-        const std::string trimmedConfig = ofTrim(conf);
-        if(trimmedConfig.empty()){
-            return;
-        }
-
-        const auto parameterConfigs = ofSplitString(trimmedConfig, ",", true, true);
-        for(const auto &parameterConfig : parameterConfigs){
-            const auto fields = ofSplitString(parameterConfig, ":", false, true);
-            if(fields.empty() || !isValidUniformName(fields[0])){
-                metadataWarnings.push_back("Invalid parameter name in metadata: " + parameterConfig);
-                continue;
-            }
-
-            EffectParameterSpec spec;
-            spec.name = fields[0];
-
-            if(fields.size() >= 2 && ofToLower(fields[1]) == "bool"){
-                spec.type = ParameterType::Bool;
-                if(fields.size() != 2 && fields.size() != 3){
-                    metadataWarnings.push_back("Boolean parameter " + spec.name + " expects Name:bool[:false|true|0|1]");
-                    continue;
-                }
-                if(fields.size() == 3){
-                    const std::string value = ofToLower(fields[2]);
-                    if(value != "false" && value != "true" && value != "0" && value != "1"){
-                        metadataWarnings.push_back("Invalid boolean default for " + spec.name + ": " + fields[2]);
-                        continue;
-                    }
-                    spec.defaultBool = value == "true" || value == "1";
-                }
-            }else if(fields.size() >= 2 && ofToLower(fields[1]) == "color"){
-                spec.type = ParameterType::Color;
-                if(fields.size() != 2 && fields.size() != 5 && fields.size() != 6){
-                    metadataWarnings.push_back("Color parameter " + spec.name + " expects Name:color or Name:color:R:G:B[:A]");
-                    continue;
-                }
-
-                if(fields.size() >= 5){
-                    float components[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-                    bool validColor = true;
-                    const size_t componentCount = fields.size() - 2;
-                    for(size_t component = 0; component < componentCount; component++){
-                        if(!parseFiniteFloat(fields[component + 2], components[component])){
-                            metadataWarnings.push_back("Invalid color component for " + spec.name + ": " + fields[component + 2]);
-                            validColor = false;
-                            break;
-                        }
-                        components[component] = ofClamp(components[component], 0.0f, 1.0f);
-                    }
-
-                    if(!validColor){
-                        continue;
-                    }
-                    spec.defaultColor = ofFloatColor(components[0], components[1], components[2], components[3]);
-                }
-            }else if(fields.size() == 2 && ofToLower(fields[1]) == "texture"){
-                spec.type = ParameterType::Texture;
-            }else{
-                if(fields.size() > 4){
-                    metadataWarnings.push_back("Too many fields for float parameter " + spec.name);
-                    continue;
-                }
-
-                if(fields.size() > 1 && !parseFiniteFloat(fields[1], spec.defaultValue)){
-                    metadataWarnings.push_back("Invalid default value for " + spec.name + ": " + fields[1]);
-                    continue;
-                }
-
-                if(fields.size() > 2 && fields[2] != "min" && !parseFiniteFloat(fields[2], spec.minValue)){
-                    metadataWarnings.push_back("Invalid minimum for " + spec.name + ": " + fields[2]);
-                    continue;
-                }
-
-                if(fields.size() > 3 && fields[3] != "max" && !parseFiniteFloat(fields[3], spec.maxValue)){
-                    metadataWarnings.push_back("Invalid maximum for " + spec.name + ": " + fields[3]);
-                    continue;
-                }
-
-                if(spec.minValue > spec.maxValue){
-                    std::swap(spec.minValue, spec.maxValue);
-                    metadataWarnings.push_back("Swapped reversed range for " + spec.name);
-                }
-
-                if(spec.defaultValue < spec.minValue || spec.defaultValue > spec.maxValue){
-                    spec.defaultValue = ofClamp(spec.defaultValue, spec.minValue, spec.maxValue);
-                    metadataWarnings.push_back("Clamped out-of-range default for " + spec.name);
-                }
-            }
-
-            effectParameters.push_back(spec);
-        }
+        effectShaderSource::parseConfiguration(conf, effectParameters, metadataWarnings);
     }
+
+    struct EffectControl {
+        EffectParameterSpec spec;
+        ofParameter<float> number;
+        ofParameter<bool> boolean;
+        ofParameter<ofFloatColor> color;
+        ofParameter<ofTexture*> texture;
+        ofTexture *connectedTexture = nullptr;
+        ofEventListeners listeners;
+    };
 
     void addEffectParameters(){
         parseConfiguration();
+        syncEffectParameters();
+    }
 
-        const size_t numParams = effectParameters.size();
-        floatParams.resize(numParams);
-        boolParams.resize(numParams);
-        colorParams.resize(numParams);
-        textureParams.resize(numParams);
-        textures.resize(numParams, nullptr);
-
-        for(size_t i = 0; i < numParams; i++){
-            const auto &spec = effectParameters[i];
-
+    void syncEffectParameters(){
+        rebuildingControls = true;
+        auto previous = controls;
+        // Disconnect removed/retyped ports before releasing their listener state.
+        for(const auto &control : previous){
+            if(std::none_of(effectParameters.begin(), effectParameters.end(), [&](const auto &spec){
+                return spec.name == control->spec.name && spec.type == control->spec.type;
+            })) removeParameter(control->spec.name);
+        }
+        controls.clear();
+        for(const auto &spec : effectParameters){
+            auto existing = std::find_if(previous.begin(), previous.end(), [&](const auto &control){
+                return spec.name == control->spec.name && spec.type == control->spec.type;
+            });
+            if(existing != previous.end()){
+                auto control = *existing;
+                control->spec = spec;
+                if(spec.type == ParameterType::Float){
+                    control->number.setMin(spec.minValue);
+                    control->number.setMax(spec.maxValue);
+                }
+                controls.push_back(control);
+                continue;
+            }
+            auto control = std::make_shared<EffectControl>();
+            control->spec = spec;
+            controls.push_back(control);
+            // Node wrappers own the callbacks; weak captures avoid ownership cycles.
+            std::weak_ptr<EffectControl> weak = control;
+            auto receive = [this, weak](ofTexture *const &texture){
+                if(auto c = weak.lock()) c->connectedTexture = texture;
+                requestCompute();
+            };
+            auto disconnect = [this, weak](){
+                if(auto c = weak.lock()) c->connectedTexture = nullptr;
+                requestCompute();
+            };
             if(spec.type == ParameterType::Bool){
-                addParameter(boolParams[i].set(spec.name, spec.defaultBool));
-                listeners.push(boolParams[i].newListener([this](bool &){
-                    requestCompute();
-                }));
+                addParameter(control->boolean.set(spec.name, spec.defaultBool));
+                control->listeners.push(control->boolean.newListener([this](bool &){ requestCompute(); }));
             }else if(spec.type == ParameterType::Color){
-                addParameter(colorParams[i].set(spec.name,
-                                                spec.defaultColor,
-                                                ofFloatColor(0.0, 0.0, 0.0, 0.0),
-                                                ofFloatColor(1.0, 1.0, 1.0, 1.0)));
-                listeners.push(colorParams[i].newListener([this](ofFloatColor &){
-                    requestCompute();
-                }));
+                const auto &c = spec.defaultColor;
+                addParameter(control->color.set(spec.name, ofFloatColor(c[0], c[1], c[2], c[3]),
+                                               ofFloatColor(0, 0, 0, 0), ofFloatColor(1, 1, 1, 1)));
+                control->listeners.push(control->color.newListener([this](ofFloatColor &){ requestCompute(); }));
             }else if(spec.type == ParameterType::Texture){
-                auto parameterReference = addParameter(textureParams[i].set(spec.name, nullptr));
-
-                listeners.push(textureParams[i].newListener([this, i](ofTexture* &texture){
-                    textures[i] = texture;
-                    requestCompute();
-                }));
-
-                parameterReference->addReceiveFunc<ofTexture*>([this, i](ofTexture *const &texture){
-                    textures[i] = texture;
-                    requestCompute();
-                });
-                parameterReference->addDisconnectFunc([this, i](){
-                    textures[i] = nullptr;
-                    requestCompute();
-                });
+                auto parameter = addParameter(control->texture.set(spec.name, nullptr));
+                control->listeners.push(control->texture.newListener([receive](ofTexture* &t){ receive(t); }));
+                parameter->addReceiveFunc<ofTexture*>(receive);
+                parameter->addDisconnectFunc(disconnect);
             }else{
-                auto parameterReference = addParameter(floatParams[i].set(spec.name,
-                                                                          spec.defaultValue,
-                                                                          spec.minValue,
-                                                                          spec.maxValue));
-
-                listeners.push(floatParams[i].newListener([this](float &){
-                    requestCompute();
-                }));
-
-                parameterReference->addReceiveFunc<ofTexture*>([this, i](ofTexture *const &texture){
-                    textures[i] = texture;
-                    requestCompute();
-                });
-                parameterReference->addDisconnectFunc([this, i](){
-                    textures[i] = nullptr;
-                    requestCompute();
-                });
+                auto parameter = addParameter(control->number.set(spec.name, spec.defaultValue, spec.minValue, spec.maxValue));
+                control->listeners.push(control->number.newListener([this](float &){ requestCompute(); }));
+                parameter->addReceiveFunc<ofTexture*>(receive);
+                parameter->addDisconnectFunc(disconnect);
             }
         }
+        rebuildingControls = false;
     }
 
     void requestCompute(){
-        if(drawOnEvent){
+        if(drawOnEvent && !rebuildingControls){
             compute();
         }
     }
@@ -526,7 +408,7 @@ private:
         blackTexture.setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
     }
 
-    void loadShader(){
+    virtual void loadShader(){
         const std::string effectFragmentPath = fragmentPath.empty()
                                              ? "Effects/" + effectName + ".glsl"
                                              : fragmentPath;
@@ -538,8 +420,10 @@ private:
             return;
         }
 
-        updateDescription(fragmentBuffer.getText());
+        compileShaderSource(fragmentBuffer.getText(), absoluteFragmentPath);
+    }
 
+    bool compileShaderSource(const std::string &source, const std::string &filePath = ""){
         std::string defaultVertSource =
         #include "defaultVertexShader.h"
         ;
@@ -547,17 +431,18 @@ private:
         ofShader candidate;
         if(!candidate.setupShaderFromSource(GL_VERTEX_SHADER, defaultVertSource)){
             setShaderFailure("Vertex shader compilation failed: " + shaderInfoLog(candidate, GL_VERTEX_SHADER));
-            return;
+            return false;
         }
 
-        if(!candidate.setupShaderFromFile(GL_FRAGMENT_SHADER, absoluteFragmentPath)){
+        if(!(filePath.empty() ? candidate.setupShaderFromSource(GL_FRAGMENT_SHADER, source)
+                            : candidate.setupShaderFromFile(GL_FRAGMENT_SHADER, filePath))){
             setShaderFailure("Fragment shader compilation failed: " + shaderInfoLog(candidate, GL_FRAGMENT_SHADER));
-            return;
+            return false;
         }
 
         if(!candidate.bindDefaults()){
             setShaderFailure("Could not bind default shader attributes");
-            return;
+            return false;
         }
 
         candidate.linkProgram();
@@ -565,7 +450,13 @@ private:
         glGetProgramiv(candidate.getProgram(), GL_LINK_STATUS, &linkStatus);
         if(linkStatus != GL_TRUE){
             setShaderFailure("Shader link failed: " + programInfoLog(candidate));
-            return;
+            return false;
+        }
+
+        const auto interfaceError = candidateInterfaceError(candidate);
+        if(!interfaceError.empty()){
+            setShaderFailure(interfaceError);
+            return false;
         }
 
         const bool candidateUsesHistory = candidate.getUniformLocation("tPreviousSource") >= 0;
@@ -581,19 +472,20 @@ void main(){ out_color = texelFetch(tSource, ivec2(gl_FragCoord.xy), 0); }
                !copyCandidate.setupShaderFromSource(GL_FRAGMENT_SHADER, copyFragment) ||
                !copyCandidate.bindDefaults()){
                 setShaderFailure("Could not compile/link the input history copy shader");
-                return;
+                return false;
             }
             copyCandidate.linkProgram();
             GLint copyLinkStatus = GL_FALSE;
             glGetProgramiv(copyCandidate.getProgram(), GL_LINK_STATUS, &copyLinkStatus);
             if(copyLinkStatus != GL_TRUE){
                 setShaderFailure("Input history copy shader link failed: " + programInfoLog(copyCandidate));
-                return;
+                return false;
             }
             historyCopyShader = std::move(copyCandidate);
         }
 
         shader = std::move(candidate);
+        updateDescription(source);
         usesHistory = candidateUsesHistory;
         usesOutputHistory = candidateUsesOutputHistory;
         historyClearControlDirty = true;
@@ -604,7 +496,7 @@ void main(){ out_color = texelFetch(tSource, ivec2(gl_FragCoord.xy), 0); }
         shaderValid = true;
 
         std::vector<std::string> warnings = metadataWarnings;
-        swapDimensionsParameter = findSwapDimensionsParameter(fragmentBuffer.getText(), warnings);
+        swapDimensionsParameter = findSwapDimensionsParameter(source, warnings);
         const auto interfaceWarnings = validateShaderInterface(shader.getShaderSource(GL_FRAGMENT_SHADER));
         warnings.insert(warnings.end(), interfaceWarnings.begin(), interfaceWarnings.end());
 
@@ -616,7 +508,10 @@ void main(){ out_color = texelFetch(tSource, ivec2(gl_FragCoord.xy), 0); }
                 ofLogWarning("simpleEffect") << effectName << ": " << warning;
             }
         }
+        return true;
     }
+
+    virtual std::string candidateInterfaceError(const ofShader &) const { return ""; }
 
     void setShaderFailure(const std::string &failure){
         const bool previousShaderStillAvailable = shaderValid.get() && shader.isLoaded();
@@ -742,26 +637,26 @@ void main(){ out_color = texelFetch(tSource, ivec2(gl_FragCoord.xy), 0); }
             const auto &spec = effectParameters[i];
 
             if(spec.type == ParameterType::Bool){
-                shader.setUniform1i(spec.name, boolParams[i].get() ? 1 : 0);
+                shader.setUniform1i(spec.name, controls[i]->boolean.get() ? 1 : 0);
             }else if(spec.type == ParameterType::Color){
-                shader.setUniform4f(spec.name, colorParams[i]);
+                shader.setUniform4f(spec.name, controls[i]->color);
             }else if(spec.type == ParameterType::Texture){
-                const bool connected = textures[i] != nullptr && textures[i]->isAllocated();
+                const bool connected = controls[i]->connectedTexture != nullptr && controls[i]->connectedTexture->isAllocated();
                 shader.setUniform1i(spec.name + "Connected", connected ? 1 : 0);
 
                 if(shader.getUniformLocation(spec.name) >= 0){
-                    ofTexture* textureToUse = connected ? textures[i] : &blackTexture;
+                    ofTexture* textureToUse = connected ? controls[i]->connectedTexture : &blackTexture;
                     bindTextureUniform(spec.name, *textureToUse, textureUnit++);
                 }
             }else{
-                const bool connected = textures[i] != nullptr && textures[i]->isAllocated();
+                const bool connected = controls[i]->connectedTexture != nullptr && controls[i]->connectedTexture->isAllocated();
                 const std::string textureUniformName = spec.name + "Tex";
 
-                shader.setUniform1f(spec.name, floatParams[i]);
+                shader.setUniform1f(spec.name, controls[i]->number);
                 shader.setUniform1i(textureUniformName + "Connected", connected ? 1 : 0);
 
                 if(shader.getUniformLocation(textureUniformName) >= 0){
-                    ofTexture* textureToUse = connected ? textures[i] : &blackTexture;
+                    ofTexture* textureToUse = connected ? controls[i]->connectedTexture : &blackTexture;
                     bindTextureUniform(textureUniformName, *textureToUse, textureUnit++);
                 }
             }
@@ -790,11 +685,8 @@ void main(){ out_color = texelFetch(tSource, ivec2(gl_FragCoord.xy), 0); }
 
     std::vector<EffectParameterSpec> effectParameters;
     std::vector<std::string> metadataWarnings;
-    std::vector<ofParameter<float>> floatParams;
-    std::vector<ofParameter<bool>> boolParams;
-    std::vector<ofParameter<ofFloatColor>> colorParams;
-    std::vector<ofParameter<ofTexture*>> textureParams;
-    std::vector<ofTexture*> textures;
+    std::vector<std::shared_ptr<EffectControl>> controls;
+    bool rebuildingControls = false;
     std::vector<std::pair<GLenum, int>> boundTextureUnits;
 
     ofParameter<ofTexture*> input;

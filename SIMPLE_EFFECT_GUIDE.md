@@ -182,3 +182,47 @@ do not sample `tPreviousOutput` allocate no feedback buffers. History is interna
 to each node instance; no output-to-input patch cable is necessary.
 
 See the [Feedback camera example and test checklist](SimpleEffectsLibrary/EffectsLibrary/README.md#temporal).
+
+## Live Shader editor
+
+Add **Textures → Shader**, connect an **Input** texture, and edit the complete
+fragment source in its **Code** tab. The initial shader demonstrates the metadata
+header, GLSL 410, standard uniforms, float/control-texture, color, and explicit
+texture parameters. The input supplies the output dimensions, as in Simple
+Effect; a procedural shader still needs an Input texture to define its canvas.
+
+**Live Compile** is enabled by default and compiles after 400 ms without edits.
+Use **Compile** or the inspector's **Reload Shader** for an immediate attempt.
+A failed edit preserves the last working shader, controls, connections, and
+history. Details appear in **Shader Status** and the editor status tooltip.
+**Shader Valid** describes the running shader; it can remain true when the new
+draft has errors. **Draw On Event** should stay off for continuous animation.
+
+The **AI** tab opens the same Requesty assistant as Formula, including its API
+key setup, model picker, Generate and Fix current modes. Its instructions include
+the full shader contract; generated source undergoes the same validation and
+compilation as manual edits. The selected AI model is stored in the preset.
+
+Controls are created from line 1 after successful compilation. Existing controls
+keep their values and connections when their name and type are unchanged;
+changing a default in the header affects newly created controls. Range edits
+update the limits. Renaming, removing, or changing a parameter's type removes its
+old connections. Presets store both the draft and last working source, so an
+unfinished edit can be reopened while retaining the working ports. With Live
+Compile off, an uncompiled draft stays uncompiled on recall.
+
+In the inspector, **Load Shader** imports a GLSL file and expands relative
+`#include`/`#pragma include` files into the editor. **Shader Name** and **Save
+Shader** export the current draft to `bin/data/Effects/<name>.glsl`; saving the
+same name overwrites that file. Names are restricted to letters, digits, `_`, and
+`-` (spaces become `_`). New files appear as regular Effects nodes after an app
+restart; existing effect instances can use Reload Shader.
+
+Saving requires valid first-line metadata (`//` is valid for no controls),
+`#version 410` or `#version 410 core` as the first non-comment directive, matching
+parameter uniform declarations, a `vec4` fragment output, and successful GPU
+compilation/linking. Names must not collide with built-in ports, inspector/preset
+fields, standard uniforms, or generated control-texture uniforms. Active uniforms
+must have types the host can supply. Include directives must be expanded, making
+the saved file independent of its original directory. A native modal lists any
+deficiencies and **no file is written** when validation fails.

@@ -95,3 +95,28 @@ show resolution.
 - Increase `Samples` until the result is visually stable at the intended show
   resolution. Check performance carefully because combined operations use a
   nested sample set.
+
+## Shader editor regression
+
+Run `python3 tests/shader_editor_regression.py --syntax --gpu` from this addon on
+macOS with access to the desktop GPU. Omit `--gpu` for CPU-only contract checks;
+omit `--syntax` when sibling openFrameworks/addon headers are unavailable. The
+checks exercise metadata and declaration failures, comments, reserved-name
+collisions, import expansion, all library shaders, and actual starter-shader
+pixels with scalar/color controls and optional control/mask textures.
+
+Host-app acceptance checks (the automated checks do not launch Oceanode):
+
+1. Add Textures → Shader, connect a texture, and edit the processing expression.
+   Confirm live compilation, alpha, scrolling at canvas zoom, and Code/AI tabs.
+2. Add/change/reorder/remove metadata parameters. Check that unchanged ports
+   preserve their values and cables, while removed/retyped ports disconnect.
+3. Introduce a GLSL error and then a metadata error. Output and existing cables
+   must stay active. Save Shader must show a modal and leave the disk file intact.
+4. Generate and fix shaders through Requesty; check model persistence in presets.
+5. Import an effect containing a relative include, save under a new name, restart,
+   and compare the discovered Effects node with the live editor's output.
+6. Save/recall a preset with an invalid draft, then with Live Compile off and an
+   uncompiled valid draft. The previous working ports and shader must survive.
+7. Load a feedback shader, connect a trigger to Clear, and save/recall the preset.
+   Clear must exist before connections restore; failed edits must retain history.

@@ -37,6 +37,7 @@
 #include "textureResizeFast.h"
 #include "displayOutput.h"
 #include "simpleEffect.h"
+#include "shaderEditor.h"
 #include "textureComposer.h"
 #include "textureComposerSimple.h"
 #include "textureBlender.h"
@@ -65,6 +66,7 @@
 
 namespace ofxOceanodeTextures{
 static void registerModels(ofxOceanode &o){
+    o.registerModel<shaderEditor>("Textures");
     o.registerModel<indexerTexture>("Textures");
     o.registerModel<oscillatorTexture>("Textures");
     o.registerModel<chaoticOscillatorTexture>("Textures");
