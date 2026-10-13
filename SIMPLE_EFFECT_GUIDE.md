@@ -244,6 +244,38 @@ library root. Existing documentation is retained, with shader links and
 `@description` text listed in an `oceanode-shaders` managed catalog block.
 Repeating a save updates the entry rather than adding duplicates.
 
+### Updating the Effects library from GitHub
+
+**Config > Update Effects** downloads the public library from branch
+`megabranch26_A`, folder `SimpleEffectsLibrary/EffectsLibrary`, and compares it
+with the application's `data/Effects`. Git must be installed; downloading does
+not require a GitHub account or the bot's SSH key. The download runs in the
+background using an isolated sparse checkout. Other addon files and commits
+are ignored, and no existing source checkout is changed.
+
+Identical effects are left alone. Shared shader includes are expanded before
+comparison so the original library layout is recognized; imported shaders are
+self-contained and do not replace local shared includes. Invalid shaders and
+unsafe paths are skipped with details in the result. Local-only effects and
+files removed from the repository are retained.
+
+If there are differences, a review dialog lists each category/file. Expand an
+entry to see the changed range, with `-` for local lines and `+` for repository
+lines. Choose **Keep local**, **Use repository**, or **Back up local + use
+repository** for each file, then click **Apply selected changes**. Keep local is
+the default. Cancel imports nothing. When there are no conflicts, new shaders
+are imported immediately and a result is shown. The result lists each successfully
+added shader with its category/file path under **New effects**. This list remains
+visible until the dialog is closed and resets when starting another update.
+
+Backups are written under `data/EffectsBackups/Update-...`, preserving category
+paths and the replaced shader's local include dependencies. A file or include
+edited while the review is open is kept and reported for a fresh review.
+Category and library README catalogs are merged with existing documentation and
+describe the actual local files retained. New effects appear in New Node without
+restarting; existing effect instances use **Reload Shader** to load a replaced
+file. Their running shaders and controls are not changed automatically.
+
 ### Publishing shader saves to GitHub
 
 **Push to GitHub** is off by default and must be selected for each save. Inspector

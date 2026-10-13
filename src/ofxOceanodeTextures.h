@@ -38,6 +38,7 @@
 #include "displayOutput.h"
 #include "simpleEffect.h"
 #include "shaderEditor.h"
+#include "effectsLibraryUpdateUI.h"
 #include "textureComposer.h"
 #include "textureComposerSimple.h"
 #include "textureBlender.h"
@@ -173,6 +174,11 @@ static void registerModels(ofxOceanode &o){
     };
 
     registerEffectsDirectory(ofToDataPath("Effects", true), "");
+
+    auto updater = std::make_shared<effectsLibraryUpdateUI>(o);
+    o.registerConfigMenuItem("Update Effects", [updater](){ updater->request(); },
+        [updater](){ updater->update(); }, [updater](){ updater->draw(); },
+        [updater](){ return !updater->busy(); });
 }
 static void registerType(ofxOceanode &o){
     auto textureBufferAssignFunction = [](ofTexture* &tex, ofFbo &fbo){

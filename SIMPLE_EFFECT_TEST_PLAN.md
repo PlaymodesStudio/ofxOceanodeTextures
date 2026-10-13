@@ -150,6 +150,40 @@ Host checks:
 6. Edit both local and remote README documentation, then publish. Both copies
    must contain both sets of notes and one entry per shader in the catalog.
 
+## Config > Update Effects
+
+The regression runner includes a temporary local Git repository for sparse
+library downloads, unrelated commits, new/unchanged files, include-only changes,
+all three conflict choices, complete backups, edits during review, invalid and
+unsafe source, retained local-only files, deleted remote files, and failed reads.
+Syntax checks include Textures registration and the owning Config menu source.
+
+Host checks:
+
+1. Confirm Update Effects appears in Config when Textures models are registered.
+   Start an update without an SSH key. Animation and interaction must continue
+   during the download, and the menu action must be disabled while it is busy.
+2. With existing library categories and SimpleEffectCommon.inc already copied
+   locally, unchanged shaders should not become conflicts merely due to includes.
+3. Add a new repository shader and change two existing ones. The review must
+   list each changed file, provide a diff and the three choices, and show the
+   new effects separately. Cancel must leave all local files untouched.
+4. Keep one local file, replace another, and back up another before replacing.
+   Verify the actual file contents, backup include dependencies and README
+   descriptions. Newly imported models must appear immediately in New Node;
+   newly created instances of replaced models must use the new metadata.
+5. Existing effect instances must retain their shader/controls until Reload
+   Shader. Local-only files and deleted remote effects must remain on disk.
+6. Edit a reviewed file or shared include externally before Apply. That shader
+   must be retained with a message to review it again.
+7. With only an unrelated src commit in the repository, a repeated update must
+   report no new or changed effects. Network/missing-branch failures must leave
+   the local library intact and provide a readable error.
+8. Import a new shader, with and without conflicts requiring review. The result
+   must list its category/file path under New effects without expanding anything.
+   Replacements and failed imports must not be listed as new. Start another
+   update with no new shaders and confirm the previous list has cleared.
+
 ## Shader Inspector presentation
 
 - Confirm there is no shader-source field in the Inspector; source still survives
