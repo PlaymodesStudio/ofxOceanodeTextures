@@ -53,6 +53,11 @@
 #include "videoPlayerScrub.h"
 #include "cameraInput.h"
 #include "textureSnapshot.h"
+#include "textureFlip.h"
+#include "paletteQuantizer.h"
+#include "blobDetector.h"
+#include "colorTracker.h"
+#include "zdepthConverter.h"
 
 #include "ofxOceanode.h"
 
@@ -104,6 +109,11 @@ static void registerModels(ofxOceanode &o){
 	o.registerModel<videoPlayerScrub>("Textures");
 	o.registerModel<cameraInput>("Textures");
 	o.registerModel<textureSnapshot>("Textures");
+	o.registerModel<textureFlip>("Textures");
+	o.registerModel<paletteQuantizer>("Textures");
+	o.registerModel<blobDetector>("Textures");
+	o.registerModel<colorTracker>("Textures");
+	o.registerModel<zdepthConverter>("Textures");
 	
     o.registerModel<textureUnitMonitor>("Debug");
 	
