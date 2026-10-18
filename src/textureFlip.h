@@ -20,7 +20,7 @@ public:
     }
 
     void draw(ofEventArgs &a) {
-        if(input != nullptr) {
+        if(input != nullptr && input.get()->isAllocated()) {
             if(inputSize.x != input.get()->getWidth() || inputSize.y != input.get()->getHeight()) {
                 inputSize.x = input.get()->getWidth();
                 inputSize.y = input.get()->getHeight();
@@ -40,17 +40,24 @@ public:
                 fbo.allocate(settings);
             }
 
+            ofPushStyle();
+            ofDisableAlphaBlending();
+            ofSetColor(255);
             fbo.begin();
+            ofClear(0,0,0,0);
             ofPushMatrix();
             ofTranslate(flipH ? fbo.getWidth() : 0, flipV ? fbo.getHeight() : 0);
             ofScale(flipH ? -1 : 1, flipV ? -1 : 1);
             input.get()->draw(0, 0);
             ofPopMatrix();
             fbo.end();
+            ofPopStyle();
 
             output = &fbo.getTexture();
-        }
+        } else output = nullptr;
     }
+
+    void deactivate() override { output=nullptr; fbo.clear(); inputSize={0,0}; }
 
 
 private:

@@ -15,8 +15,8 @@ public:
     {
         addParameter(input.set("Input",nullptr));
         addOutputParameter(ms.set("Ms",0,0,FLT_MAX));
-        addOutputParameter(width.set("Width",0,0,FLT_MAX));
-        addOutputParameter(height.set("Height",0,0,FLT_MAX));
+        addOutputParameter(width.set("Width",0,0,INT_MAX));
+        addOutputParameter(height.set("Height",0,0,INT_MAX));
         addOutputParameter(format.set("Format",""));
         
         textureInListener = input.newListener([this](ofTexture* &t){
@@ -73,7 +73,7 @@ private:
     ofParameter<int> height;
     ofParameter<string> format;
     
-    float lastTime;
+    float lastTime=0;
     
     
  

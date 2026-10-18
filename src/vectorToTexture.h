@@ -22,12 +22,21 @@ public:
     }
     
     void draw(ofEventArgs &a){
+        GLint limit=0;
+        glGetIntegerv(GL_MAX_TEXTURE_SIZE,&limit);
+        if(width.get()<1 || height.get()<1 || width.get()>limit || height.get()>limit) {
+            output=nullptr;
+            return;
+        }
         if(!fbo.isAllocated() || fbo.getWidth() != width || fbo.getHeight() != height){
             fbo.allocate(width, height, GL_RGBA32F);
             fbo.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
         }
-        vector<float> rgbaInput(input->size()*4, 0);
-        for(int i = 0; i < input->size(); i++){
+        // Upload exactly the declared image size. A shorter input previously
+        // let GL read beyond the CPU vector; longer inputs are cropped.
+        const size_t pixels=size_t(width.get())*size_t(height.get());
+        vector<float> rgbaInput(pixels*4, 0);
+        for(size_t i = 0; i < std::min(input->size(),pixels); i++){
             rgbaInput[(i*4)] = input->at(i);
             rgbaInput[(i*4)+1] = input->at(i);
             rgbaInput[(i*4)+2] = input->at(i);
