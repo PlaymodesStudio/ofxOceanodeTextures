@@ -10,137 +10,125 @@
 #define senderManager_h
 
 #include "ofxOceanodeNodeModel.h"
+#include <atomic>
 #ifdef TARGET_OSX
 #include "ofxSyphon.h"
 #elif TARGET_WIN64
 //#include "ofxSpout.h"
 #endif
 
-class textureReceiver : public ofxOceanodeNodeModel{
+class textureReceiver : public ofxOceanodeNodeModel {
 public:
-	textureReceiver() : ofxOceanodeNodeModel("Texture Receiver"){}
-	
-	void setup(){
-		dir.setup();
-		client.setup();
+    textureReceiver() : ofxOceanodeNodeModel("Texture Receiver") {}
 
-
-		directoriesStrings = {"None"};
-		for( auto& server : dir.getServerList()){
-			directoriesStrings.push_back(server.serverName + "-" + server.appName);
-		}
-
-		auto selectorRef = addParameterDropdown(syphonSelector, "Server", 0, directoriesStrings, ofxOceanodeParameterFlags_DisableSavePreset);
-		addOutputParameter(output.set("Texture", nullptr));
-
-		listeners.push(dir.events.serverAnnounced.newListener([this, selectorRef](ofxSyphonServerDirectoryEventArgs &arg){
-			directoriesStrings = {"None"};
-			for( auto& server : dir.getServerList()){
-				directoriesStrings.push_back(server.serverName + "-" + server.appName);
-			}
-			selectorRef->setDropdownOptions(directoriesStrings);
-			syphonSelector.setMax(directoriesStrings.size());
-		}));
-
-		listeners.push(dir.events.serverUpdated.newListener([this, selectorRef](ofxSyphonServerDirectoryEventArgs &arg){
-			directoriesStrings = {"None"};
-			for( auto& server : dir.getServerList()){
-				directoriesStrings.push_back(server.serverName + "-" + server.appName);
-			}
-			selectorRef->setDropdownOptions(directoriesStrings);
-			syphonSelector.setMax(directoriesStrings.size());
-		}));
-
-		listeners.push(dir.events.serverRetired.newListener([this, selectorRef](ofxSyphonServerDirectoryEventArgs &arg){
-			directoriesStrings = {"None"};
-			for( auto& server : dir.getServerList()){
-				directoriesStrings.push_back(server.serverName + "-" + server.appName);
-			}
-			selectorRef->setDropdownOptions(directoriesStrings);
-			syphonSelector.setMax(directoriesStrings.size());
-		}));
-
-		listeners.push(syphonSelector.newListener([this](int &i){
-			if(i > 0){
-				client.set(dir.getDescription(i-1));
-			}
-		}));
-	}
-	
-	void update(ofEventArgs &a){
-		if(dir.isValidIndex(syphonSelector-1)){
-			client.bind();
-			int width = client.getWidth();
-			int height = client.getHeight();
-			client.unbind();
-			if((!fbo.isAllocated()
-			   || fbo.getWidth() != width
-			   || fbo.getHeight() != height)
-			   && width != 0
-			   && height != 0){
-				ofFbo::Settings fboSettings;
-                fboSettings.width = width;
-                fboSettings.height = height;
-                fboSettings.internalformat = GL_RGBA32F;
-				fboSettings.numColorbuffers = 1;
-                fboSettings.useDepth = false;
-                fboSettings.useStencil = false;
-                fboSettings.textureTarget = GL_TEXTURE_2D;
-                fboSettings.maxFilter = GL_NEAREST;
-                fboSettings.minFilter = GL_NEAREST;
-				fbo.allocate(fboSettings);
-			}
-			if((width!=0)&&(height!=0))
-			{
-				fbo.begin();
-				ofClear(0, 0, 0, 0);
-				client.draw(0, 0);
-				fbo.end();
-
-				output = &fbo.getTexture();
-			}
-		}else{
-			output = nullptr;
-		}
-	}
-	
-	void serverAnnounced(ofxSyphonServerDirectoryEventArgs &arg);
-	void serverUpdated(ofxSyphonServerDirectoryEventArgs &args);
-	void serverRetired(ofxSyphonServerDirectoryEventArgs &arg);
-    
-    void presetSave(ofJson &json){
-        json["ServerName"] = directoriesStrings[syphonSelector];
+    void setup() override {
+        selector = addParameterDropdown(syphonSelector, "Server", 0, {"None"},
+            ofxOceanodeParameterFlags_DisableSavePreset);
+        addOutputParameter(output.set("Texture", nullptr));
+        dir.setup();
+        // Directory notifications only request a refresh. Resolve selection and
+        // create/release GL clients on the node's normal update thread.
+        auto changed = [this](ofxSyphonServerDirectoryEventArgs&) { directoryDirty = true; };
+        listeners.push(dir.events.serverAnnounced.newListener(changed));
+        listeners.push(dir.events.serverUpdated.newListener(changed));
+        listeners.push(dir.events.serverRetired.newListener(changed));
+        listeners.push(syphonSelector.newListener([this](int& index) {
+            if(refreshing) return;
+            selectedServer = index > 0 && size_t(index) < serverNames.size()
+                ? serverNames[size_t(index)] : "None";
+            refreshServers();
+        }));
+        refreshServers();
     }
-        
-    void presetRecallAfterSettingParameters(ofJson &json){
-        string name = "None";
-        if(json.count("ServerName") == 1){
-            name = json["ServerName"];
+
+    void update(ofEventArgs&) override {
+        if(directoryDirty.exchange(false)) refreshServers();
+        if(!client || !client->lockTexture()) { output = nullptr; return; }
+        struct Unlock {
+            ofxSyphonClient& client;
+            ~Unlock() { client.unlockTexture(); }
+        } unlock{*client};
+        auto& texture = client->getTexture();
+        const int width = int(texture.getWidth()), height = int(texture.getHeight());
+        if(width <= 0 || height <= 0) { output = nullptr; return; }
+        if(!fbo.isAllocated() || fbo.getWidth() != width || fbo.getHeight() != height) {
+            ofFbo::Settings settings;
+            settings.width = width; settings.height = height;
+            settings.internalformat = GL_RGBA32F;
+            settings.numColorbuffers = 1;
+            settings.useDepth = false; settings.useStencil = false;
+            settings.textureTarget = GL_TEXTURE_2D;
+            settings.maxFilter = GL_NEAREST; settings.minFilter = GL_NEAREST;
+            fbo.allocate(settings);
         }
-        auto it = std::find(directoriesStrings.begin(), directoriesStrings.end(), name);
-        
-        if(it != directoriesStrings.end()){
-            syphonSelector = it - directoriesStrings.begin();
-        }else{
-            syphonSelector = 0;
-        }
+        fbo.begin();
+        ofClear(0, 0, 0, 0);
+        ofPushStyle();
+        ofSetColor(255);
+        ofDisableAlphaBlending(); // Copy the received RGBA values without compositing twice.
+        texture.draw(0, 0);
+        ofPopStyle();
+        fbo.end();
+        output = &fbo.getTexture();
     }
-    
-    void deactivate(){
-        fbo.clear();
+
+    void presetSave(ofJson& json) override {
+        // Preserve the requested name even when its server is temporarily absent.
+        json["ServerName"] = selectedServer;
+    }
+
+    void presetRecallAfterSettingParameters(ofJson& json) override {
+        selectedServer = json.contains("ServerName") && json["ServerName"].is_string()
+            ? json["ServerName"].get<string>() : "None";
+        refreshServers();
+    }
+
+    void activate() override { directoryDirty = true; }
+    void deactivate() override {
         output = nullptr;
+        client.reset();
+        connectedServer.clear();
+        fbo.clear();
     }
-	
+
 private:
-	vector<string> directoriesStrings;
-	ofxSyphonServerDirectory dir;
-	ofxSyphonClient client;
-	ofParameter<int> syphonSelector;
-	ofParameter<ofTexture*> output;
+    void refreshServers() {
+        serverNames = {"None"};
+        const auto& servers = dir.getServerList();
+        int selected = 0;
+        for(const auto& server : servers) {
+            serverNames.push_back(server.serverName + "-" + server.appName);
+            if(serverNames.back() == selectedServer) selected = int(serverNames.size()) - 1;
+        }
+        refreshing = true;
+        selector->setDropdownOptions(serverNames);
+        syphonSelector.setMax(int(serverNames.size()) - 1);
+        syphonSelector = selected;
+        refreshing = false;
+        if(selected == 0) {
+            output = nullptr;
+            client.reset();
+            connectedServer.clear();
+        } else if(!client || connectedServer != selectedServer) {
+            output = nullptr;
+            client = std::make_unique<ofxSyphonClient>();
+            client->setup();
+            client->set(servers[size_t(selected - 1)]);
+            connectedServer = selectedServer;
+        }
+    }
 
-	ofFbo fbo;
-
-	ofEventListeners listeners;
+    vector<string> serverNames;
+    string selectedServer = "None", connectedServer;
+    bool refreshing = false;
+    std::atomic<bool> directoryDirty{false};
+    ofxSyphonServerDirectory dir;
+    std::unique_ptr<ofxSyphonClient> client;
+    ofParameter<int> syphonSelector;
+    shared_ptr<ofxOceanodeParameter<int>> selector;
+    ofParameter<ofTexture*> output;
+    ofFbo fbo;
+    ofEventListeners listeners;
 };
 
 class textureSender : public ofxOceanodeNodeModel{
