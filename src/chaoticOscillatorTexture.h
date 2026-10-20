@@ -8,7 +8,7 @@
 #ifndef chaoticOscillatorTexture_h
 #define chaoticOscillatorTexture_h
 
-#include "ofxOceanode.h"
+#include "ofxOceanodeNodeModel.h"
 
 class chaoticOscillatorTexture : public ofxOceanodeNodeModel{
 public:

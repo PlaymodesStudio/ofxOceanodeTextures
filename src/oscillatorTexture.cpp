@@ -8,6 +8,7 @@
 
 #include "oscillatorTexture.h"
 #include <random>
+#include <random>
 
 #define STRINGIFY(x) #x
 
@@ -534,7 +535,7 @@ vector<float> oscillatorTexture::newRandomValuesVector(){
 //        randomValuesVecY[i] = (int)-randomValuesVecY.size()/2 + i;
 //    }
     
-    mt19937 g(static_cast<uint32_t>(time(0)));
+    std::mt19937 g(static_cast<uint32_t>(time(0)));
     shuffle(randomValuesVecX.begin(), randomValuesVecX.end(), g);
     shuffle(randomValuesVecY.begin(), randomValuesVecY.end(), g);
     
@@ -971,7 +972,7 @@ vector<float> oscillatorTexture2::newRandomValuesVector(){
     iota(randomValuesVecX.begin(), randomValuesVecX.end(), 0);
     iota(randomValuesVecY.begin(), randomValuesVecY.end(), 0);
 
-    mt19937 g(static_cast<uint32_t>(time(0)));
+    std::mt19937 g(static_cast<uint32_t>(time(0)));
     shuffle(randomValuesVecX.begin(), randomValuesVecX.end(), g);
     shuffle(randomValuesVecY.begin(), randomValuesVecY.end(), g);
 

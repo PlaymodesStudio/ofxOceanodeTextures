@@ -9,7 +9,7 @@
 #ifndef oscillatorTexture_h
 #define oscillatorTexture_h
 
-#include "ofxOceanode.h"
+#include "ofxOceanodeNodeModel.h"
 
 class oscillatorTexture : public ofxOceanodeNodeModel{
 public:
