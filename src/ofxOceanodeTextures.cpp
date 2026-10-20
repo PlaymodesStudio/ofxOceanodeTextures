@@ -82,7 +82,7 @@ void registerModels(ofxOceanode &o){
     registerEffectsDirectory(ofToDataPath("Effects", true), "");
 
     auto updater = std::make_shared<effectsLibraryUpdateUI>(o);
-    o.registerConfigMenuItem("Update Effects", [updater](){ updater->request(); },
+    o.registerUtilityMenuItem("Update Effects", [updater](){ updater->request(); },
         [updater](){ updater->update(); }, [updater](){ updater->draw(); },
         [updater](){ return !updater->busy(); });
 }

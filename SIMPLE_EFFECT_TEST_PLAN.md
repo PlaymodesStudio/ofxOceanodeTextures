@@ -150,17 +150,17 @@ Host checks:
 6. Edit both local and remote README documentation, then publish. Both copies
    must contain both sets of notes and one entry per shader in the catalog.
 
-## Config > Update Effects
+## Help > Utilities > Update Effects
 
 The regression runner includes a temporary local Git repository for sparse
 library downloads, unrelated commits, new/unchanged files, include-only changes,
 all three conflict choices, complete backups, edits during review, invalid and
 unsafe source, retained local-only files, deleted remote files, and failed reads.
-Syntax checks include Textures registration and the owning Config menu source.
+Syntax checks include Textures registration and the owning Help menu source.
 
 Host checks:
 
-1. Confirm Update Effects appears in Config when Textures models are registered.
+1. Confirm Update Effects appears in Help’s Utilities section when Textures models are registered.
    Start an update without an SSH key. Animation and interaction must continue
    during the download, and the menu action must be disabled while it is busy.
 2. With existing library categories and SimpleEffectCommon.inc already copied

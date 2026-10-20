@@ -246,7 +246,7 @@ Repeating a save updates the entry rather than adding duplicates.
 
 ### Updating the Effects library from GitHub
 
-**Config > Update Effects** downloads the public library from branch
+**Help > Utilities > Update Effects** downloads the public library from branch
 `megabranch26_A`, folder `SimpleEffectsLibrary/EffectsLibrary`, and compares it
 with the application's `data/Effects`. Git must be installed; downloading does
 not require a GitHub account or the bot's SSH key. The download runs in the
