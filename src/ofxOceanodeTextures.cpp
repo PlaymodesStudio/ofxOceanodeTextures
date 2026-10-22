@@ -110,6 +110,11 @@ void registerType(ofxOceanode &o){
                                                             textureBufferCheckFunction);
     o.registerType<std::vector<glm::mat4>>("mat4", {glm::identity<glm::mat4>()});
 }
+// Outline the drawn area so dark or transparent textures keep visible bounds.
+static void drawScopeBorder(ImVec2 min, ImVec2 max){
+    ImGui::GetWindowDrawList()->AddRect(min, max, IM_COL32(0, 0, 0, 255));
+}
+
 void registerScope(ofxOceanode &o){
     o.registerScope<ofTexture*>([](ofxOceanodeAbstractParameter *p, ImVec2 size){
         auto tex = p->cast<ofTexture*>().getParameter().get();
@@ -142,7 +147,8 @@ void registerScope(ofxOceanode &o){
             
             ImTextureID textureID = (ImTextureID)(uintptr_t)tex->texData.textureID;
             ImGui::Image(textureID, size);
-            
+            drawScopeBorder(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+
             // Restore cursor position to overlay button
             ImGui::SetCursorPos(ImVec2(imagePos.x + size.x - 20, imagePos.y + 5));
             
@@ -175,6 +181,7 @@ void registerScope(ofxOceanode &o){
         float sizeAspectRatio=size.x/size.y;
         
         auto cursorpos = ImGui::GetCursorPos();
+        ImVec2 boundsMin(FLT_MAX, FLT_MAX), boundsMax(-FLT_MAX, -FLT_MAX);
         for(int i = 0; i < vtex.size(); i++){
             auto tex = vtex[i];
             float texAspectRatio;
@@ -197,8 +204,12 @@ void registerScope(ofxOceanode &o){
                 ImGui::SetCursorPos(cursorpos);
                 ImTextureID textureID = (ImTextureID)(uintptr_t)tex->texData.textureID;
                 ImGui::ImageWithBg(textureID, size, ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, sqrt(1.0/vtex.size())));
+                boundsMin = ImVec2(std::min(boundsMin.x, ImGui::GetItemRectMin().x), std::min(boundsMin.y, ImGui::GetItemRectMin().y));
+                boundsMax = ImVec2(std::max(boundsMax.x, ImGui::GetItemRectMax().x), std::max(boundsMax.y, ImGui::GetItemRectMax().y));
             }
         }
+        // Layers share one origin; outline their combined area.
+        if(boundsMin.x <= boundsMax.x) drawScopeBorder(boundsMin, boundsMax);
     });
 }
 void registerCollection(ofxOceanode &o){
