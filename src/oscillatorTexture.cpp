@@ -275,7 +275,7 @@ void oscillatorTexture::draw(ofEventArgs &a){
         
         GLenum err;
         while ((err = glGetError()) != GL_NO_ERROR) {
-            ofLog() << "OpenGL error: " << err;
+            ofLogError(nodeName()) << getParents() << "/" << nodeName() << "_" << getNumIdentifier() << " | draw / resize | OpenGL error: " << err;
         }
         
         isFirstPassAfterSetup = true;

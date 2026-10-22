@@ -241,7 +241,7 @@ public:
             output = &pingPongFbo[pingPongIndex].getTexture();
             GLenum err;
             while ((err = glGetError()) != GL_NO_ERROR) {
-                ofLog() << "OpenGL error: " << err;
+                ofLogError(nodeName()) << getParents() << "/" << nodeName() << "_" << getNumIdentifier() << " | draw | OpenGL error: " << err;
             }
             ofPopStyle();
         }else{

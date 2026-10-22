@@ -6,6 +6,7 @@
 //
 
 #include "indexerTexture.h"
+#include "ofxOceanodeGlDiagnostics.h"
 #include <random>
 
 #define STRINGIFY(x) #x
@@ -71,13 +72,13 @@ void indexerTexture::setup(){
     
     //Listeners
     listeners.push(widthVec.newListener([this](vector<int> &vi){
-        width = *max_element(vi.begin(), vi.end());
+        width = vi.empty() ? 0 : *max_element(vi.begin(), vi.end());
         vector<float> vf(vi.begin(), vi.end());
         onShaderParameterChanged(widthVec, vf);
     }));
     
     listeners.push(heightVec.newListener([this](vector<int> &vi){
-        height = *max_element(vi.begin(), vi.end());
+        height = vi.empty() ? 0 : *max_element(vi.begin(), vi.end());
         vector<float> vf(vi.begin(), vi.end());
         onShaderParameterChanged(heightVec, vf);
     }));
@@ -156,6 +157,10 @@ void indexerTexture::update(ofEventArgs &a){
 }
 
 void indexerTexture::draw(ofEventArgs &a){
+    if(width <= 0 || height <= 0){
+        indexsOut = nullptr;
+        return;
+    }
     if(width!=0 && height!=0)
     {
     if(!isSetup){
@@ -202,6 +207,8 @@ void indexerTexture::draw(ofEventArgs &a){
         isSetup = true;
     }
     
+    oceanodeGlDiagnostics::Scope::checkpoint("Indexer: initial framebuffer and buffer allocation");
+
     if(isFirstPassAfterSetup){
         fbo.begin();
         ofClear(0, 0, 0, 255);
@@ -237,12 +244,14 @@ void indexerTexture::draw(ofEventArgs &a){
         setParametersInfoMaps();
         setShaderParameterDataToTBO();
         
+        oceanodeGlDiagnostics::Scope::checkpoint("Indexer: resize framebuffer and parameter buffer");
         GLenum err;
         while ((err = glGetError()) != GL_NO_ERROR) {
             ofLog() << "OpenGL error: " << err;
         }
         
         indexRandomValuesBuffer.setData(newRandomValuesVector(), GL_STREAM_DRAW);
+        oceanodeGlDiagnostics::Scope::checkpoint("Indexer: resize random buffer");
         
         isFirstPassAfterSetup = true;
         sizeChanged = false;
@@ -267,15 +276,27 @@ void indexerTexture::draw(ofEventArgs &a){
             }
         }
         
+        oceanodeGlDiagnostics::Scope::checkpoint("Indexer: update random buffer");
         if(vf.size() == size){
             shaderParametersBuffer.updateData(position*4, vf);
         }else if(size!=0){
             shaderParametersBuffer.updateData(position*4, vector<float>(size, vf[0]));
         }
+        if(oceanodeGlDiagnostics::enabled()){
+            const auto operation = "Indexer: upload " + parameter.first +
+                " offset=" + ofToString(position * sizeof(float)) +
+                " bytes=" + ofToString(size * sizeof(float)) +
+                " capacity=" + ofToString(shaderParametersBuffer.size()) +
+                " dimensions=" + ofToString(width.get()) + "x" + ofToString(height.get());
+            oceanodeGlDiagnostics::Scope::checkpoint(operation.c_str());
+        }
     }
     changedParameters.clear();
     }
-    indexsOut = computeBank();
+    auto* result = computeBank();
+    oceanodeGlDiagnostics::Scope::checkpoint("Indexer: computeBank completed");
+    indexsOut = result;
+    oceanodeGlDiagnostics::Scope::checkpoint("Indexer: publish output / downstream listeners");
 }
 
 void indexerTexture::setParametersInfoMaps(){
@@ -430,15 +451,23 @@ ofTexture* indexerTexture::computeBank(){
     
     fbo.begin();
     ofClear(0, 0, 0, 255);
+    oceanodeGlDiagnostics::Scope::checkpoint("Indexer: begin framebuffer / clear");
     shader.begin();
+    oceanodeGlDiagnostics::Scope::checkpoint("Indexer: begin shader");
     shader.setUniformTexture("parameters", shaderParametersTexture, 0);
+    oceanodeGlDiagnostics::Scope::checkpoint("Indexer: bind parameter texture buffer");
     shader.setUniformTexture("indexRandomValues", indexRandomValuesTexture, 1);
+    oceanodeGlDiagnostics::Scope::checkpoint("Indexer: bind random texture buffer");
     shader.setUniform2i("size", width, height);
     shader.setUniform1f("time", ofGetElapsedTimef());
+    oceanodeGlDiagnostics::Scope::checkpoint("Indexer: set size/time uniforms");
     ofDrawRectangle(0, 0, width, height);
+    oceanodeGlDiagnostics::Scope::checkpoint("Indexer: draw rectangle");
     shader.end();
+    oceanodeGlDiagnostics::Scope::checkpoint("Indexer: end shader");
     fbo.end();
     ofPopStyle();
+    oceanodeGlDiagnostics::Scope::checkpoint("Indexer: end framebuffer / restore style");
     
     isFirstPassAfterSetup = false;
     
@@ -481,6 +510,14 @@ void indexerTexture::onShaderParameterChanged(ofAbstractParameter &p, vector<flo
 }
 
 void indexerTexture::sizeChangedListener(int &i){
+    // Empty/zero dimensions temporarily suspend rendering. Preserve the last
+    // valid parameter ranges until a positive size arrives.
+    if(i <= 0){
+        sizeChanged = true;
+        if(&i == &width.get()) previousWidth = i;
+        else previousHeight = i;
+        return;
+    }
     if(&i == &width.get()){
         if(width != previousWidth){
             changeMinMaxOfVecParameter(indexNumWaves[0], -1.0f, float(width), false);
