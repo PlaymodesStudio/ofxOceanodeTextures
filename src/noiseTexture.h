@@ -9,6 +9,7 @@
 #define noiseTexture_h
 
 #include "ofxOceanodeNodeModel.h"
+#include "ofxOceanodeShared.h"
 #include "imgui.h"
 
 #define STRINGIFY(A) #A
@@ -117,11 +118,11 @@ public:
     void draw(ofEventArgs &a){
         ofPushStyle();
         ofSetColor(255, 255, 255, 255);
-        if(!fbo.isAllocated() || fbo.getWidth() != width || fbo.getHeight() != height){
+        if(!fbo.isAllocated() || fbo.getWidth() != width || fbo.getHeight() != height || fbo.getTexture().getTextureData().glInternalFormat != ofxOceanodeShared::getColorTextureInternalFormat()){
             ofFbo::Settings fboSettings;
             fboSettings.width = width;
             fboSettings.height = height;
-            fboSettings.internalformat = GL_RGBA32F;
+            fboSettings.internalformat = ofxOceanodeShared::getColorTextureInternalFormat();
             //fboSettings.numSamples = 4;
             fboSettings.useDepth = false;
             fboSettings.useStencil = false;

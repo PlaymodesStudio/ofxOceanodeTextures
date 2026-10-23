@@ -9,6 +9,7 @@
 #define ColorByValue_h
 
 #include "ofxOceanodeNodeModel.h"
+#include "ofxOceanodeShared.h"
 
 class ColorByValue : public ofxOceanodeNodeModel {
 public:
@@ -56,11 +57,11 @@ public:
         int outW = width;
         int outH = valuesIn.get().size();
 
-        if (!fbo.isAllocated() || fbo.getWidth() != outW || fbo.getHeight() != outH) {
+        if(!fbo.isAllocated() || fbo.getWidth() != outW || fbo.getHeight() != outH || fbo.getTexture().getTextureData().glInternalFormat != ofxOceanodeShared::getColorTextureInternalFormat()){
             ofFbo::Settings settings;
             settings.width = outW;
             settings.height = outH;
-            settings.internalformat = GL_RGBA32F;
+            settings.internalformat = ofxOceanodeShared::getColorTextureInternalFormat();
             settings.maxFilter = GL_NEAREST;
             settings.minFilter = GL_NEAREST;
             settings.numColorbuffers = 1;

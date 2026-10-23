@@ -10,6 +10,7 @@
 
 #include "ofMain.h"
 #include "ofxOceanodeNodeModel.h"
+#include "ofxOceanodeShared.h"
 
 #include <cctype>
 #include <cmath>
@@ -138,11 +139,11 @@ public:
             }
             // Never sample the texture attached to the current render target.
             renderTarget = &outputHistory[1 - outputHistoryIndex];
-        }else if(!fbo.isAllocated() || fbo.getWidth() != outputWidth || fbo.getHeight() != outputHeight){
+        }else if(!fbo.isAllocated() || fbo.getWidth() != outputWidth || fbo.getHeight() != outputHeight || fbo.getTexture().getTextureData().glInternalFormat != ofxOceanodeShared::getColorTextureInternalFormat()){
             ofFbo::Settings settings;
             settings.height = outputHeight;
             settings.width = outputWidth;
-            settings.internalformat = GL_RGBA32F;
+            settings.internalformat = ofxOceanodeShared::getColorTextureInternalFormat();
             settings.maxFilter = GL_NEAREST;
             settings.minFilter = GL_NEAREST;
             settings.numColorbuffers = 1;
@@ -243,12 +244,12 @@ protected:
 
     bool prepareOutputHistory(int width, int height){
         if(!outputHistory[0].isAllocated() || !outputHistory[1].isAllocated() ||
-           outputHistory[0].getWidth() != width || outputHistory[0].getHeight() != height){
+           outputHistory[0].getWidth() != width || outputHistory[0].getHeight() != height || outputHistory[0].getTexture().getTextureData().glInternalFormat != ofxOceanodeShared::getColorTextureInternalFormat()){
             clearOutputHistory();
             ofFbo::Settings settings;
             settings.width = width;
             settings.height = height;
-            settings.internalformat = GL_RGBA32F;
+            settings.internalformat = ofxOceanodeShared::getColorTextureInternalFormat();
             settings.textureTarget = GL_TEXTURE_2D;
             settings.minFilter = GL_NEAREST;
             settings.maxFilter = GL_NEAREST;
@@ -267,12 +268,12 @@ protected:
 
     bool prepareHistory(const ofTexture &source){
         if(!history[0].isAllocated() || !history[1].isAllocated() ||
-           history[0].getWidth() != source.getWidth() || history[0].getHeight() != source.getHeight()){
+           history[0].getWidth() != source.getWidth() || history[0].getHeight() != source.getHeight() || history[0].getTexture().getTextureData().glInternalFormat != ofxOceanodeShared::getColorTextureInternalFormat()){
             clearHistory();
             ofFbo::Settings settings;
             settings.width = source.getWidth();
             settings.height = source.getHeight();
-            settings.internalformat = GL_RGBA32F;
+            settings.internalformat = ofxOceanodeShared::getColorTextureInternalFormat();
             settings.textureTarget = GL_TEXTURE_2D;
             settings.minFilter = GL_NEAREST;
             settings.maxFilter = GL_NEAREST;

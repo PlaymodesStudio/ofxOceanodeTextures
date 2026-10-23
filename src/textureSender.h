@@ -10,6 +10,7 @@
 #define senderManager_h
 
 #include "ofxOceanodeNodeModel.h"
+#include "ofxOceanodeShared.h"
 #include <atomic>
 #ifdef TARGET_OSX
 #include "ofxSyphon.h"
@@ -51,10 +52,10 @@ public:
         auto& texture = client->getTexture();
         const int width = int(texture.getWidth()), height = int(texture.getHeight());
         if(width <= 0 || height <= 0) { output = nullptr; return; }
-        if(!fbo.isAllocated() || fbo.getWidth() != width || fbo.getHeight() != height) {
+        if(!fbo.isAllocated() || fbo.getWidth() != width || fbo.getHeight() != height || fbo.getTexture().getTextureData().glInternalFormat != ofxOceanodeShared::getColorTextureInternalFormat()) {
             ofFbo::Settings settings;
             settings.width = width; settings.height = height;
-            settings.internalformat = GL_RGBA32F;
+            settings.internalformat = ofxOceanodeShared::getColorTextureInternalFormat();
             settings.numColorbuffers = 1;
             settings.useDepth = false; settings.useStencil = false;
             settings.textureTarget = GL_TEXTURE_2D;
@@ -147,6 +148,7 @@ public:
         addParameter(syphonName.set("Server", "Texture"));
         addParameter(masterFader.set("Opacity", 1, 0, 1), ofxOceanodeParameterFlags_DisableSavePreset);
         addParameter(textureIn.set("Texture In", nullptr));
+        addInspectorParameter(directPublish.set("Direct Publish (Keep Alpha)", false));
         
         listeners.push(textureIn.newListener(this, &textureSender::sendTexture));
         
@@ -187,9 +189,18 @@ public:
 private:
     void sendTexture(ofTexture *&info){
         #ifdef TARGET_OSX
-            if(syphonServer != NULL && enable && info != nullptr){
-                if(colorFbo.getHeight() != info->getHeight() || colorFbo.getWidth() != info->getWidth()){
-                    colorFbo.allocate(info->getWidth(), info->getHeight(), GL_RGBA32F);
+            if(syphonServer != NULL && enable && info != nullptr && info->isAllocated()){
+                if(directPublish && masterFader == 1.0f){
+                    syphonServer->publishTexture(info);
+                    return;
+                }
+                if(!colorFbo.isAllocated() || colorFbo.getHeight() != info->getHeight() || colorFbo.getWidth() != info->getWidth() || colorFbo.getTexture().getTextureData().glInternalFormat != ofxOceanodeShared::getColorTextureInternalFormat()){
+                    // Fresh settings avoid retaining the previous attachment colorFormats.
+                    ofFbo::Settings settings;
+                    settings.width = info->getWidth(); settings.height = info->getHeight();
+                    settings.internalformat = ofxOceanodeShared::getColorTextureInternalFormat();
+                    settings.useDepth = false; settings.useStencil = false;
+                    colorFbo.allocate(settings);
                 }
                 colorFbo.begin();
                 ofClear(0, 0, 0, 255);
@@ -210,6 +221,7 @@ private:
 #endif
 
     ofParameter<bool>   enable;
+    ofParameter<bool> directPublish;
     ofParameter<string> syphonName;
     ofParameter<float>  masterFader;
     ofParameter<ofTexture*>    textureIn;

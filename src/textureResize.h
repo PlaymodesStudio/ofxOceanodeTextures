@@ -9,6 +9,7 @@
 #define textureResize_h
 
 #include "ofxOceanodeNodeModel.h"
+#include "ofxOceanodeShared.h"
 #define STRINGIFY(x) #x
 
 class textureResize : public ofxOceanodeNodeModel {
@@ -39,7 +40,7 @@ public:
                 inputSize.y = input.get()->getHeight();
                 resizeMesh();
             }
-            if(width != fbo.getWidth() || height != fbo.getHeight()){
+            if(width != fbo.getWidth() || height != fbo.getHeight() || fbo.getTexture().getTextureData().glInternalFormat != ofxOceanodeShared::getColorTextureInternalFormat()){
                 resizeFbo();
                 resizeMesh();
             }
@@ -82,7 +83,7 @@ private:
         ofFbo::Settings settings;
         settings.width = width;
         settings.height = height;
-        settings.internalformat = GL_RGBA32F;
+        settings.internalformat = ofxOceanodeShared::getColorTextureInternalFormat();
         settings.maxFilter = GL_NEAREST;
         settings.minFilter = GL_NEAREST;
         settings.numColorbuffers = 1;

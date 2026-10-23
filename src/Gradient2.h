@@ -9,6 +9,7 @@
 #define Gradient2_h
 
 #include "ofxOceanodeNodeModel.h"
+#include "ofxOceanodeShared.h"
 
 #define STRINGIFY(A) #A
 
@@ -70,13 +71,12 @@ public:
     void draw(ofEventArgs &a){
         if((input.get() != nullptr) && (input.get()->getWidth()>0 && input.get()->getHeight()>0) )
 		{
-            if( !fbo.isAllocated() || fbo.getWidth()!=input.get()->getWidth() || fbo.getHeight()!=input.get()->getHeight() )
-			{
+            if( !fbo.isAllocated() || fbo.getWidth()!=input.get()->getWidth() || fbo.getHeight()!=input.get()->getHeight()  || fbo.getTexture().getTextureData().glInternalFormat != ofxOceanodeShared::getColorTextureInternalFormat()){
                 
                 ofFbo::Settings settings;
                 settings.width = input.get()->getWidth();
                 settings.height = input.get()->getHeight();
-                settings.internalformat = GL_RGBA32F;
+                settings.internalformat = ofxOceanodeShared::getColorTextureInternalFormat();
                 settings.maxFilter = GL_NEAREST;
                 settings.minFilter = GL_NEAREST;
                 settings.numColorbuffers = 1;

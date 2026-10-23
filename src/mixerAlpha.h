@@ -172,11 +172,11 @@ public:
 			}
 			int fboIndex = 0;
 			pingPongIndex = 0;
-			if(!pingPongFbo[0].isAllocated() || pingPongFbo[0].getWidth() != width || pingPongFbo[0].getHeight() != height){
+			if(!pingPongFbo[0].isAllocated() || pingPongFbo[0].getWidth() != width || pingPongFbo[0].getHeight() != height || pingPongFbo[0].getTexture().getTextureData().glInternalFormat != ofxOceanodeShared::getColorTextureInternalFormat()){
 				ofFbo::Settings fboSettings;
 				fboSettings.width = width;
 				fboSettings.height = height;
-				fboSettings.internalformat = GL_RGBA32F;
+				fboSettings.internalformat = ofxOceanodeShared::getColorTextureInternalFormat();
 				fboSettings.numColorbuffers = 1;
 				fboSettings.useDepth = false;
 				fboSettings.useStencil = false;

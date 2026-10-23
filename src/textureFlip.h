@@ -2,6 +2,7 @@
 #define textureFlip_h
 
 #include "ofxOceanodeNodeModel.h"
+#include "ofxOceanodeShared.h"
 
 class textureFlip : public ofxOceanodeNodeModel {
 public:
@@ -21,7 +22,7 @@ public:
 
     void draw(ofEventArgs &a) {
         if(input != nullptr && input.get()->isAllocated()) {
-            if(inputSize.x != input.get()->getWidth() || inputSize.y != input.get()->getHeight()) {
+            if(!fbo.isAllocated() || inputSize.x != input.get()->getWidth() || inputSize.y != input.get()->getHeight() || fbo.getTexture().getTextureData().glInternalFormat != ofxOceanodeShared::getColorTextureInternalFormat()) {
                 inputSize.x = input.get()->getWidth();
                 inputSize.y = input.get()->getHeight();
 
@@ -29,7 +30,7 @@ public:
                 ofFbo::Settings settings;
                 settings.width = inputSize.x;
                 settings.height = inputSize.y;
-                settings.internalformat = GL_RGBA32F;
+                settings.internalformat = ofxOceanodeShared::getColorTextureInternalFormat();
                 settings.maxFilter = GL_NEAREST;
                 settings.minFilter = GL_NEAREST;
                 settings.numColorbuffers = 1;

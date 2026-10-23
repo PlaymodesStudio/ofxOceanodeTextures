@@ -10,6 +10,7 @@
 #define TextureChannels_h
 
 #include "ofxOceanodeNodeModel.h"
+#include "ofxOceanodeShared.h"
 
 #define STRINGIFY(A) #A
 
@@ -44,11 +45,11 @@ public:
             int height = input.get()->getHeight();
             
             // Allocate FBO with 4 color attachments if needed
-            if(!fbo.isAllocated() || fbo.getWidth() != width || fbo.getHeight() != height){
+            if(!fbo.isAllocated() || fbo.getWidth() != width || fbo.getHeight() != height || fbo.getTexture().getTextureData().glInternalFormat != ofxOceanodeShared::getColorTextureInternalFormat()){
                 ofFbo::Settings settings;
                 settings.width = width;
                 settings.height = height;
-                settings.internalformat = GL_RGBA32F;
+                settings.internalformat = ofxOceanodeShared::getColorTextureInternalFormat();
                 settings.maxFilter = GL_NEAREST;
                 settings.minFilter = GL_NEAREST;
                 settings.numColorbuffers = 4;  // 4 color attachments for MRT

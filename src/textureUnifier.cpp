@@ -1,3 +1,4 @@
+#include "ofxOceanodeShared.h"
 //
 //  textureUnifier.cpp
 //  MIRABCN_Generator
@@ -56,14 +57,14 @@ void textureUnifier::computeOutput(ofTexture* &in){
 			if(!lastSpacing){
 				fboRect.setHeight(fboRect.getHeight() - spacing);
 			}
-            if(outputFbo.getHeight() != fboRect.getHeight() || outputFbo.getWidth() != fboRect.getWidth() || !outputFbo.isAllocated()){
+            if(outputFbo.getHeight() != fboRect.getHeight() || outputFbo.getWidth() != fboRect.getWidth() || !outputFbo.isAllocated() || outputFbo.getTexture().getTextureData().glInternalFormat != ofxOceanodeShared::getColorTextureInternalFormat()){
                 if(fboRect.getHeight() != 0 && fboRect.getWidth() != 0){
                     outputFbo.clear();
     
                     ofFbo::Settings settings;
                     settings.height = fboRect.getHeight();
                     settings.width = fboRect.getWidth();
-                    settings.internalformat = GL_RGBA32F;
+                    settings.internalformat = ofxOceanodeShared::getColorTextureInternalFormat();
                     settings.maxFilter = GL_NEAREST;
                     settings.minFilter = GL_NEAREST;
                     settings.numColorbuffers = 1;

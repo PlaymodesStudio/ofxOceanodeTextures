@@ -9,6 +9,7 @@
 #define injectAlpha_h
 
 #include "ofxOceanodeNodeModel.h"
+#include "ofxOceanodeShared.h"
 
 #define STRINGIFY(A) #A
 
@@ -49,11 +50,11 @@ public:
             int height = textureIn.get()->getHeight();
             
             // Allocate or reallocate FBO if needed
-            if(!fbo.isAllocated() || fbo.getWidth() != width || fbo.getHeight() != height){
+            if(!fbo.isAllocated() || fbo.getWidth() != width || fbo.getHeight() != height || fbo.getTexture().getTextureData().glInternalFormat != ofxOceanodeShared::getColorTextureInternalFormat()){
                 ofFbo::Settings settings;
                 settings.width = width;
                 settings.height = height;
-                settings.internalformat = GL_RGBA32F;
+                settings.internalformat = ofxOceanodeShared::getColorTextureInternalFormat();
                 settings.maxFilter = GL_NEAREST;
                 settings.minFilter = GL_NEAREST;
                 settings.numColorbuffers = 1;

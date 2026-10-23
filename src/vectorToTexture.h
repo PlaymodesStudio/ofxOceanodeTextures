@@ -9,6 +9,7 @@
 #define vectorToTexture_h
 
 #include "ofxOceanodeNodeModel.h"
+#include "ofxOceanodeShared.h"
 
 class vectorToTexture : public ofxOceanodeNodeModel{
 public:
@@ -19,48 +20,57 @@ public:
         addParameter(width.set("Width", 32, 1, INT_MAX));
         addParameter(height.set("Height", 4, 1, INT_MAX));
         addOutputParameter(output.set("Output Tex", nullptr));
+        listener = input.newListener([this](vector<float>&){ uploadDirty = true; });
     }
     
     void draw(ofEventArgs &a){
-        GLint limit=0;
-        glGetIntegerv(GL_MAX_TEXTURE_SIZE,&limit);
-        if(width.get()<1 || height.get()<1 || width.get()>limit || height.get()>limit) {
-            output=nullptr;
+        if(textureLimit == 0) glGetIntegerv(GL_MAX_TEXTURE_SIZE, &textureLimit);
+        if(width.get()<1 || height.get()<1 || width.get()>textureLimit || height.get()>textureLimit){
+            output = nullptr;
             return;
         }
-        if(!fbo.isAllocated() || fbo.getWidth() != width || fbo.getHeight() != height){
-            fbo.allocate(width, height, GL_RGBA32F);
+        const int format = ofxOceanodeShared::getColorTextureInternalFormat();
+        if(!tex.isAllocated() || tex.getWidth() != width || tex.getHeight() != height || tex.getTextureData().glInternalFormat != format){
+            tex.allocate(width, height, format);
+            tex.setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
+            uploadDirty = true;
+        }
+        if(!fbo.isAllocated() || fbo.getWidth() != width || fbo.getHeight() != height || fbo.getTexture().getTextureData().glInternalFormat != format){
+            // Fresh settings avoid retaining the previous attachment colorFormats.
+            ofFbo::Settings settings;
+            settings.width = width; settings.height = height;
+            settings.internalformat = format;
+            settings.useDepth = false; settings.useStencil = false;
+            fbo.allocate(settings);
             fbo.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
         }
-        // Upload exactly the declared image size. A shorter input previously
-        // let GL read beyond the CPU vector; longer inputs are cropped.
-        const size_t pixels=size_t(width.get())*size_t(height.get());
-        vector<float> rgbaInput(pixels*4, 0);
-        for(size_t i = 0; i < std::min(input->size(),pixels); i++){
-            rgbaInput[(i*4)] = input->at(i);
-            rgbaInput[(i*4)+1] = input->at(i);
-            rgbaInput[(i*4)+2] = input->at(i);
-            rgbaInput[(i*4)+3] = 1.0f;
-        }
-        if(rgbaInput.size()>0)
-        {
-            tex.allocate(width, height, GL_RGBA32F);
+        if(uploadDirty){
+            const size_t count = size_t(width.get()) * height.get();
+            rgbaInput.assign(count * 4, 0.0f);
+            const auto& values = input.get();
+            for(size_t i = 0; i < std::min(values.size(), count); ++i){
+                rgbaInput[4*i] = rgbaInput[4*i+1] = rgbaInput[4*i+2] = values[i];
+                rgbaInput[4*i+3] = 1.0f;
+            }
             tex.loadData(rgbaInput.data(), width, height, GL_RGBA);
-            tex.setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
-            fbo.begin();
-            ofClear(0, 0, 0, 255);
-            tex.draw(0, 0, width, height);
-            fbo.end();
-            output = &fbo.getTexture();
+            uploadDirty = false;
         }
+        // Retain the original compositing pass: it defines padded pixels' alpha
+        // and respects the host's blend/tint state. Allocation/upload storage is reused.
+        fbo.begin();
+        ofClear(0, 0, 0, 255);
+        tex.draw(0, 0, width, height);
+        fbo.end();
+        output = &fbo.getTexture();
     }
-    
+
     void loadBeforeConnections(ofJson &json){
         deserializeParameter(json, width);
         deserializeParameter(json, height);
     }
     
     void deactivate(){
+        tex.clear();
         fbo.clear();
         output = nullptr;
     }
@@ -71,6 +81,9 @@ private:
     ofParameter<int> width, height;
     ofTexture tex;
     ofFbo fbo;
+    vector<float> rgbaInput;
+    GLint textureLimit = 0;
+    bool uploadDirty = true;
     
     ofEventListener listener;
 };

@@ -9,6 +9,7 @@
 #define subTexture_h
 
 #include "ofxOceanodeNodeModel.h"
+#include "ofxOceanodeShared.h"
 
 class subTexture : public ofxOceanodeNodeModel{
 public:
@@ -34,8 +35,13 @@ public:
 
             const int outputWidth = width * static_cast<int>(xValues.size());
             const int outputHeight = height * static_cast<int>(yValues.size());
-            if(!fbo.isAllocated() || outputWidth != fbo.getWidth() || outputHeight != fbo.getHeight()){
-                fbo.allocate(outputWidth, outputHeight, GL_RGBA32F);
+            if(!fbo.isAllocated() || outputWidth != fbo.getWidth() || outputHeight != fbo.getHeight() || fbo.getTexture().getTextureData().glInternalFormat != ofxOceanodeShared::getColorTextureInternalFormat()){
+                // Fresh settings avoid retaining the previous attachment colorFormats.
+                ofFbo::Settings settings;
+                settings.width = outputWidth; settings.height = outputHeight;
+                settings.internalformat = ofxOceanodeShared::getColorTextureInternalFormat();
+                settings.useDepth = false; settings.useStencil = false;
+                fbo.allocate(settings);
                 fbo.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
             }
             fbo.begin();

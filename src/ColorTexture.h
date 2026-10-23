@@ -9,6 +9,7 @@
 #define ColorTexture_h
 
 #include "ofxOceanodeNodeModel.h"
+#include "ofxOceanodeShared.h"
 
 class ColorTexture : public ofxOceanodeNodeModel {
 public:
@@ -22,11 +23,11 @@ public:
     }
 
     void draw(ofEventArgs &a) {
-        if (!fbo.isAllocated() || fbo.getWidth() != resX || fbo.getHeight() != resY) {
+        if(!fbo.isAllocated() || fbo.getWidth() != resX || fbo.getHeight() != resY || fbo.getTexture().getTextureData().glInternalFormat != ofxOceanodeShared::getColorTextureInternalFormat()){
             ofFbo::Settings fboSettings;
             fboSettings.width = resX;
             fboSettings.height = resY;
-            fboSettings.internalformat = GL_RGBA32F;
+            fboSettings.internalformat = ofxOceanodeShared::getColorTextureInternalFormat();
             fboSettings.useDepth = false;
             fboSettings.useStencil = false;
             fboSettings.textureTarget = GL_TEXTURE_2D;
