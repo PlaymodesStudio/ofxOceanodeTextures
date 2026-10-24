@@ -25,7 +25,8 @@ public:
     };
     
     void presetHasLoaded() override{
-        setShowWindow(true);
+        // Keep the legacy default only for presets without a visibility choice.
+        if(!hasSavedWindowVisibility) setShowWindow(true);
         auto currentWin = ofGetCurrentWindow();
         setExternalWindowFullScreen(true);
         currentWin->makeCurrent();
