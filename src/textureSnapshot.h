@@ -10,7 +10,7 @@ public:
 
 		// Parameters (follow your style: addParameter(param.set(...)))
 		addParameter(texIn.set("Texture In", nullptr));
-		addParameter(texOut.set("Texture Out", nullptr));
+		addOutputParameter(texOut.set("Texture Out", nullptr));
 		addParameter(snapTrigger.set("Snap!"));
 		snapTrigger.addListener(this, &textureSnapshot::onSnap);
 	}

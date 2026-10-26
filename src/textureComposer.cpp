@@ -51,8 +51,8 @@ void textureComposer::setup()
     addParameter(scale[2].set("Sca.Z", {1}, {0}, {FLT_MAX}));
 
 	addSeparator("Output",ofColor(128,128,128));
-    addParameter(output.set("Output", {nullptr}));
-    addParameter(transformOutput.set("T. Out", {glm::identity<glm::mat4>()}));
+    addOutputParameter(output.set("Output", {nullptr}));
+    addOutputParameter(transformOutput.set("T. Out", {glm::identity<glm::mat4>()}));
     
     addInspectorParameter(normalizedAnchor.set("Normalized Anchor", false));
     addInspectorParameter(normalizedZAnchor.set("Normalize Z Anchor", false));

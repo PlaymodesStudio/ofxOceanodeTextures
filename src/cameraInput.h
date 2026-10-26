@@ -29,13 +29,13 @@ public:
 		addParameter(height.set("Height", 480, 1, 2160));
 		height.addListener(this, &cameraInput::onResizeChanged);
 
-		addParameter(deviceNames.set("Devices", {""}, {""}, {""}));
+		addOutputParameter(deviceNames.set("Devices", {""}, {""}, {""}));
 
 		// Read-only outputs: actual camera resolution
 		addOutputParameter(deviceW.set("Device W", 0, 0, 7680));
 		addOutputParameter(deviceH.set("Device H", 0, 0, 4320));
 
-		addParameter(textureOut.set("Texture Out", nullptr));
+		addOutputParameter(textureOut.set("Texture Out", nullptr));
 	}
 
 	~cameraInput() override {

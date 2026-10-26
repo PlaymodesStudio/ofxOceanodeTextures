@@ -14,8 +14,8 @@ public:
         //addInspectorParameter(numColors.set("Num Colors", 5, 2, 10));
         addParameter(input.set("Input", nullptr));
         addParameter(threshold.set("Thrs.",1.0,0.0,1.0));
-        addParameter(avgBright.set("Avg.Bright",0,0,1));
-        addParameter(maxBright.set("Max.Bright",0,0,1));
+        addOutputParameter(avgBright.set("Avg.Bright",0,0,1));
+        addOutputParameter(maxBright.set("Max.Bright",0,0,1));
 
     }
     

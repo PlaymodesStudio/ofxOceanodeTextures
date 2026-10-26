@@ -16,9 +16,9 @@ public:
     
     void setup(){
         addParameter(input.set("Input", nullptr));
-        addParameter(x.set("X", 0.5, 0, 1));
-        addParameter(y.set("Y", 0.5, 0, 1));
-        addParameter(force.set("Force", 0, -1, 1));
+        addOutputParameter(x.set("X", 0.5, 0, 1));
+        addOutputParameter(y.set("Y", 0.5, 0, 1));
+        addOutputParameter(force.set("Force", 0, -1, 1));
         
         black.allocate(4, 4, GL_RGBA32F);
 //        black.begin();
