@@ -34,7 +34,7 @@ public:
         addParameter(loop.set("Loop", true));
         addParameter(play.set("Play", false));
         addParameter(speed.set("Speed", 1, 0, 10));
-        addParameter(position.set("Position", 0, 0, 1));
+        addInputAndOutputParameter(position.set("Position", 0, 0, 1));
         addOutputParameter(texture.set("Output", nullptr));
         
         listeners.push(fileIndex.newListener([this](int &i){

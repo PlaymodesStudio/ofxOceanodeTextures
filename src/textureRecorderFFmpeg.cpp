@@ -25,7 +25,7 @@ std::string shellQuote(const std::string &value){
 textureRecorderFFmpeg::textureRecorderFFmpeg() : ofxOceanodeNodeModel("Texture Recorder FFmpeg"){
     addSeparator("Capture");
     addParameter(phasorIn.set("Phase", 0, 0, 1));
-    addParameter(record.set("Record", false));
+    addInputAndOutputParameter(record.set("Record", false));
     addParameter(autoRecLoop.set("Auto.Rec", false));
     addParameter(filename.set("File", "recTest"));
     addInspectorParameter(numInputs.set("Num Inputs", 1, 1, maxInputs));
