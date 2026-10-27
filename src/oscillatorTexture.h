@@ -113,6 +113,8 @@ private:
     //TBOs
     ofTexture               oscillatorShaderTexture;
     ofBufferObject          oscillatorShaderBuffer;
+    vector<float>           oscillatorShaderMirror; // CPU copy of the TBO, uploaded once per frame
+    bool                    oscillatorShaderDirty = false;
     
     bool isFirstPassAfterSetup;
     

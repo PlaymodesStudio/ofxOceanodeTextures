@@ -101,6 +101,8 @@ private:
     
     ofTexture               shaderParametersTexture;
     ofBufferObject          shaderParametersBuffer;
+    vector<float>           shaderParametersMirror; // CPU copy of the TBO, uploaded once per frame
+    bool                    shaderParametersDirty = false;
     
     //Index Random Values
     ofTexture               indexRandomValuesTexture;
@@ -214,6 +216,8 @@ private:
     
     ofTexture               shaderParametersTexture;
     ofBufferObject          shaderParametersBuffer;
+    vector<float>           shaderParametersMirror; // CPU copy of the TBO, uploaded once per frame
+    bool                    shaderParametersDirty = false;
     
     //Index Random Values
     ofTexture               indexRandomValuesTexture;

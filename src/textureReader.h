@@ -141,7 +141,10 @@ private:
             glPixelStorei(GL_PACK_ALIGNMENT, alignment); glPixelStorei(GL_PACK_ROW_LENGTH, rowLength);
             glPixelStorei(GL_PACK_SKIP_ROWS, skipRows); glPixelStorei(GL_PACK_SKIP_PIXELS, skipPixels);
             glBindBuffer(GL_PIXEL_PACK_BUFFER, previousBuffer);
-            if(slot.fence){ ++pending; glFlush(); }
+            // No glFlush here: the frame's swap (or any later driver flush) submits
+            // the read, and the fence is only polled on a later draw anyway. An
+            // explicit flush per reader per frame cost ~4% of the frame in Lightnet.
+            if(slot.fence) ++pending;
         }
     }
 #endif

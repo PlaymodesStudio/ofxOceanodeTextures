@@ -6,6 +6,7 @@
 //
 
 #include "indexerTexture.h"
+#include "shaderParameterStaging.h"
 #include "ofxOceanodeGlDiagnostics.h"
 #include <random>
 
@@ -277,11 +278,7 @@ void indexerTexture::draw(ofEventArgs &a){
         }
         
         oceanodeGlDiagnostics::Scope::checkpoint("Indexer: update random buffer");
-        if(vf.size() == size){
-            shaderParametersBuffer.updateData(position*4, vf);
-        }else if(size!=0){
-            shaderParametersBuffer.updateData(position*4, vector<float>(size, vf[0]));
-        }
+        if(stageShaderParameters(shaderParametersMirror, position, size, vf)) shaderParametersDirty = true;
         if(oceanodeGlDiagnostics::enabled()){
             const auto operation = "Indexer: upload " + parameter.first +
                 " offset=" + ofToString(position * sizeof(float)) +
@@ -292,6 +289,10 @@ void indexerTexture::draw(ofEventArgs &a){
         }
     }
     changedParameters.clear();
+    }
+    if(shaderParametersDirty){
+        shaderParametersBuffer.setData(shaderParametersMirror, GL_STREAM_DRAW);
+        shaderParametersDirty = false;
     }
     auto* result = computeBank();
     oceanodeGlDiagnostics::Scope::checkpoint("Indexer: computeBank completed");
@@ -348,7 +349,8 @@ void indexerTexture::setParametersInfoMaps(){
 }
 
 void indexerTexture::setShaderParameterDataToTBO(){
-    vector<float> accumulateParametersShaderParameters;
+    vector<float>& accumulateParametersShaderParameters = shaderParametersMirror;
+    accumulateParametersShaderParameters.clear();
     
     vector<float> indexNumWavesX_tempVec(height, (indexNumWaves[0].get().empty() ? 0 : indexNumWaves[0].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexNumWavesX_tempVec.begin(), indexNumWavesX_tempVec.end());
@@ -397,6 +399,7 @@ void indexerTexture::setShaderParameterDataToTBO(){
     
     
     shaderParametersBuffer.setData(accumulateParametersShaderParameters, GL_STREAM_DRAW);
+    shaderParametersDirty = false;
 }
 
 
@@ -813,13 +816,13 @@ void indexerTexture2::draw(ofEventArgs &a){
             }
         }
         
-        if(vf.size() == size){
-            shaderParametersBuffer.updateData(position*4, vf);
-        }else{
-            shaderParametersBuffer.updateData(position*4, vector<float>(size, vf[0]));
-        }
+        if(stageShaderParameters(shaderParametersMirror, position, size, vf)) shaderParametersDirty = true;
     }
     changedParameters.clear();
+    if(shaderParametersDirty){
+        shaderParametersBuffer.setData(shaderParametersMirror, GL_STREAM_DRAW);
+        shaderParametersDirty = false;
+    }
     indexsOut = computeBank();
 }
 
@@ -877,7 +880,8 @@ void indexerTexture2::setParametersInfoMaps(){
 }
 
 void indexerTexture2::setShaderParameterDataToTBO(){
-    vector<float> accumulateParametersShaderParameters;
+    vector<float>& accumulateParametersShaderParameters = shaderParametersMirror;
+    accumulateParametersShaderParameters.clear();
     
     vector<float> indexNumWavesR_tempVec(angleResolution, (indexNumWaves[0].get().empty() ? 0 : indexNumWaves[0].get()[0]));
     accumulateParametersShaderParameters.insert(accumulateParametersShaderParameters.end(), indexNumWavesR_tempVec.begin(), indexNumWavesR_tempVec.end());
@@ -926,6 +930,7 @@ void indexerTexture2::setShaderParameterDataToTBO(){
     
     
     shaderParametersBuffer.setData(accumulateParametersShaderParameters, GL_STREAM_DRAW);
+    shaderParametersDirty = false;
 }
 
 

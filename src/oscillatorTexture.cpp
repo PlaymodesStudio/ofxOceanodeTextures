@@ -7,6 +7,7 @@
 //
 
 #include "oscillatorTexture.h"
+#include "shaderParameterStaging.h"
 #include <random>
 #include <random>
 
@@ -287,14 +288,13 @@ void oscillatorTexture::draw(ofEventArgs &a){
         int position = oscillatorShaderParameterNameTBOPositionMap[parameter.first];
         int size = oscillatorShaderParameterNameTBOSizeMap[parameter.first];
         
-        if(vf.size() == size){
-            oscillatorShaderBuffer.updateData(position*4, vf);
-		}else if (size!=0 && vf.size()!=0)
-		{
-            oscillatorShaderBuffer.updateData(position*4, vector<float>(size, vf[0]));
-        }
+        if(stageShaderParameters(oscillatorShaderMirror, position, size, vf)) oscillatorShaderDirty = true;
     }
     changedOscillatorParameters.clear();
+    if(oscillatorShaderDirty){
+        oscillatorShaderBuffer.setData(oscillatorShaderMirror, GL_STREAM_DRAW);
+        oscillatorShaderDirty = false;
+    }
     oscillatorOut = computeBank(phasorIn);
 }
 
@@ -368,7 +368,8 @@ void oscillatorTexture::setParametersInfoMaps(){
 }
 
 void oscillatorTexture::setOscillatorShaderParameterDataToTBO(){
-    vector<float> accumulateParametersOscillatorShaderParameters;
+    vector<float>& accumulateParametersOscillatorShaderParameters = oscillatorShaderMirror;
+    accumulateParametersOscillatorShaderParameters.clear();
     
     vector<float> widthVec_tempVec(height, widthVec.get()[0]);
     accumulateParametersOscillatorShaderParameters.insert(accumulateParametersOscillatorShaderParameters.end(), widthVec_tempVec.begin(), widthVec_tempVec.end());
@@ -441,6 +442,7 @@ void oscillatorTexture::setOscillatorShaderParameterDataToTBO(){
     accumulateParametersOscillatorShaderParameters.insert(accumulateParametersOscillatorShaderParameters.end(), invertY_tempVec.begin(), invertY_tempVec.end());
     
     oscillatorShaderBuffer.setData(accumulateParametersOscillatorShaderParameters, GL_STREAM_DRAW);
+    oscillatorShaderDirty = false;
 }
 
 
