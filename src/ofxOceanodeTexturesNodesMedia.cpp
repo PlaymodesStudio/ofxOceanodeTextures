@@ -21,13 +21,13 @@ namespace ofxOceanodeTextures{
 
 void registerMediaNodes(ofxOceanode &o){
     o.registerModel<imageLoader>("Textures");
-    o.registerModel<videoPlayer>("Textures");
+    o.registerModel<videoPlayer>("Textures", ofxOceanodeNodeRegistrationFlags::Sink);
     o.registerModel<videoPlayerScrub>("Textures");
     o.registerModel<cameraInput>("Textures");
     o.registerModel<textureSender>("Textures");
     o.registerModel<textureReceiver>("Textures");
-    o.registerModel<textureRecorder>("Textures");
-    o.registerModel<textureRecorderFFmpeg>("Textures");
+    o.registerModel<textureRecorder>("Textures", ofxOceanodeNodeRegistrationFlags::Sink);
+    o.registerModel<textureRecorderFFmpeg>("Textures", ofxOceanodeNodeRegistrationFlags::Sink);
     o.registerModel<textureSnapshot>("Textures");
     o.registerModel<displayOutput>("Textures");
     o.registerModel<textureDisplay>("Textures");
