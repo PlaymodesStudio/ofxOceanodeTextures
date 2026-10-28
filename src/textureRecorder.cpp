@@ -13,7 +13,7 @@
 
 textureRecorder::textureRecorder() : ofxOceanodeNodeModel("Texture Recorder"){
     addParameter(phasorIn.set("Phase", 0, 0, 1));
-    addParameter(record.set("Record", false));
+    addInputAndOutputParameter(record.set("Record", false));
     addParameter(autoRecLoop.set("Auto.Rec", false));
     addParameter(filename.set("File", "recTest"));
     addParameter(input.set("Input", nullptr));
