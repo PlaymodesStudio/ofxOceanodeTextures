@@ -27,10 +27,9 @@ public:
     void presetHasLoaded() override{
         // Keep the legacy default only for presets without a visibility choice.
         if(!hasSavedWindowVisibility) setShowWindow(true);
-        auto currentWin = ofGetCurrentWindow();
+        // The base class keeps the main window's GL context current across
+        // window creation and fullscreen changes, so no restore is needed here.
         setExternalWindowFullScreen(true);
-        currentWin->makeCurrent();
-        ofGetMainLoop()->setCurrentWindow(currentWin);
     }
     
 private:
@@ -43,7 +42,12 @@ private:
             ofPushStyle();
             ofSetRectMode(OF_RECTMODE_CENTER);
             ofSetColor(masterFader*255);
-            texture.get()->setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
+            // The texture object is shared with every other node reading it, so
+            // sample it nearest only for this draw and restore the filter after.
+            ofTexture &tex = *texture.get();
+            const GLint prevMinFilter = tex.getTextureData().minFilter;
+            const GLint prevMagFilter = tex.getTextureData().magFilter;
+            tex.setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
             if(fit){
                 float drawWidth = texture.get()->getWidth();
                 float drawHeight = texture.get()->getHeight();
@@ -69,6 +73,7 @@ private:
                 ofSetRectMode(OF_RECTMODE_CENTER);
                 texture.get()->draw(ofGetWidth()/2, ofGetHeight()/2);
             }
+            tex.setTextureMinMagFilter(prevMinFilter, prevMagFilter);
             ofPopStyle();
         }
     }
