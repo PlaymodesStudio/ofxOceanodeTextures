@@ -46,6 +46,8 @@ public:
         ImGui::SetNextWindowSize(ImVec2(850, 0), ImGuiCond_Appearing);
         ImGui::SetNextWindowSizeConstraints(ImVec2(600, 0), ImVec2(FLT_MAX, ImGui::GetMainViewport()->WorkSize.y * 0.85f));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(24, 20));
+        ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID);
+        ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
         if(ImGui::BeginPopupModal("Update Effects", nullptr, ImGuiWindowFlags_AlwaysAutoResize)){
             ImGui::TextWrapped("%s", status.c_str());
             if(!newEffects.empty()){

@@ -445,6 +445,8 @@ void main()
 
     void drawCreateCategoryDialog(){
         ImGui::SetNextWindowSize(ImVec2(420, 0), ImGuiCond_Appearing);
+        ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID);
+        ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
         if(ImGui::BeginPopupModal("Create new category", nullptr, ImGuiWindowFlags_AlwaysAutoResize)){
             if(ImGui::IsWindowAppearing()) ImGui::SetKeyboardFocusHere();
             const bool submitted = ImGui::InputText("Name", newCategoryBuffer, sizeof(newCategoryBuffer), ImGuiInputTextFlags_EnterReturnsTrue);
@@ -478,6 +480,8 @@ void main()
         if(openSaveDialog){ ImGui::OpenPopup("Save Shader"); openSaveDialog = false; }
         ImGui::SetNextWindowSize(ImVec2(640, 0), ImGuiCond_Appearing);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20, 16));
+        ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID);
+        ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
         if(ImGui::BeginPopupModal("Save Shader", nullptr, ImGuiWindowFlags_AlwaysAutoResize)){
             const bool busy = saveBusy();
             if(busy) ImGui::BeginDisabled();
