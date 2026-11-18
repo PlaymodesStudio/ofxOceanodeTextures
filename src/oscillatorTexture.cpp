@@ -11,6 +11,23 @@
 #include <random>
 #include <random>
 
+namespace {
+    // A size saved while a vector was connected is an array; older presets hold
+    // a string or a number. Accept all three instead of throwing on load.
+    vector<int> sizeVectorFromJson(const ofJson& value){
+        auto one = [](const ofJson& v) -> int {
+            if(v.is_string()) return ofToInt(v.get<string>());
+            if(v.is_number()) return v.get<int>();
+            return 1;
+        };
+        if(!value.is_array()) return vector<int>(1, one(value));
+        vector<int> sizes;
+        for(const auto& v : value) sizes.push_back(one(v));
+        if(sizes.empty()) sizes.push_back(1);
+        return sizes;
+    }
+}
+
 #define STRINGIFY(x) #x
 
 oscillatorTexture::oscillatorTexture() : ofxOceanodeNodeModel("Oscillator Texture"){
@@ -463,18 +480,10 @@ void oscillatorTexture::loadShader(bool &b){
 
 void oscillatorTexture::presetRecallBeforeSettingParameters(ofJson &json){
     if(json.count(widthVec.getEscapedName()) == 1){
-        if(json[widthVec.getEscapedName()].is_string()){
-            widthVec = vector<int>(1, ofToInt(json[widthVec.getEscapedName()]));
-        }else{
-            widthVec = vector<int>(1, int(json[widthVec.getEscapedName()]));
-        }
+        widthVec = sizeVectorFromJson(json[widthVec.getEscapedName()]);
     }
     if(json.count(heightVec.getEscapedName()) == 1){
-        if(json[heightVec.getEscapedName()].is_string()){
-            heightVec = vector<int>(1, ofToInt(json[heightVec.getEscapedName()]));
-        }else{
-            heightVec = vector<int>(1, int(json[heightVec.getEscapedName()]));
-        }
+        heightVec = sizeVectorFromJson(json[heightVec.getEscapedName()]);
     }
     isFirstPassAfterSetup = true;
 }
